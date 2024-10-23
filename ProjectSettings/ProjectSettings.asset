@@ -140,7 +140,7 @@ PlayerSettings:
   loadStoreDebugModeEnabled: 0
   visionOSBundleVersion: 1.0
   tvOSBundleVersion: 1.0
-  bundleVersion: 1.16.0
+  bundleVersion: 1.17.0
   preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0
@@ -529,6 +529,8 @@ PlayerSettings:
     PROGRESS_BAR_FILL_COLOR: '-'
     VK_PLAY_GAME_ID: '-'
     Y8_GAME_ID: '-'
+    LAGGED_DEV_ID: '-'
+    LAGGED_PUBLISHER_ID: '-'
   mobileMTRendering:
     Android: 1
     iPhone: 1

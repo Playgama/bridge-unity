@@ -169,6 +169,12 @@
                         gameId: '{{{ Y8_GAME_ID }}}'
                     },
 #endif
+#if LAGGED_DEV_ID && LAGGED_DEV_ID !== '-' && LAGGED_DEV_ID !== ' ' && LAGGED_PUBLISHER_ID && LAGGED_PUBLISHER_ID !== '-' && LAGGED_PUBLISHER_ID !== ' '
+                    'lagged': {
+                        devId: '{{{ LAGGED_DEV_ID }}}',
+                        publisherId: '{{{ LAGGED_PUBLISHER_ID }}}',
+                    },
+#endif
 #if ADSGRAM_BLOCK_ID && ADSGRAM_BLOCK_ID !== '-' && ADSGRAM_BLOCK_ID !== ' '
                     'telegram': {
                         adsgramBlockId: '{{{ ADSGRAM_BLOCK_ID }}}'
