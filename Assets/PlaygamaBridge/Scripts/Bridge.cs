@@ -1,5 +1,4 @@
 #if UNITY_WEBGL
-using Playgama.Common;
 using Playgama.Modules.Advertisement;
 using Playgama.Modules.Device;
 using Playgama.Modules.Game;
@@ -14,7 +13,7 @@ using Playgama.Modules.Storage;
 
 namespace Playgama
 {
-    public class Bridge : Singleton<Bridge>
+    public class Bridge :  Playgama.Common.Singleton<Bridge>
     {
         public static AdvertisementModule advertisement => instance._advertisement;
         public static GameModule game => instance._game;
