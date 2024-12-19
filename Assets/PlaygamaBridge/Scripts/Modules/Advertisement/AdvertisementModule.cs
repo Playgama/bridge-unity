@@ -154,7 +154,11 @@ namespace Playgama.Modules.Advertisement
         private void Awake()
         {
 #if !UNITY_EDITOR
-            OnInterstitialStateChanged(PlaygamaBridgeGetInterstitialState());
+            string value = PlaygamaBridgeGetInterstitialState();
+            if (Enum.TryParse<InterstitialState>(value, true, out var state))
+            {
+                interstitialState = state;
+            }
 #endif
         }
         
