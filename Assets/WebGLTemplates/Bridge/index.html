@@ -190,10 +190,6 @@
                     bridge.advertisement.on('rewarded_state_changed', state => sendMessageToUnity('OnRewardedStateChanged', state))
                     bridge.game.on('visibility_state_changed', state => sendMessageToUnity('OnVisibilityStateChanged', state))
 
-                    if (bridge.platform.id === bridge.PLATFORM_ID.GAME_DISTRIBUTION) {
-                        bridge.advertisement.showInterstitial()
-                    }
-
                     let unityLoader = document.createElement('script')
                     unityLoader.src = 'Build/{{{ LOADER_FILENAME }}}'
                     unityLoader.onload = () => {
