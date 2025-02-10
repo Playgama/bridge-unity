@@ -23,12 +23,6 @@
                 top: 0px;
                 left: 0px;
             }
-            #banner-container {
-                position: absolute;
-                bottom: 0px;
-                width: 100%;
-                height: 90px;
-            }
             #loading-overlay {
                 font-size: 20px;
                 z-index: 1;
@@ -68,7 +62,6 @@
     </head>
     <body>
         <canvas id="canvas" class="fullscreen"></canvas>
-        <div id="banner-container" style="display: none"></div>
         <div id="loading-overlay" class="fullscreen">
             <img id="icon" src="./icon.png" />
             <div id="progress-bar"><div id="progress-bar-fill"></div></div>
@@ -85,7 +78,6 @@
             let canvas = document.getElementById('canvas')
             let loadingOverlay = document.getElementById('loading-overlay')
             let progressBarFill = document.getElementById('progress-bar-fill')
-            let bannerContainer = document.getElementById('banner-container')
 
             const STORAGE_DATA_SEPARATOR = '{bridge_data_separator}'
             const STORAGE_KEYS_SEPARATOR = '{bridge_keys_separator}'
@@ -197,10 +189,6 @@
                     bridge.advertisement.on('interstitial_state_changed', state => sendMessageToUnity('OnInterstitialStateChanged', state))
                     bridge.advertisement.on('rewarded_state_changed', state => sendMessageToUnity('OnRewardedStateChanged', state))
                     bridge.game.on('visibility_state_changed', state => sendMessageToUnity('OnVisibilityStateChanged', state))
-
-                    if (bridge.platform.id === bridge.PLATFORM_ID.GAME_DISTRIBUTION) {
-                        bridge.advertisement.showInterstitial()
-                    }
 
                     let unityLoader = document.createElement('script')
                     unityLoader.src = 'Build/{{{ LOADER_FILENAME }}}'
@@ -447,26 +435,10 @@
                     options = { }
                 }
 
-                if (bridge.platform.id === bridge.PLATFORM_ID.CRAZY_GAMES || bridge.platform.id === bridge.PLATFORM_ID.GAME_DISTRIBUTION) {
-                    bannerContainer.style.display = 'block'
-                }
-
-                options['crazy_games'] = {
-                    containerId: 'banner-container'
-                }
-
-                options['game_distribution'] = {
-                    containerId: 'banner-container'
-                }
-
                 bridge.advertisement.showBanner(options)
             }
 
             window.hideBanner = function() {
-                if (bridge.platform.id === bridge.PLATFORM_ID.CRAZY_GAMES || bridge.platform.id === bridge.PLATFORM_ID.GAME_DISTRIBUTION) {
-                    bannerContainer.style.display = 'none'
-                }
-
                 bridge.advertisement.hideBanner()
             }
 
