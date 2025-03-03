@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿#if UNITY_WEBGL
+
+using System.Collections.Generic;
 using Playgama;
 using Playgama.Modules.Social;
 using UnityEngine;
@@ -169,3 +171,5 @@ namespace Examples
         }
     }
 }
+
+#endif

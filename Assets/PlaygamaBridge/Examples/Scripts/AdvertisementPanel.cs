@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿#if UNITY_WEBGL
+
+using System.Collections.Generic;
 using Playgama;
 using Playgama.Modules.Advertisement;
 using UnityEngine;
@@ -173,3 +175,5 @@ namespace Examples
         }
     }
 }
+
+#endif

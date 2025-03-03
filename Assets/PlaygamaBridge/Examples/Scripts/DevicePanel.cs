@@ -1,4 +1,6 @@
-﻿using Playgama;
+﻿#if UNITY_WEBGL
+
+using Playgama;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,3 +16,5 @@ namespace Examples
         }
     }
 }
+
+#endif
