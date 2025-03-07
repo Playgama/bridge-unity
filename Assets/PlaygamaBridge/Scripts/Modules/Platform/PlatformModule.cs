@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using UnityEngine;
 #if !UNITY_EDITOR
+using Playgama.Common;
 using System.Runtime.InteropServices;
 #endif
 
@@ -47,7 +48,7 @@ namespace Playgama.Modules.Platform
         private static extern string PlaygamaBridgeGetAllGames();
 
         [DllImport("__Internal")]
-        private static extern string PlaygamaBridgeGetGameById();
+        private static extern string PlaygamaBridgeGetGameById(string options);
 #else
         public string id => "mock";
         public string language => "en";

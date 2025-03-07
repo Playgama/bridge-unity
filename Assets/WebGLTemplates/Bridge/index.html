@@ -255,11 +255,11 @@
             }
 
             window.getIsPlatformGetAllGamesSupported = function() {
-                return bridge.platform.isGetAllGamesSupported
+                return bridge.platform.isGetAllGamesSupported.toString()
             }
 
             window.getIsPlatformGetGameByIdSupported = function() {
-                return bridge.platform.isGetGameByIdSupported
+                return bridge.platform.isGetGameByIdSupported.toString()
             }
 
             window.sendMessageToPlatform = function(message) {
