@@ -121,7 +121,7 @@ namespace Examples
 
             Bridge.platform.GetGameById(new Dictionary<string, object>
             {
-                { "id", _gameIdInputField.text }
+                { "gameId", _gameIdInputField.text }
             }, (success, game) =>
             {
                 Debug.Log($"OnGetGameByIdCompleted, success: {success}, game:");
