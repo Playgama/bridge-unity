@@ -60,7 +60,7 @@ namespace Playgama.Modules.Platform
         private Action<DateTime?> _getServerTimeCallback;
 
         private Action<bool, List<Dictionary<string, string>>> _getAllGamesCallback;
-        private Action<bool, Dictionary<string, string>> _getGamesByIdCallback;
+        private Action<bool, Dictionary<string, string>> _getGameByIdCallback;
         
         public void SendMessage(PlatformMessage message)
         {
@@ -123,7 +123,7 @@ namespace Playgama.Modules.Platform
 
         public void GetGameById(Dictionary<string, object> options, Action<bool, Dictionary<string, string>> onComplete = null) 
         {
-            _getGamesByIdCallback = onComplete;
+            _getGameByIdCallback = onComplete;
 #if !UNITY_EDITOR
             PlaygamaBridgeGetGameById(options.ToJson());
 #else
@@ -189,14 +189,14 @@ namespace Playgama.Modules.Platform
                 }
             }
 
-            _getGamesByIdCallback?.Invoke(true, game);
-            _getGamesByIdCallback = null;
+            _getGameByIdCallback?.Invoke(true, game);
+            _getGameByIdCallback = null;
         }
 
         private void OnGetGameByIdCompletedFailed()
         {
-            _getGamesByIdCallback?.Invoke(false, null);
-            _getGamesByIdCallback = null;
+            _getGameByIdCallback?.Invoke(false, null);
+            _getGameByIdCallback = null;
         }
     }
 }
