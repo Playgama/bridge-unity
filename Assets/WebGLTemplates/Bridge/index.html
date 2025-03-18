@@ -254,6 +254,14 @@
                 }
             }
 
+            window.getIsPlatformGetAllGamesSupported = function() {
+                return bridge.platform.isGetAllGamesSupported.toString()
+            }
+
+            window.getIsPlatformGetGameByIdSupported = function() {
+                return bridge.platform.isGetGameByIdSupported.toString()
+            }
+
             window.sendMessageToPlatform = function(message) {
                 bridge.platform.sendMessage(message)
             }
@@ -268,6 +276,31 @@
                     })
             }
 
+            window.getAllGames = function() {
+                bridge.platform.getAllGames()
+                    .then(result => {
+                        sendMessageToUnity('OnGetAllGamesCompletedSuccess', JSON.stringify(result))
+                    })
+                    .catch(error => {
+                        sendMessageToUnity('OnGetAllGamesCompletedFailed')
+                    })
+            }
+
+            window.getGameById = function(options) {
+                if (options) {
+                    options = JSON.parse(options)
+                } else {
+                    options = { }
+                }
+
+                bridge.platform.getGameById(options)
+                    .then(result => {
+                        sendMessageToUnity('OnGetGameByIdCompletedSuccess', JSON.stringify(result))
+                    })
+                    .catch(error => {
+                        sendMessageToUnity('OnGetGameByIdCompletedFailed')
+                    })
+            }
 
             // device
             window.getDeviceType = function() {

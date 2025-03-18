@@ -1,19 +1,24 @@
 ﻿#if UNITY_WEBGL
 using System;
+using System.Collections.Generic;
+using Newtonsoft.Json;
 using UnityEngine;
 #if !UNITY_EDITOR
+using Playgama.Common;
 using System.Runtime.InteropServices;
 #endif
 
 namespace Playgama.Modules.Platform
 {
     public class PlatformModule : MonoBehaviour
-    {
+    {        
 #if !UNITY_EDITOR
         public string id { get; } = PlaygamaBridgeGetPlatformId();
         public string language { get; } = PlaygamaBridgeGetPlatformLanguage();
         public string payload { get; } = PlaygamaBridgeGetPlatformPayload();
         public string tld { get; } = PlaygamaBridgeGetPlatformTld();
+        public bool isGetAllGamesSupported { get; } = PlaygamaBridgeIsPlatformGetAllGamesSupported() == "true";
+        public bool isGetGameByIdSupported { get; } = PlaygamaBridgeIsPlatformGetGameByIdSupported() == "true";
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeGetPlatformId();
@@ -26,20 +31,36 @@ namespace Playgama.Modules.Platform
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeGetPlatformTld();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsPlatformGetAllGamesSupported();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsPlatformGetGameByIdSupported();
         
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeSendMessageToPlatform(string message);
         
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeGetServerTime();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeGetAllGames();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeGetGameById(string options);
 #else
         public string id => "mock";
         public string language => "en";
         public string payload => null;
         public string tld => null;
+        public bool isGetAllGamesSupported => false;
+        public bool isGetGameByIdSupported => false;
 #endif
         private Action<DateTime?> _getServerTimeCallback;
 
+        private Action<bool, List<Dictionary<string, string>>> _getAllGamesCallback;
+        private Action<bool, Dictionary<string, string>> _getGamesByIdCallback;
         
         public void SendMessage(PlatformMessage message)
         {
@@ -90,6 +111,26 @@ namespace Playgama.Modules.Platform
 #endif
         }
 
+        public void GetAllGames(Action<bool, List<Dictionary<string, string>>> onComplete = null)
+        {
+            _getAllGamesCallback = onComplete;
+#if !UNITY_EDITOR
+            PlaygamaBridgeGetAllGames();
+#else
+            OnGetAllGamesCompletedFailed();
+#endif
+        }
+
+        public void GetGameById(Dictionary<string, object> options, Action<bool, Dictionary<string, string>> onComplete = null) 
+        {
+            _getGamesByIdCallback = onComplete;
+#if !UNITY_EDITOR
+            PlaygamaBridgeGetGameById(options.ToJson());
+#else
+            OnGetGameByIdCompletedFailed();
+#endif
+        }
+
 
         // Called from JS
         private void OnGetServerTimeCompleted(string result)
@@ -104,6 +145,58 @@ namespace Playgama.Modules.Platform
             
             _getServerTimeCallback?.Invoke(date);
             _getServerTimeCallback = null;
+        }
+
+        private void OnGetAllGamesCompletedSuccess(string result)
+        {
+            var games = new List<Dictionary<string, string>>();
+
+            if (!string.IsNullOrEmpty(result))
+            {
+                try
+                {
+                    games = JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(result);
+                }
+                catch (Exception e)
+                {
+                    Debug.Log(e);
+                }
+            }
+
+            _getAllGamesCallback?.Invoke(true, games);
+            _getAllGamesCallback = null;
+        }
+
+        private void OnGetAllGamesCompletedFailed()
+        {
+            _getAllGamesCallback?.Invoke(false, null);
+            _getAllGamesCallback = null;
+        }
+
+        private void OnGetGameByIdCompletedSuccess(string result)
+        {
+            var game = new Dictionary<string, string>();
+
+            if (!string.IsNullOrEmpty(result))
+            {
+                try
+                {
+                    game = JsonConvert.DeserializeObject<Dictionary<string, string>>(result);
+                }
+                catch (Exception e)
+                {
+                    Debug.Log(e);
+                }
+            }
+
+            _getGamesByIdCallback?.Invoke(true, game);
+            _getGamesByIdCallback = null;
+        }
+
+        private void OnGetGameByIdCompletedFailed()
+        {
+            _getGamesByIdCallback?.Invoke(false, null);
+            _getGamesByIdCallback = null;
         }
     }
 }

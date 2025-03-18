@@ -31,6 +31,22 @@ mergeInto(LibraryManager.library, {
         stringToUTF8(platformTld, buffer, bufferSize)
         return buffer
     },
+
+    PlaygamaBridgeIsPlatformGetAllGamesSupported: function() {
+        var isAllGamesSupported = window.getIsPlatformGetAllGamesSupported()
+        var bufferSize = lengthBytesUTF8(isAllGamesSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isAllGamesSupported, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeIsPlatformGetGameByIdSupported: function() {
+        var isGameByIdSupported = window.getIsPlatformGetGameByIdSupported()
+        var bufferSize = lengthBytesUTF8(isGameByIdSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isGameByIdSupported, buffer, bufferSize)
+        return buffer
+    },
     
     PlaygamaBridgeSendMessageToPlatform: function(message) {
         window.sendMessageToPlatform(UTF8ToString(message))
@@ -40,6 +56,13 @@ mergeInto(LibraryManager.library, {
         window.getServerTime()
     },
 
+    PlaygamaBridgeGetAllGames: function() {
+        window.getAllGames()
+    },
+
+    PlaygamaBridgeGetGameById: function(options) {
+        window.getGameById(UTF8ToString(options))
+    },
 
     PlaygamaBridgeGetDeviceType: function() {
         var deviceType = window.getDeviceType()
