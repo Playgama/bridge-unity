@@ -1,10 +1,9 @@
 ﻿#if UNITY_WEBGL
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 using UnityEngine;
-#if !UNITY_EDITOR
 using Playgama.Common;
+#if !UNITY_EDITOR
 using System.Runtime.InteropServices;
 #endif
 
@@ -155,7 +154,7 @@ namespace Playgama.Modules.Platform
             {
                 try
                 {
-                    games = JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(result);
+                    games = JsonHelper.FromJsonToListOfDictionaries(result);
                 }
                 catch (Exception e)
                 {
@@ -181,7 +180,7 @@ namespace Playgama.Modules.Platform
             {
                 try
                 {
-                    game = JsonConvert.DeserializeObject<Dictionary<string, string>>(result);
+                    game = JsonHelper.FromJsonToDictionary(result);
                 }
                 catch (Exception e)
                 {

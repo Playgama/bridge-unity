@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 #if !UNITY_EDITOR
-using Newtonsoft.Json;
 using Playgama.Common;
 using System.Runtime.InteropServices;
 #endif
@@ -82,10 +81,9 @@ namespace Playgama.Modules.Player
                 
                 try
                 {
-                    var list = JsonConvert.DeserializeObject<List<string>>(json);
-                    return list;
+                    return JsonHelper.FromJsonToListOfStrings(json);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     return new List<string>();
                 }

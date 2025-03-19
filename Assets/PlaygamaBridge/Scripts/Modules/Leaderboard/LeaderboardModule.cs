@@ -1,10 +1,9 @@
 ﻿#if UNITY_WEBGL
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using Playgama.Common;
 using UnityEngine;
 #if !UNITY_EDITOR
-using Playgama.Common;
 using System.Runtime.InteropServices;
 #endif
 
@@ -178,7 +177,7 @@ namespace Playgama.Modules.Leaderboard
             {
                 try
                 {
-                    entries = JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(result);
+                    entries = JsonHelper.FromJsonToListOfDictionaries(result);
                 }
                 catch (Exception e)
                 {
