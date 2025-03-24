@@ -1,9 +1,9 @@
-﻿#if UNITY_WEBGL
-
-using System.Collections.Generic;
-using Playgama;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+#if UNITY_WEBGL
+using Playgama;
+#endif
 
 namespace Examples
 {
@@ -19,12 +19,14 @@ namespace Examples
         [SerializeField] private Button _consumePurchaseButton;
         [SerializeField] private GameObject _overlay;
 
+#if UNITY_WEBGL
         private void Start()
         {
             _isSupported.text = $"Is Supported: { Bridge.payments.isSupported }";
             _isGetCatalogSupported.text = $"Is Get Catalog Supported: { Bridge.payments.isGetCatalogSupported }";
             _isGetPurchasesSupported.text = $"Is Get Purchases Supported: { Bridge.payments.isGetPurchasesSupported }";
             _isConsumePurchaseSupported.text = $"Is Consume Purchase Supported: { Bridge.payments.isConsumePurchaseSupported }";
+
             _getCatalogButton.onClick.AddListener(OnGetCatalogButtonClicked);
             _getPurchasesButton.onClick.AddListener(OnGetPurchasesButtonClicked);
             _purchaseButton.onClick.AddListener(OnPurchaseButtonClicked);
@@ -136,7 +138,6 @@ namespace Examples
             
             Bridge.payments.ConsumePurchase(options, _ => { _overlay.SetActive(false); });
         }
+#endif
     }
 }
-
-#endif

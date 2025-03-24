@@ -1,10 +1,10 @@
-﻿#if UNITY_WEBGL
-
-using System.Collections.Generic;
-using Playgama;
-using Playgama.Modules.Advertisement;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+#if UNITY_WEBGL
+using Playgama;
+using Playgama.Modules.Advertisement;
+#endif
 
 namespace Examples
 {
@@ -28,7 +28,7 @@ namespace Examples
         private readonly List<InterstitialState> _lastInterstitialStates = new();
         private readonly List<RewardedState> _lastRewardedStates = new();
 
-
+#if UNITY_WEBGL
         private void Start()
         {
             Bridge.advertisement.bannerStateChanged += OnBannerStateChanged;
@@ -60,7 +60,6 @@ namespace Examples
             }
         }
 
-        
         private void OnBannerStateChanged(BannerState state)
         {
             _lastBannerStates.Add(state);
@@ -173,7 +172,6 @@ namespace Examples
         {
             _minimumDelayBetweenInterstitial.text = Bridge.advertisement.minimumDelayBetweenInterstitial.ToString();
         }
+#endif
     }
 }
-
-#endif

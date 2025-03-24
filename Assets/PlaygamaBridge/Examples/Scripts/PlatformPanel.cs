@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
-using Playgama;
-using Playgama.Modules.Platform;
 using UnityEngine;
 using UnityEngine.UI;
+#if UNITY_WEBGL
+using Playgama;
+using Playgama.Modules.Platform;
+#endif
 
 namespace Examples
 {
@@ -28,6 +30,7 @@ namespace Examples
         [SerializeField] private Button _getGameByIdButton;
         [SerializeField] private GameObject _overlay;
 
+#if UNITY_WEBGL
         private void Start()
         {
             _id.text = $"ID: { Bridge.platform.id }";
@@ -138,5 +141,6 @@ namespace Examples
                 _overlay.SetActive(false);
             });
         }
+#endif
     }
 }

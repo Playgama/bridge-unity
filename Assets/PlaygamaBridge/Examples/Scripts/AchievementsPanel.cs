@@ -1,9 +1,9 @@
-#if UNITY_WEBGL
-
 using System.Collections.Generic;
-using Playgama;
 using UnityEngine;
 using UnityEngine.UI;
+#if UNITY_WEBGL
+using Playgama;
+#endif
 
 namespace Examples
 {
@@ -19,12 +19,13 @@ namespace Examples
         [SerializeField] private Button _showNativePopupButton;
         [SerializeField] private GameObject _overlay;
 
+#if UNITY_WEBGL
         private void Start()
         {
             _isSupported.text = $"Is Supported: { Bridge.achievements.isSupported }";
             _isGetListSupported.text = $"Is Get List Supported: { Bridge.achievements.isGetListSupported }";
             _isNativePopupSupported.text = $"Is Native Popup Supported: { Bridge.achievements.isNativePopupSupported }";
-            
+
             _getListButton.onClick.AddListener(OnGetListButtonClicked);
             _unlockButton.onClick.AddListener(OnUnlockButtonClicked);
             _showNativePopupButton.onClick.AddListener(OnShowNativePopupButtonClicked);
@@ -65,6 +66,7 @@ namespace Examples
                 _overlay.SetActive(false);
             });
         }
+        
         private void OnGetListButtonClicked()
         {
             _overlay.SetActive(true);
@@ -105,7 +107,6 @@ namespace Examples
                 _overlay.SetActive(false);
             });
         }
+#endif
     }
 }
-
-#endif

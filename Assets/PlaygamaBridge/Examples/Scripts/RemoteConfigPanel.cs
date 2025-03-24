@@ -1,9 +1,9 @@
-﻿#if UNITY_WEBGL
-
-using System.Collections.Generic;
-using Playgama;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+#if UNITY_WEBGL
+using Playgama;
+#endif
 
 namespace Examples
 {
@@ -13,6 +13,7 @@ namespace Examples
         [SerializeField] private Button _getButton;
         [SerializeField] private GameObject _overlay;
 
+#if UNITY_WEBGL
         private void Start()
         {
             _isSupportedText.text = $"Is Supported: { Bridge.remoteConfig.isSupported }";
@@ -57,7 +58,6 @@ namespace Examples
             
             _overlay.SetActive(false);
         }
+#endif
     }
 }
-
-#endif

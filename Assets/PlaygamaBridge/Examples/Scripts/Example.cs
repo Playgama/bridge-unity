@@ -1,20 +1,18 @@
-﻿#if UNITY_WEBGL
-
-using System;
+﻿using System;
+using UnityEngine;
+#if UNITY_WEBGL
 using Playgama;
 using Playgama.Modules.Advertisement;
 using Playgama.Modules.Game;
-using UnityEngine;
+#endif
 
 namespace Examples
 {
     public class Example : MonoBehaviour
     {
-        [SerializeField] private AudioSource _musicAudioSource;
-
+#if UNITY_WEBGL
         private void Start()
         {
-            _musicAudioSource.Play();
             Bridge.game.visibilityStateChanged += OnGameVisibilityStateChanged;
             Bridge.advertisement.interstitialStateChanged += OnInterstitialStateChanged;
             Bridge.advertisement.rewardedStateChanged += OnRewardedStateChanged;
@@ -35,11 +33,11 @@ namespace Examples
             switch (visibilityState)
             {
                 case VisibilityState.Visible:
-                    _musicAudioSource.Play();
+                    // play music
                     break;
 
                 case VisibilityState.Hidden:
-                    _musicAudioSource.Pause();
+                    // pause music
                     break;
             }
         }
@@ -50,11 +48,11 @@ namespace Examples
             {
                 case InterstitialState.Loading:
                 case InterstitialState.Opened:
-                    _musicAudioSource.Pause();
+                    // pause music
                     break;
                 case InterstitialState.Closed:
                 case InterstitialState.Failed:
-                    _musicAudioSource.Play();
+                    // play music
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(state), state, null);
@@ -67,19 +65,18 @@ namespace Examples
             {
                 case RewardedState.Loading:
                 case RewardedState.Opened:
-                    _musicAudioSource.Pause();
+                    // pause music
                     break;
                 case RewardedState.Rewarded:
                     break;
                 case RewardedState.Closed:
                 case RewardedState.Failed:
-                    _musicAudioSource.Play();
+                    // play music
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(state), state, null);
             }
         }
+#endif
     }
 }
-
-#endif

@@ -1,10 +1,10 @@
-﻿#if UNITY_WEBGL
-
-using System.Collections.Generic;
-using Playgama;
-using Playgama.Modules.Storage;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+#if UNITY_WEBGL
+using Playgama;
+using Playgama.Modules.Storage;
+#endif
 
 namespace Examples
 {
@@ -25,6 +25,7 @@ namespace Examples
         private const string _coinsKey = "coins";
         private const string _levelKey = "level";
 
+#if UNITY_WEBGL
         private void Start()
         {
             _defaultTypeText.text = $"Default Type: { Bridge.storage.defaultType }";
@@ -90,7 +91,6 @@ namespace Examples
                 _overlay.SetActive(false);
             });
         }
+#endif
     }
 }
-
-#endif

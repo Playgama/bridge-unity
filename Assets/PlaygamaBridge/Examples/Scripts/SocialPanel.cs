@@ -1,10 +1,10 @@
-﻿#if UNITY_WEBGL
-
-using System.Collections.Generic;
-using Playgama;
-using Playgama.Modules.Social;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+#if UNITY_WEBGL
+using Playgama;
+using Playgama.Modules.Social;
+#endif
 
 namespace Examples
 {
@@ -27,6 +27,7 @@ namespace Examples
         [SerializeField] private Button _rateButton;
         [SerializeField] private GameObject _overlay;
 
+#if UNITY_WEBGL
         private void Start()
         {
             _isShareSupported.text = $"Is Share Supported: { Bridge.social.isShareSupported }";
@@ -169,7 +170,6 @@ namespace Examples
             _overlay.SetActive(true);
             Bridge.social.Rate(_ => { _overlay.SetActive(false); });
         }
+#endif
     }
 }
-
-#endif
