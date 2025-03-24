@@ -1,4 +1,6 @@
-﻿using System;
+﻿#if UNITY_WEBGL
+
+using System;
 using Playgama;
 using Playgama.Modules.Advertisement;
 using Playgama.Modules.Game;
@@ -79,3 +81,5 @@ namespace Examples
         }
     }
 }
+
+#endif
