@@ -10,6 +10,7 @@ using Playgama.Modules.Player;
 using Playgama.Modules.RemoteConfig;
 using Playgama.Modules.Social;
 using Playgama.Modules.Storage;
+using UnityEngine;
 
 namespace Playgama
 {
@@ -25,7 +26,7 @@ namespace Playgama
         public static LeaderboardModule leaderboard => instance._leaderboard; 
         public static PaymentsModule payments => instance._payments; 
         public static AchievementsModule achievements => instance._achievements; 
-        public static RemoteConfigModule remoteConfig => instance._remoteConfig; 
+        public static RemoteConfigModule remoteConfig => instance._remoteConfig;
 
         private AdvertisementModule _advertisement;
         private GameModule _game;
@@ -54,6 +55,13 @@ namespace Playgama
             _payments = gameObject.AddComponent<PaymentsModule>();
             _remoteConfig = gameObject.AddComponent<RemoteConfigModule>();
             _achievements = gameObject.AddComponent<AchievementsModule>();
+        }
+
+        [RuntimeInitializeOnLoadMethod]
+        private static void ResetOnLoad()
+        {
+            _instance = null;
+            _isApplicationQuitting = false;
         }
     }
 }
