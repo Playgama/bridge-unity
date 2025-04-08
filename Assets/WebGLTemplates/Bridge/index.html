@@ -707,6 +707,10 @@
                 return bridge.payments.isSupported.toString()
             }
 
+            window.getIsPaymentsAvailable = function() {
+                return bridge.payments.isAvailable.toString()
+            }
+
             window.getIsCatalogSupported = function() {
                 return bridge.payments.isGetCatalogSupported.toString()
             }

@@ -369,6 +369,14 @@ mergeInto(LibraryManager.library, {
         stringToUTF8(isPaymentsSupported, buffer, bufferSize)
         return buffer
     },
+        
+    PlaygamaBridgeIsPaymentsAvailable: function() {
+        var isPaymentsAvailable = window.getIsPaymentsAvailable()
+        var bufferSize = lengthBytesUTF8(isPaymentsAvailable) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isPaymentsAvailable, buffer, bufferSize)
+        return buffer
+    },
 
     PlaygamaBridgeIsCatalogSupported: function() {
         var isGetCatalogSupported = window.getIsCatalogSupported()
