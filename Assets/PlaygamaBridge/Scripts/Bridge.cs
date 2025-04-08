@@ -57,12 +57,14 @@ namespace Playgama
             _achievements = gameObject.AddComponent<AchievementsModule>();
         }
 
+#if UNITY_EDITOR
         [RuntimeInitializeOnLoadMethod]
         private static void ResetOnLoad()
         {
             _instance = null;
             _isApplicationQuitting = false;
         }
+#endif
     }
 }
 #endif

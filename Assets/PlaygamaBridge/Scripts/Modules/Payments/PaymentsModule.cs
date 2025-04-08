@@ -76,6 +76,9 @@ namespace Playgama.Modules.Payments
         private static extern string PlaygamaBridgeIsPaymentsSupported();
 
         [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsPaymentsAvailable();
+
+        [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsCatalogSupported();
 
         [DllImport("__Internal")]
