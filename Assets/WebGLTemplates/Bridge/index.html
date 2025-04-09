@@ -12,11 +12,7 @@
                 margin: 0px;
             }
             .fullscreen {
-#if OVERLAY_BACKGROUND_COLOR && OVERLAY_BACKGROUND_COLOR !== '-' && OVERLAY_BACKGROUND_COLOR !== ' '
-                background: {{{ OVERLAY_BACKGROUND_COLOR }}};
-#else
                 background: #242424;
-#endif
                 width: 100%;
                 height: 100%;
                 position: absolute;
@@ -41,22 +37,14 @@
                 width: 90%;
                 max-width: 250px;
                 height: 20px;
-#if PROGRESS_BAR_BACKGROUND_COLOR && PROGRESS_BAR_BACKGROUND_COLOR !== '-' && PROGRESS_BAR_BACKGROUND_COLOR !== ' '
-                background: {{{ PROGRESS_BAR_BACKGROUND_COLOR }}};
-#else
                 background: #181818;
-#endif
                 padding: 5px;
             }
             #progress-bar-fill {
                 border-radius: 3px;
                 width: 0%;
                 height: 100%;
-#if PROGRESS_BAR_FILL_COLOR && PROGRESS_BAR_FILL_COLOR !== '-' && PROGRESS_BAR_FILL_COLOR !== ' '
-                background: {{{ PROGRESS_BAR_FILL_COLOR }}};
-#else
                 background: #9747FF;
-#endif
             }
         </style>
     </head>
@@ -143,47 +131,10 @@
                 canvas.focus()
             })
 
-
-            let bridgeOptions = {
-                platforms: {
-#if GAME_DISTRIBUTION_GAME_ID && GAME_DISTRIBUTION_GAME_ID !== '-' && GAME_DISTRIBUTION_GAME_ID !== ' '
-                    'game_distribution': {
-                        gameId: '{{{ GAME_DISTRIBUTION_GAME_ID }}}'
-                    },
-#endif
-#if Y8_GAME_ID && Y8_GAME_ID !== '-' && Y8_GAME_ID !== ' '
-                    'y8': {
-                        gameId: '{{{ Y8_GAME_ID }}}',
-#if Y8_ADSENSE_ID && Y8_ADSENSE_ID !== '-' && Y8_ADSENSE_ID !== ' '
-                        adsenseId: '{{{ Y8_ADSENSE_ID }}}',
-#endif
-#if Y8_CHANNEL_ID && Y8_CHANNEL_ID !== '-' && Y8_CHANNEL_ID !== ' '
-                        channelId: '{{{ Y8_CHANNEL_ID }}}',
-#endif
-                    },
-#endif
-#if LAGGED_DEV_ID && LAGGED_DEV_ID !== '-' && LAGGED_DEV_ID !== ' ' && LAGGED_PUBLISHER_ID && LAGGED_PUBLISHER_ID !== '-' && LAGGED_PUBLISHER_ID !== ' '
-                    'lagged': {
-                        devId: '{{{ LAGGED_DEV_ID }}}',
-                        publisherId: '{{{ LAGGED_PUBLISHER_ID }}}',
-                    },
-#endif
-#if ADSGRAM_BLOCK_ID && ADSGRAM_BLOCK_ID !== '-' && ADSGRAM_BLOCK_ID !== ' '
-                    'telegram': {
-                        adsgramBlockId: '{{{ ADSGRAM_BLOCK_ID }}}'
-                    },
-#endif
-#if FACEBOOK_PLACEMENT_ID && FACEBOOK_PLACEMENT_ID !== '-' && FACEBOOK_PLACEMENT_ID !== ' '
-                    'facebook': {
-                        placementId: '{{{ FACEBOOK_PLACEMENT_ID }}}'
-                    },
-#endif
-                }
-            }
-
+            
             // initialization
             bridge
-                .initialize(bridgeOptions)
+                .initialize()
                 .then(() => {
                     bridge.advertisement.on('banner_state_changed', state => sendMessageToUnity('OnBannerStateChanged', state))
                     bridge.advertisement.on('interstitial_state_changed', state => sendMessageToUnity('OnInterstitialStateChanged', state))
