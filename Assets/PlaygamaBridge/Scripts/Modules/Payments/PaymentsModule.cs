@@ -22,18 +22,6 @@ namespace Playgama.Modules.Payments
 #endif
             }
         }
-        
-        public bool isAvailable
-        {
-            get
-            {
-#if !UNITY_EDITOR
-                return PlaygamaBridgeIsPaymentsAvailable() == "true";
-#else
-                return false;
-#endif
-            }
-        }
 
         public bool isGetCatalogSupported
         {

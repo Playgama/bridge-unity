@@ -10,7 +10,6 @@ namespace Examples
     public class PaymentsPanel : MonoBehaviour
     {
         [SerializeField] private Text _isSupported;
-        [SerializeField] private Text _isAvailable;
         [SerializeField] private Text _isGetCatalogSupported;
         [SerializeField] private Text _isGetPurchasesSupported;
         [SerializeField] private Text _isConsumePurchaseSupported;
@@ -24,7 +23,6 @@ namespace Examples
         private void Start()
         {
             _isSupported.text = $"Is Supported: { Bridge.payments.isSupported }";
-            _isAvailable.text = $"Is Available: { Bridge.payments.isAvailable }";
             _isGetCatalogSupported.text = $"Is Get Catalog Supported: { Bridge.payments.isGetCatalogSupported }";
             _isGetPurchasesSupported.text = $"Is Get Purchases Supported: { Bridge.payments.isGetPurchasesSupported }";
             _isConsumePurchaseSupported.text = $"Is Consume Purchase Supported: { Bridge.payments.isConsumePurchaseSupported }";
