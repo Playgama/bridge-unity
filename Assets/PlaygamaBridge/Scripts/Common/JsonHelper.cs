@@ -79,6 +79,11 @@ namespace Playgama.Common
 
             foreach (var obj in objects)
             {
+                if (string.IsNullOrEmpty(obj))
+                {
+                    continue;
+                }
+                
                 var formattedObject = obj.Trim('{', '}').Trim();
                 var dict = new Dictionary<string, string>();
                 var keyValuePairs = formattedObject.Split(new[] { ",\"" }, StringSplitOptions.None);
