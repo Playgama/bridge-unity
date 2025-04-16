@@ -23,60 +23,15 @@ namespace Playgama.Modules.Payments
             }
         }
 
-        public bool isGetCatalogSupported
-        {
-            get
-            {
-#if !UNITY_EDITOR
-                return PlaygamaBridgeIsCatalogSupported() == "true";
-#else
-                return false;
-#endif
-            }
-        }
-
-        public bool isGetPurchasesSupported
-        {
-            get
-            {
-#if !UNITY_EDITOR
-                return PlaygamaBridgeIsPurchaseListSupported() == "true";
-#else
-                return false;
-#endif
-            }
-        }
-        
-        public bool isConsumePurchaseSupported
-        {
-            get
-            {
-#if !UNITY_EDITOR
-                return PlaygamaBridgeIsPurchaseConsumingSupported() == "true";
-#else
-                return false;
-#endif
-            }
-        }
-
 #if !UNITY_EDITOR
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsPaymentsSupported();
 
         [DllImport("__Internal")]
-        private static extern string PlaygamaBridgeIsCatalogSupported();
+        private static extern void PlaygamaBridgePaymentsPurchase(string id);
 
         [DllImport("__Internal")]
-        private static extern string PlaygamaBridgeIsPurchaseListSupported();
-
-        [DllImport("__Internal")]
-        private static extern string PlaygamaBridgeIsPurchaseConsumingSupported();
-        
-        [DllImport("__Internal")]
-        private static extern void PlaygamaBridgePaymentsPurchase(string options);
-
-        [DllImport("__Internal")]
-        private static extern void PlaygamaBridgePaymentsConsumePurchase(string options);
+        private static extern void PlaygamaBridgePaymentsConsumePurchase(string id);
         
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgePaymentsGetPurchases();
@@ -91,23 +46,23 @@ namespace Playgama.Modules.Payments
         private Action<bool, List<Dictionary<string, string>>> _getCatalogCallback;
 
 
-        public void Purchase(Dictionary<string, object> options, Action<bool, Dictionary<string, string>> onComplete = null)
+        public void Purchase(string id, Action<bool, Dictionary<string, string>> onComplete = null)
         {
             _purchaseCallback = onComplete;
 
 #if !UNITY_EDITOR
-            PlaygamaBridgePaymentsPurchase(options.ToJson());
+            PlaygamaBridgePaymentsPurchase(id);
 #else
             OnPaymentsPurchaseFailed();
 #endif
         }
         
-        public void ConsumePurchase(Dictionary<string, object> options, Action<bool> onComplete = null)
+        public void ConsumePurchase(string id, Action<bool> onComplete = null)
         {
             _consumePurchaseCallback = onComplete;
 
 #if !UNITY_EDITOR
-            PlaygamaBridgePaymentsConsumePurchase(options.ToJson());
+            PlaygamaBridgePaymentsConsumePurchase(id);
 #else
             OnPaymentsConsumePurchaseCompleted("false");
 #endif

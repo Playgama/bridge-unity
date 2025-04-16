@@ -658,24 +658,8 @@
                 return bridge.payments.isSupported.toString()
             }
 
-            window.getIsCatalogSupported = function() {
-                return bridge.payments.isGetCatalogSupported.toString()
-            }
-
-            window.getIsPurchaseListSupported = function() {
-                return bridge.payments.isGetPurchasesSupported.toString()
-            }
-
-            window.getIsPurchaseConsumingSupported = function() {
-                return bridge.payments.isConsumePurchaseSupported.toString()
-            }
-
-            window.paymentsPurchase = function(options) {
-                if (options) {
-                    options = JSON.parse(options)
-                }
-                
-                bridge.payments.purchase(options)
+            window.paymentsPurchase = function(id) {
+                bridge.payments.purchase(id)
                     .then(data => {
                         if (data) {
                             if (typeof data !== 'string') {
@@ -692,12 +676,8 @@
                     })
             }
 
-            window.paymentsConsumePurchase = function(options) {
-                if (options) {
-                    options = JSON.parse(options)
-                }
-                
-                bridge.payments.consumePurchase(options)
+            window.paymentsConsumePurchase = function(id) {
+                bridge.payments.consumePurchase(id)
                     .then(() => {
                         sendMessageToUnity('OnPaymentsConsumePurchaseCompleted', 'true')
                     })
