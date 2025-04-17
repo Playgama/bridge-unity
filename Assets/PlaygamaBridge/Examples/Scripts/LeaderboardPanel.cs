@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
-using Playgama;
 using UnityEngine;
 using UnityEngine.UI;
+#if UNITY_WEBGL
+using Playgama;
+#endif
 
 namespace Examples
 {
@@ -18,6 +20,7 @@ namespace Examples
         [SerializeField] private Button _getEntriesButton;
         [SerializeField] private GameObject _overlay;
 
+#if UNITY_WEBGL
         private void Start()
         {
             _isSupported.text = $"Is Supported: { Bridge.leaderboard.isSupported }";
@@ -126,5 +129,6 @@ namespace Examples
                     _overlay.SetActive(false);
                 });
         }
+#endif
     }
 }

@@ -1,6 +1,8 @@
-﻿using Playgama;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
+#if UNITY_WEBGL
+using Playgama;
+#endif
 
 namespace Examples
 {
@@ -8,9 +10,11 @@ namespace Examples
     {
         [SerializeField] private Text _type;
 
+#if UNITY_WEBGL
         private void Start()
         {
             _type.text = $"Type: { Bridge.device.type }";
         }
+#endif
     }
 }

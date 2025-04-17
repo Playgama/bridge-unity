@@ -1,7 +1,10 @@
-﻿using Playgama;
-using Playgama.Modules.Platform;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+#if UNITY_WEBGL
+using Playgama;
+using Playgama.Modules.Platform;
+#endif
 
 namespace Examples
 {
@@ -11,6 +14,10 @@ namespace Examples
         [SerializeField] private Text _language;
         [SerializeField] private Text _payload;
         [SerializeField] private Text _tld;
+        [SerializeField] private Text _isGetAllGamesSupported;
+        [SerializeField] private Text _isGetGameByIdSupported;
+        [SerializeField] private InputField _gameIdInputField;
+
         [SerializeField] private Button _sendGameReadyMessageButton;
         [SerializeField] private Button _sendInGameLoadingStartedMessageButton;
         [SerializeField] private Button _sendInGameLoadingStoppedMessageButton;
@@ -19,14 +26,20 @@ namespace Examples
         [SerializeField] private Button _sendPlayerGotAchievementMessageButton;
         [SerializeField] private Text _serverTimeText;
         [SerializeField] private Button _getServerTimeButton;
+        [SerializeField] private Button _getAllGamesButton;
+        [SerializeField] private Button _getGameByIdButton;
         [SerializeField] private GameObject _overlay;
 
+#if UNITY_WEBGL
         private void Start()
         {
             _id.text = $"ID: { Bridge.platform.id }";
             _language.text = $"Language: { Bridge.platform.language }";
             _payload.text = $"Payload: { Bridge.platform.payload }";
             _tld.text = $"TLD: { Bridge.platform.tld }";
+
+            _isGetAllGamesSupported.text = $"Is Get All Games Supported: { Bridge.platform.isGetAllGamesSupported }";
+            _isGetGameByIdSupported.text = $"Is Get Game By Id Supported: { Bridge.platform.isGetGameByIdSupported }";
             
             _sendGameReadyMessageButton.onClick.AddListener(OnSendGameReadyMessageButtonClicked);
             _sendInGameLoadingStartedMessageButton.onClick.AddListener(OnSendInGameLoadingStartedMessageButtonClicked);
@@ -35,6 +48,9 @@ namespace Examples
             _sendGameplayStoppedMessageButton.onClick.AddListener(OnSendGameplayStoppedMessageButtonClicked);
             _sendPlayerGotAchievementMessageButton.onClick.AddListener(OnSendPlayerGotAchievementMessageButtonClicked);
             _getServerTimeButton.onClick.AddListener(OnGetServerTimeButtonClicked);
+            
+            _getAllGamesButton.onClick.AddListener(OnGetAllGamesButtonClicked);
+            _getGameByIdButton.onClick.AddListener(OnGetGameByIdButtonClicked);
         }
 
         private void OnSendGameReadyMessageButtonClicked()
@@ -80,5 +96,51 @@ namespace Examples
                 _overlay.SetActive(false);
             });
         }
+
+        private void OnGetAllGamesButtonClicked()
+        {
+            _overlay.SetActive(true);
+            
+            Bridge.platform.GetAllGames((success, games) => {
+                Debug.Log($"OnGetAllGamesCompleted, success: {success}, games:");
+
+                if (success) {
+                    foreach (var game in games) {
+                        Debug.Log($"App ID: {game["appID"]}");
+                        Debug.Log($"Title: {game["title"]}");
+                        Debug.Log($"URL: {game["url"]}");
+                        Debug.Log($"Cover URL: {game["coverURL"]}");
+                        Debug.Log($"Icon URL: {game["iconURL"]}");
+                    }
+                }
+
+                _overlay.SetActive(false);
+            });
+        }
+
+        private void OnGetGameByIdButtonClicked()
+        {
+            _overlay.SetActive(true);
+
+            Bridge.platform.GetGameById(new Dictionary<string, object>
+            {
+                { "gameId", _gameIdInputField.text }
+            }, (success, game) =>
+            {
+                Debug.Log($"OnGetGameByIdCompleted, success: {success}, game:");
+
+                if (success)
+                {
+                    Debug.Log($"App ID: {game["appID"]}");
+                    Debug.Log($"Title: {game["title"]}");
+                    Debug.Log($"URL: {game["url"]}");
+                    Debug.Log($"Cover URL: {game["coverURL"]}");
+                    Debug.Log($"Icon URL: {game["iconURL"]}");
+                }
+
+                _overlay.SetActive(false);
+            });
+        }
+#endif
     }
 }

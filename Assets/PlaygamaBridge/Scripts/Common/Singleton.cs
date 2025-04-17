@@ -5,9 +5,6 @@ namespace Playgama.Common
 {
     public class Singleton<T> : MonoBehaviour where T : Component
     {
-        private static T _instance;
-        private static bool _isApplicationQuitting;
-
         public static T instance
         {
             get
@@ -22,7 +19,7 @@ namespace Playgama.Common
                     return _instance;
                 }
 
-                _instance = FindObjectOfType<T>();
+                _instance = FindFirstObjectByType<T>();
                 if (_instance != null)
                 {
                     return _instance;
@@ -33,7 +30,11 @@ namespace Playgama.Common
                 return _instance;
             }
         }
+        
+        protected static T _instance;
+        protected static bool _isApplicationQuitting;
 
+        
         protected virtual void Awake()
         {
             if (_instance == null)
@@ -51,6 +52,15 @@ namespace Playgama.Common
         {
             _isApplicationQuitting = true;
         }
+
+#if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod]
+        private static void ResetOnLoad()
+        {
+            _instance = null;
+            _isApplicationQuitting = false;
+        }
+#endif
     }
 }
 #endif

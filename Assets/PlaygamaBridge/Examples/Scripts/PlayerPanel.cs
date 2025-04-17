@@ -1,9 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using Playgama;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
+#if UNITY_WEBGL
+using Playgama;
+#endif
 
 namespace Examples
 {
@@ -17,6 +19,7 @@ namespace Examples
         [SerializeField] private Button _authorizeButton;
         [SerializeField] private GameObject _overlay;
 
+#if UNITY_WEBGL
         private void Start()
         {
             UpdateValues();
@@ -70,5 +73,6 @@ namespace Examples
                 _photo.sprite = sprite;
             }
         }
+#endif
     }
 }

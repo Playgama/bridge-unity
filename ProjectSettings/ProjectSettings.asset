@@ -13,7 +13,7 @@ PlayerSettings:
   useOnDemandResources: 0
   accelerometerFrequency: 60
   companyName: Playgama
-  productName: bridge
+  productName: Bridge
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
@@ -140,7 +140,7 @@ PlayerSettings:
   loadStoreDebugModeEnabled: 0
   visionOSBundleVersion: 1.0
   tvOSBundleVersion: 1.0
-  bundleVersion: 1.20.0
+  bundleVersion: 1.21.0
   preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0
@@ -520,19 +520,7 @@ PlayerSettings:
   openGLRequireES31: 0
   openGLRequireES31AEP: 0
   openGLRequireES32: 0
-  m_TemplateCustomTags:
-    ADSGRAM_BLOCK_ID: '-'
-    GAME_DISTRIBUTION_GAME_ID: '-'
-    OVERLAY_BACKGROUND_COLOR: '-'
-    PRODUCT_DESCRIPTION: 
-    PROGRESS_BAR_BACKGROUND_COLOR: '-'
-    PROGRESS_BAR_FILL_COLOR: '-'
-    Y8_GAME_ID: '-'
-    Y8_ADSENSE_ID: '-'
-    Y8_CHANNEL_ID: '-'
-    LAGGED_DEV_ID: '-'
-    LAGGED_PUBLISHER_ID: '-'
-    FACEBOOK_PLACEMENT_ID: '-'
+  m_TemplateCustomTags: {}
   mobileMTRendering:
     Android: 1
     iPhone: 1

@@ -50,6 +50,73 @@ namespace Playgama.Common
 
             return sb.ToString().SurroundWithBraces();
         }
+        
+        public static Dictionary<string, string> FromJsonToDictionary(string json)
+        {
+            json = json.Trim('{', '}').Trim();
+            
+            var result = new Dictionary<string, string>();
+            var keyValuePairs = json.Split(new[] { ",\"" }, StringSplitOptions.None);
+
+            foreach (var keyValuePair in keyValuePairs)
+            {
+                var keyValue = keyValuePair.Split(new[] { "\":" }, StringSplitOptions.None);
+                if (keyValue.Length == 2)
+                {
+                    result[keyValue[0].Trim('"')] = keyValue[1].Trim('"');
+                }
+            }
+
+            return result;
+        }
+        
+        public static List<Dictionary<string, string>> FromJsonToListOfDictionaries(string json)
+        {
+            json = json.Trim('[', ']').Trim();
+            
+            var result = new List<Dictionary<string, string>>();
+            var objects = json.Split(new[] { "},{" }, StringSplitOptions.None);
+
+            foreach (var obj in objects)
+            {
+                if (string.IsNullOrEmpty(obj))
+                {
+                    continue;
+                }
+                
+                var formattedObject = obj.Trim('{', '}').Trim();
+                var dict = new Dictionary<string, string>();
+                var keyValuePairs = formattedObject.Split(new[] { ",\"" }, StringSplitOptions.None);
+
+                foreach (var keyValuePair in keyValuePairs)
+                {
+                    var keyValue = keyValuePair.Split(new[] { "\":" }, StringSplitOptions.None);
+                    if (keyValue.Length == 2)
+                    {
+                        dict[keyValue[0].Trim('"')] = keyValue[1].Trim('"');
+                    }
+                }
+
+                result.Add(dict);
+            }
+
+            return result;
+        }
+        
+        public static List<string> FromJsonToListOfStrings(string json)
+        {
+            json = json.Trim('[', ']').Trim();
+            
+            var result = new List<string>();
+            var values = json.Split(new[] { ",\"" }, StringSplitOptions.None);
+
+            foreach (var value in values)
+            {
+                result.Add(value.Trim('"'));
+            }
+
+            return result;
+        }
 
         private static string ToJson(this Array data)
         {
