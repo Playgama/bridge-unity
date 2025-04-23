@@ -38,7 +38,7 @@ namespace Examples
                 {
                     foreach (var item in list)
                     {
-                        Debug.Log("Common ID: " + item["commonId"]);
+                        Debug.Log("ID: " + item["id"]);
                         Debug.Log("Price: " + item["price"]);
                         Debug.Log("Price Currency Code: " + item["priceCurrencyCode"]);
                         Debug.Log("Price Value: " + item["priceValue"]);
@@ -61,7 +61,7 @@ namespace Examples
                 {
                     foreach (var purchase in list)
                     {
-                        Debug.Log("Common ID: " + purchase["commonId"]);
+                        Debug.Log("ID: " + purchase["id"]);
                     }
                 }
                 
@@ -75,7 +75,7 @@ namespace Examples
             
             Bridge.payments.Purchase("test_product", (success, _) =>
             {
-                Debug.Log("OnPurchaseCompleted, success: " + success); 
+                Debug.Log($"OnPurchaseCompleted, success: {success}"); 
                 _overlay.SetActive(false);
             });
         }
@@ -83,7 +83,7 @@ namespace Examples
         private void OnConsumePurchaseButtonClicked()
         {
             _overlay.SetActive(true);
-            Bridge.payments.ConsumePurchase("test_product", success =>
+            Bridge.payments.ConsumePurchase("test_product", (success, _) =>
             {
                 Debug.Log("OnConsumePurchaseCompleted, success: " + success); 
                 _overlay.SetActive(false);

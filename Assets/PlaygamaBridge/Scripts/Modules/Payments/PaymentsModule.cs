@@ -41,7 +41,7 @@ namespace Playgama.Modules.Payments
 #endif
         
         private Action<bool, Dictionary<string, string>> _purchaseCallback;
-        private Action<bool> _consumePurchaseCallback;
+        private Action<bool, Dictionary<string, string>> _consumePurchaseCallback;
         private Action<bool, List<Dictionary<string, string>>> _getPurchasesCallback;
         private Action<bool, List<Dictionary<string, string>>> _getCatalogCallback;
 
@@ -57,14 +57,14 @@ namespace Playgama.Modules.Payments
 #endif
         }
         
-        public void ConsumePurchase(string id, Action<bool> onComplete = null)
+        public void ConsumePurchase(string id, Action<bool, Dictionary<string, string>> onComplete = null)
         {
             _consumePurchaseCallback = onComplete;
 
 #if !UNITY_EDITOR
             PlaygamaBridgePaymentsConsumePurchase(id);
 #else
-            OnPaymentsConsumePurchaseCompleted("false");
+            OnPaymentsConsumePurchaseFailed();
 #endif
         }
         
@@ -120,8 +120,27 @@ namespace Playgama.Modules.Payments
         
         private void OnPaymentsConsumePurchaseCompleted(string result)
         {
-            var isSuccess = result == "true";
-            _consumePurchaseCallback?.Invoke(isSuccess);
+            var purchase = new Dictionary<string, string>();
+
+            if (!string.IsNullOrEmpty(result))
+            {
+                try
+                {
+                    purchase = JsonHelper.FromJsonToDictionary(result);
+                }
+                catch (Exception e)
+                {
+                    Debug.Log(e);
+                }
+            }
+
+            _consumePurchaseCallback?.Invoke(true, purchase);
+            _consumePurchaseCallback = null;
+        }
+        
+        private void OnPaymentsConsumePurchaseFailed()
+        {
+            _consumePurchaseCallback?.Invoke(false, null);
             _consumePurchaseCallback = null;
         }
         
