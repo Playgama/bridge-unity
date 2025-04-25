@@ -678,11 +678,19 @@
 
             window.paymentsConsumePurchase = function(id) {
                 bridge.payments.consumePurchase(id)
-                    .then(() => {
-                        sendMessageToUnity('OnPaymentsConsumePurchaseCompleted', 'true')
+                    .then(data => {
+                        if (data) {
+                            if (typeof data !== 'string') {
+                                data = JSON.stringify(data)
+                            }
+
+                            sendMessageToUnity('OnPaymentsConsumePurchaseCompleted', data)
+                        } else {
+                            sendMessageToUnity('OnPaymentsConsumePurchaseCompleted', '')
+                        }
                     })
                     .catch(error => {
-                        sendMessageToUnity('OnPaymentsConsumePurchaseCompleted', 'false')
+                        sendMessageToUnity('OnPaymentsConsumePurchaseFailed', '')
                     })
             }
 
@@ -700,7 +708,7 @@
                         }
                     })
                     .catch(error => {
-                        sendMessageToUnity('OnPaymentsGetCatalogCompletedFailed', 'false')
+                        sendMessageToUnity('OnPaymentsGetCatalogCompletedFailed', '')
                     })
             }
 
@@ -718,7 +726,7 @@
                         }
                     })
                     .catch(error => {
-                        sendMessageToUnity('OnPaymentsGetPurchasesCompletedFailed', 'false')
+                        sendMessageToUnity('OnPaymentsGetPurchasesCompletedFailed', '')
                     })
             }
 
