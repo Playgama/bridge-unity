@@ -1,11 +1,9 @@
 ﻿#if UNITY_WEBGL
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 #if !UNITY_EDITOR
 using Playgama.Common;
 using System.Runtime.InteropServices;
-
 #endif
 
 namespace Playgama.Modules.Advertisement
@@ -45,8 +43,22 @@ namespace Playgama.Modules.Advertisement
             }
         }
         
+        public string rewardedPlacement
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return PlaygamaBridgeRewardedPlacement();
+#else
+                return _rewardedPlacement;
+#endif
+            }
+        }
+        
 #if UNITY_EDITOR
         private int _minimumDelayBetweenInterstitial;
+        
+        private string _rewardedPlacement;
 
         private DateTime _lastInterstitialShownTimestamp = DateTime.MinValue;
 #else
@@ -60,16 +72,19 @@ namespace Playgama.Modules.Advertisement
         private static extern void PlaygamaBridgeSetMinimumDelayBetweenInterstitial(string options);
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeShowInterstitial();
+        private static extern string PlaygamaBridgeRewardedPlacement();
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeShowRewarded();
+        private static extern void PlaygamaBridgeShowInterstitial(string placement);
+
+        [DllImport("__Internal")]
+        private static extern void PlaygamaBridgeShowRewarded(string placement);
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsBannerSupported();
         
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeShowBanner(string options);
+        private static extern void PlaygamaBridgeShowBanner(string position, string placement);
         
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeHideBanner();
@@ -80,10 +95,10 @@ namespace Playgama.Modules.Advertisement
         private Action<bool> _checkAdBlockCallback;
 
         
-        public void ShowBanner(Dictionary<string, object> options = null)
+        public void ShowBanner(BannerPosition position = BannerPosition.Bottom, string placement = null)
         {
 #if !UNITY_EDITOR
-            PlaygamaBridgeShowBanner(options.ToJson());
+            PlaygamaBridgeShowBanner(position.ToString().ToLower(), placement);
 #else
             OnBannerStateChanged(BannerState.Loading.ToString());
             OnBannerStateChanged(BannerState.Shown.ToString());
@@ -109,10 +124,10 @@ namespace Playgama.Modules.Advertisement
 #endif
         }
 
-        public void ShowInterstitial()
+        public void ShowInterstitial(string placement = null)
         {
 #if !UNITY_EDITOR
-            PlaygamaBridgeShowInterstitial();
+            PlaygamaBridgeShowInterstitial(placement);
 #else
             var delta = DateTime.Now - _lastInterstitialShownTimestamp;
             if (delta.TotalSeconds > _minimumDelayBetweenInterstitial)
@@ -128,11 +143,12 @@ namespace Playgama.Modules.Advertisement
 #endif
         }
 
-        public void ShowRewarded()
+        public void ShowRewarded(string placement = null)
         {
 #if !UNITY_EDITOR
-            PlaygamaBridgeShowRewarded();
+            PlaygamaBridgeShowRewarded(placement);
 #else
+            _rewardedPlacement = placement;
             OnRewardedStateChanged(RewardedState.Loading.ToString());
             OnRewardedStateChanged(RewardedState.Opened.ToString());
             OnRewardedStateChanged(RewardedState.Rewarded.ToString());

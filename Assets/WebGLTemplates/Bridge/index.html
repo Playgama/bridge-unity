@@ -412,26 +412,28 @@
                 bridge.advertisement.setMinimumDelayBetweenInterstitial(options)
             }
 
-            window.showBanner = function(options) {
-                if (options) {
-                    options = JSON.parse(options)
+            window.getRewardedPlacement = function() {
+                if (bridge.advertisement.rewardedPlacement) {
+                    return bridge.advertisement.rewardedPlacement
                 } else {
-                    options = { }
+                    return ''
                 }
+            }
 
-                bridge.advertisement.showBanner(options)
+            window.showBanner = function(position, placement) {
+                bridge.advertisement.showBanner(position, placement)
             }
 
             window.hideBanner = function() {
                 bridge.advertisement.hideBanner()
             }
 
-            window.showInterstitial = function() {
-                bridge.advertisement.showInterstitial()
+            window.showInterstitial = function(placement) {
+                bridge.advertisement.showInterstitial(placement)
             }
 
-            window.showRewarded = function() {
-                bridge.advertisement.showRewarded()
+            window.showRewarded = function(placement) {
+                bridge.advertisement.showRewarded(placement)
             }
 
             window.checkAdBlock = function() {

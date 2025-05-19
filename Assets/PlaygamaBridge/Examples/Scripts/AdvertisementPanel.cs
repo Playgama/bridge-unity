@@ -20,6 +20,7 @@ namespace Examples
         [SerializeField] private Button _hideBannerButton;
         [SerializeField] private Button _showInterstitialButton;
         [SerializeField] private Button _showRewardedButton;
+        [SerializeField] private Text _rewardedPlacementText;
         [SerializeField] private Text _adBlockDetectedText;
         [SerializeField] private Button _checkAdBlockButton;
         [SerializeField] private GameObject _overlay;
@@ -118,6 +119,7 @@ namespace Examples
             }
 
             _rewardedState.text = $"Last Rewarded States: { string.Join(" → ", _lastRewardedStates) }";
+            _rewardedPlacementText.text = $"Rewarded Placement: { Bridge.advertisement.rewardedPlacement }";
         }
 
         private void OnSetMinimumDelayBetweenInterstitialButtonClicked()
@@ -129,18 +131,7 @@ namespace Examples
         
         private void OnShowBannerButtonClicked()
         {
-            var options = new Dictionary<string, object>();
-
-            switch (Bridge.platform.id)
-            {
-                case "vk":
-                    options.Add("position", "bottom");
-                    options.Add("layoutType", "resize");
-                    options.Add("canClose", false);
-                    break;
-            }
-            
-            Bridge.advertisement.ShowBanner(options);
+            Bridge.advertisement.ShowBanner();
         }
 
         private void OnHideBannerButtonClicked()

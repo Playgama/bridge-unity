@@ -187,25 +187,33 @@ mergeInto(LibraryManager.library, {
         stringToUTF8(minimumDelayBetweenInterstitial, buffer, bufferSize)
         return buffer
     },
+    
+    PlaygamaBridgeRewardedPlacement: function() {
+        var rewardedPlacement = window.getRewardedPlacement()
+        var bufferSize = lengthBytesUTF8(rewardedPlacement) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(rewardedPlacement, buffer, bufferSize)
+        return buffer
+    },
 
     PlaygamaBridgeSetMinimumDelayBetweenInterstitial: function(options) {
         window.setMinimumDelayBetweenInterstitial(UTF8ToString(options))
     },
     
-    PlaygamaBridgeShowBanner: function(options) {
-        window.showBanner(UTF8ToString(options))
+    PlaygamaBridgeShowBanner: function(position, placement) {
+        window.showBanner(UTF8ToString(position), UTF8ToString(placement))
     },
         
     PlaygamaBridgeHideBanner: function() {
         window.hideBanner()
     },
 
-    PlaygamaBridgeShowInterstitial: function() {
-        window.showInterstitial()
+    PlaygamaBridgeShowInterstitial: function(placement) {
+        window.showInterstitial(UTF8ToString(placement))
     },
 
-    PlaygamaBridgeShowRewarded: function() {
-        window.showRewarded()
+    PlaygamaBridgeShowRewarded: function(placement) {
+        window.showRewarded(UTF8ToString(placement))
     },
     
     PlaygamaBridgeCheckAdBlock: function() {
