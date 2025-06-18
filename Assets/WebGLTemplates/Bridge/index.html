@@ -11,7 +11,7 @@
                 padding: 0px;
                 margin: 0px;
             }
-            .fullscreen {
+            .fullscreen-canvas {
                 background: #242424;
                 width: 100%;
                 height: 100%;
@@ -19,144 +19,13 @@
                 top: 0px;
                 left: 0px;
             }
-            #loading-overlay {
-                font-size: 20px;
-                z-index: 1;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-            }
-
-            #logo {
-                width: 10%;
-                max-width: 300px;
-                min-width: 120px;
-                overflow: visible;
-            }
-
-            .fill-rect {
-                transform: translateY(100%);
-                transition: transform 0.3s ease-out;
-            }
-
-            #gradientMover {
-                display: none;
-            }
-
-            .gradient-mover {
-                animation: moveGradient .4s linear;
-            }
-
-            @keyframes moveGradient {
-                0% { transform: translateX(0);}
-                100% { transform: translateX(-250%);}
-            }
-
-            .logo-fade-out {
-                animation: logoFadeOut 1s linear;
-            }
-
-            .logo-fade-out path {
-                fill: white;
-                stroke: white;
-            }
-
-            @keyframes logoFadeOut {
-                0% { opacity: 1}
-                50% { opacity: 0}
-                100% { opacity: 0}
-            }
            
         </style>
     </head>
     <body>
-        <canvas id="canvas" class="fullscreen"></canvas>
-        <div id="loading-overlay" class="fullscreen">
-            <svg id="logo" viewBox="0 0 633 819" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <mask id="bridge-mask">
-                        <rect x="0" y="0" width="100%" height="100%" fill="black" />
-                        <path
-                            d="M632 1V632H1V1H632ZM350 125.586V507.414L380.586 538H546V451H478.599L478.308 451.278L454.598 474H443.406L450.944 452.328L451 452.169V187.459L457.369 182H546V95H380.586L350 125.586ZM283 125.586L252.414 95H87V182H175.631L182 187.459V445.54L175.631 451H87V538H252.414L283 507.414V125.586Z"
-                            fill="white" />
-                        <path d="M633 687V660H548V687H560V791H548V819H633V792H601L592 801H587L590 792V752H627V725H590V687H633Z"
-                            fill="white" />
-                        <path
-                            d="M533 718V675L518 660H450L435 675V802L450 819H518L533 804V734H482V761H503V788L499 792H476L467 801H462L465 792V691L469 687H499L503 691V718H533Z"
-                            fill="white" />
-                        <path
-                            d="M402 660H310V687H322V792H310V819H402L417 804V675L402 660ZM387 788L383 792H363L354 801H349L352 792V687H383L387 691V788Z"
-                            fill="white" />
-                        <path d="M295 687V660H239V687H251V792H239V819H295V792H283V687H295Z" fill="white" />
-                        <path
-                            d="M215 791L200 760H209L224 745V675L209 660H121V687H132V792H121V819H162V760H166L193 819H227V791H215ZM194 729L190 733H173L164 742H159L162 733V687H190L194 691V729Z"
-                            fill="white" />
-                        <path
-                            d="M106 724V675L91 660H0V687H12V792H0V819H91L106 804V749L89 744V728L106 724ZM73 788L69 792H53L44 801H39L42 792V752H73V788ZM73 725H53L44 734H39L42 725V687H69L73 691V725Z"
-                            fill="white" />
-                    </mask>
-            
-                    <linearGradient id="shineGradient" x1="1233" y1="0" x2="1866" y2="633" gradientUnits="userSpaceOnUse">
-                        <stop offset="0.235577" stop-color="#aa76ff" />
-                        <stop offset="0.240685" stop-color="white" />
-                        <stop offset="0.659749" stop-color="#aa76ff" />
-                    </linearGradient>
-            
-                </defs>
-            
-                <g mask="url(#bridge-mask)">
-                    <rect id="gradientMover" x="0" y="0" width="2532" height="819" fill="url(#shineGradient)"
-                        style="transform: translateX(0);" />
-                </g>
-            
-                <g mask="url(#bridge-mask)">
-                    <rect id="fillRect" class="fill-rect" x="0" y="0" width="100%" height="819" fill="#aa76ff" />
-                </g>
-            
-                <path
-                    d="M632 1V632H1V1H632ZM350 125.586V507.414L380.586 538H546V451H478.599L478.308 451.278L454.598 474H443.406L450.944 452.328L451 452.169V187.459L457.369 182H546V95H380.586L350 125.586ZM283 125.586L252.414 95H87V182H175.631L182 187.459V445.54L175.631 451H87V538H252.414L283 507.414V125.586Z"
-                    stroke="#aa76ff" stroke-width="3" />
-                <path d="M633 687V660H548V687H560V791H548V819H633V792H601L592 801H587L590 792V752H627V725H590V687H633Z"
-                    stroke="#aa76ff" stroke-width="3" />
-                <path
-                    d="M533 718V675L518 660H450L435 675V802L450 819H518L533 804V734H482V761H503V788L499 792H476L467 801H462L465 792V691L469 687H499L503 691V718H533Z"
-                    stroke="#aa76ff" stroke-width="3" />
-                <path
-                    d="M402 660H310V687H322V792H310V819H402L417 804V675L402 660ZM387 788L383 792H363L354 801H349L352 792V687H383L387 691V788Z"
-                    stroke="#aa76ff" stroke-width="3" />
-                <path d="M295 687V660H239V687H251V792H239V819H295V792H283V687H295Z" stroke="#aa76ff" stroke-width="3" />
-                <path
-                    d="M215 791L200 760H209L224 745V675L209 660H121V687H132V792H121V819H162V760H166L193 819H227V791H215ZM194 729L190 733H173L164 742H159L162 733V687H190L194 691V729Z"
-                    stroke="#aa76ff" stroke-width="3" />
-                <path
-                    d="M106 724V675L91 660H0V687H12V792H0V819H91L106 804V749L89 744V728L106 724ZM73 788L69 792H53L44 801H39L42 792V752H73V788ZM73 725H53L44 734H39L42 725V687H69L73 691V725Z"
-                    stroke="#aa76ff" stroke-width="3" />
-            </svg>
-        </div>
+        <canvas id="canvas" class="fullscreen-canvas"></canvas>
         <script src="./playgama-bridge.js"></script>
         <script>
-            const logo = document.getElementById('logo');
-            const fill = document.getElementById('fillRect');
-            const gradientMover = document.getElementById('gradientMover');
-
-            function updateProgress(percent) {
-                const _percent = Math.max(0, Math.min(100, percent));
-                const translateY = 100 - _percent;
-                fill.style.transform = `translateY(${translateY}%)`;
-
-                if (_percent === 100) {
-                    setTimeout(() => {
-                        fill.style.display = 'none';
-                        gradientMover.style.display = 'block';
-                        gradientMover.classList.add('gradient-mover');
-
-                    }, 400)
-                } else {
-                    gradientMover.classList.remove('gradient-mover');
-                }
-            }
-
             if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
                 let meta = document.createElement('meta')
                 meta.name = 'viewport'
@@ -165,7 +34,6 @@
             }
 
             let canvas = document.getElementById('canvas')
-            let loadingOverlay = document.getElementById('loading-overlay')
 
             const STORAGE_DATA_SEPARATOR = '{bridge_data_separator}'
             const STORAGE_KEYS_SEPARATOR = '{bridge_keys_separator}'
@@ -181,7 +49,7 @@
             }
 
             function onUnityLoadingProgressChanged(progress) {
-                updateProgress(progress * 100)
+                bridge.setLoadingProgress(progress * 100)
             }
             
             window.addEventListener('pointerdown', () => {
@@ -223,8 +91,6 @@
                             onUnityLoadingProgressChanged)
                             .then((unityInstance) => {
                                 window.unityInstance = unityInstance
-                                setTimeout(() => logo.classList.add('logo-fade-out'), 900);
-                                setTimeout(() => loadingOverlay.remove(), 1400)
                                 canvas.focus()
                             })
                             .catch((error) => {
