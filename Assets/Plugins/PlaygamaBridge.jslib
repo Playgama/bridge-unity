@@ -314,61 +314,22 @@ mergeInto(LibraryManager.library, {
     },
 
 
-    PlaygamaBridgeIsLeaderboardSupported: function() {
-        var isLeaderboardSupported = window.getIsLeaderboardSupported()
-        var bufferSize = lengthBytesUTF8(isLeaderboardSupported) + 1
+    PlaygamaBridgeLeaderboardsType: function() {
+        var value = window.getLeaderboardsType()
+        var bufferSize = lengthBytesUTF8(value) + 1
         var buffer = _malloc(bufferSize)
-        stringToUTF8(isLeaderboardSupported, buffer, bufferSize)
+        stringToUTF8(value, buffer, bufferSize)
         return buffer
     },
 
-    PlaygamaBridgeIsLeaderboardNativePopupSupported: function() {
-        var isLeaderboardNativePopupSupported = window.getIsLeaderboardNativePopupSupported()
-        var bufferSize = lengthBytesUTF8(isLeaderboardNativePopupSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isLeaderboardNativePopupSupported, buffer, bufferSize)
-        return buffer
+    PlaygamaBridgeLeaderboardsSetScore: function(id, score) {
+        window.leaderboardsSetScore(UTF8ToString(id), UTF8ToString(score))
     },
 
-    PlaygamaBridgeIsLeaderboardSetScoreSupported: function() {
-        var isLeaderboardSetScoreSupported = window.getIsLeaderboardSetScoreSupported()
-        var bufferSize = lengthBytesUTF8(isLeaderboardSetScoreSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isLeaderboardSetScoreSupported, buffer, bufferSize)
-        return buffer
+    PlaygamaBridgeLeaderboardsGetEntries: function(id) {
+        window.leaderboardsGetEntries(UTF8ToString(id))
     },
 
-    PlaygamaBridgeIsLeaderboardGetScoreSupported: function() {
-        var isLeaderboardGetScoreSupported = window.getIsLeaderboardGetScoreSupported()
-        var bufferSize = lengthBytesUTF8(isLeaderboardGetScoreSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isLeaderboardGetScoreSupported, buffer, bufferSize)
-        return buffer
-    },
-
-    PlaygamaBridgeIsLeaderboardGetEntriesSupported: function() {
-        var isLeaderboardGetEntriesSupported = window.getIsLeaderboardGetEntriesSupported()
-        var bufferSize = lengthBytesUTF8(isLeaderboardGetEntriesSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isLeaderboardGetEntriesSupported, buffer, bufferSize)
-        return buffer
-    },
-
-    PlaygamaBridgeLeaderboardSetScore: function(options) {
-        window.leaderboardSetScore(UTF8ToString(options))
-    },
-
-    PlaygamaBridgeLeaderboardGetScore: function(options) {
-        window.leaderboardGetScore(UTF8ToString(options))
-    },
-
-    PlaygamaBridgeLeaderboardGetEntries: function(options) {
-        window.leaderboardGetEntries(UTF8ToString(options))
-    },
-
-    PlaygamaBridgeLeaderboardShowNativePopup: function(options) {
-        window.leaderboardShowNativePopup(UTF8ToString(options))
-    },
 
     PlaygamaBridgeIsPaymentsSupported: function() {
         var isPaymentsSupported = window.getIsPaymentsSupported()
