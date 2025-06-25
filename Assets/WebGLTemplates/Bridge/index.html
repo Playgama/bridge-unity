@@ -492,92 +492,33 @@
             }
 
 
-            // leaderboard
-            window.getIsLeaderboardSupported = function() {
-                return bridge.leaderboard.isSupported.toString()
+            // leaderboards
+            window.getLeaderboardsType = function() {
+                return bridge.leaderboards.type
             }
 
-            window.getIsLeaderboardNativePopupSupported = function() {
-                return bridge.leaderboard.isNativePopupSupported.toString()
-            }
-
-            window.getIsLeaderboardSetScoreSupported = function() {
-                return bridge.leaderboard.isSetScoreSupported.toString()
-            }
-
-            window.getIsLeaderboardGetScoreSupported = function() {
-                return bridge.leaderboard.isGetScoreSupported.toString()
-            }
-
-            window.getIsLeaderboardGetEntriesSupported = function() {
-                return bridge.leaderboard.isGetEntriesSupported.toString()
-            }
-
-            window.leaderboardSetScore = function(options) {
-                if (options) {
-                    options = JSON.parse(options)
-                }
-
-                bridge.leaderboard.setScore(options)
+            window.leaderboardsSetScore = function(id, score) {
+                score = parseInt(score)
+                bridge.leaderboards.setScore(id, score)
                     .then(() => {
-                        sendMessageToUnity('OnLeaderboardSetScoreCompleted', 'true')
+                        sendMessageToUnity('OnLeaderboardsSetScoreCompleted', 'true')
                     })
                     .catch(error => {
-                        sendMessageToUnity('OnLeaderboardSetScoreCompleted', 'false')
+                        sendMessageToUnity('OnLeaderboardsSetScoreCompleted', 'false')
                     })
             }
 
-            window.leaderboardGetScore = function(options) {
-                if (options) {
-                    options = JSON.parse(options)
-                }
-
-                bridge.leaderboard.getScore(options)
+            window.leaderboardsGetEntries = function(id) {
+                bridge.leaderboards.getEntries(id)
                     .then(data => {
                         if (data) {
-                            if (typeof data !== 'string') {
-                                data = JSON.stringify(data)
-                            }
-
-                            sendMessageToUnity('OnLeaderboardGetScoreCompleted', data)
+                            sendMessageToUnity('OnLeaderboardsGetEntriesCompletedSuccess', JSON.stringify(data))
                         } else {
-                            sendMessageToUnity('OnLeaderboardGetScoreCompleted', '')
+                            sendMessageToUnity('OnLeaderboardsGetEntriesCompletedSuccess', '')
                         }
                     })
                     .catch(error => {
-                        sendMessageToUnity('OnLeaderboardGetScoreCompleted', 'false')
-                    })
-            }
-
-            window.leaderboardGetEntries = function(options) {
-                if (options) {
-                    options = JSON.parse(options)
-                }
-
-                bridge.leaderboard.getEntries(options)
-                    .then(data => {
-                        if (data) {
-                            sendMessageToUnity('OnLeaderboardGetEntriesCompletedSuccess', JSON.stringify(data))
-                        } else {
-                            sendMessageToUnity('OnLeaderboardGetEntriesCompletedSuccess', '')
-                        }
-                    })
-                    .catch(error => {
-                        sendMessageToUnity('OnLeaderboardGetEntriesCompletedFailed', 'false')
-                    })
-            }
-
-            window.leaderboardShowNativePopup = function(options) {
-                if (options) {
-                    options = JSON.parse(options)
-                }
-
-                bridge.leaderboard.showNativePopup(options)
-                    .then(() => {
-                        sendMessageToUnity('OnLeaderboardShowNativePopupCompleted', 'true')
-                    })
-                    .catch(error => {
-                        sendMessageToUnity('OnLeaderboardShowNativePopupCompleted', 'false')
+                        sendMessageToUnity('OnLeaderboardsGetEntriesCompletedFailed', 'false')
                     })
             }
 
