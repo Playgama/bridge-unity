@@ -48,12 +48,12 @@ namespace Playgama.Modules.Leaderboards
         private Action<bool, List<Dictionary<string, string>>> _getEntriesCallback;
 
         
-        public void SetScore(string id, int score, Action<bool> onComplete)
+        public void SetScore(string id, int score, Action<bool> onComplete = null)
         {
             SetScore(id, score.ToString(), onComplete);
         }
         
-        public void SetScore(string id, string score, Action<bool> onComplete)
+        public void SetScore(string id, string score, Action<bool> onComplete = null)
         {
             _setScoreCallback = onComplete;
 #if !UNITY_EDITOR
