@@ -179,12 +179,28 @@ mergeInto(LibraryManager.library, {
         stringToUTF8(isBannerSupported, buffer, bufferSize)
         return buffer
     },
+        
+    PlaygamaBridgeIsInterstitialSupported: function() {
+        var isInterstitialSupported = window.getIsInterstitialSupported()
+        var bufferSize = lengthBytesUTF8(isInterstitialSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isInterstitialSupported, buffer, bufferSize)
+        return buffer
+    },
 
     PlaygamaBridgeMinimumDelayBetweenInterstitial: function() {
         var minimumDelayBetweenInterstitial = window.getMinimumDelayBetweenInterstitial()
         var bufferSize = lengthBytesUTF8(minimumDelayBetweenInterstitial) + 1
         var buffer = _malloc(bufferSize)
         stringToUTF8(minimumDelayBetweenInterstitial, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeIsRewardedSupported: function() {
+        var isRewardedSupported = window.getIsRewardedSupported()
+        var bufferSize = lengthBytesUTF8(isRewardedSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isRewardedSupported, buffer, bufferSize)
         return buffer
     },
     

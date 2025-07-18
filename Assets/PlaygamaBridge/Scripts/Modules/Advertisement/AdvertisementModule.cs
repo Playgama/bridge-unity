@@ -43,6 +43,30 @@ namespace Playgama.Modules.Advertisement
             }
         }
         
+        public bool isInterstitialSupported
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return PlaygamaBridgeIsInterstitialSupported() == "true";
+#else
+                return true;
+#endif
+            }
+        }
+        
+        public bool isRewardedSupported
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return PlaygamaBridgeIsRewardedSupported() == "true";
+#else
+                return true;
+#endif
+            }
+        }
+        
         public string rewardedPlacement
         {
             get
@@ -82,6 +106,12 @@ namespace Playgama.Modules.Advertisement
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsBannerSupported();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsInterstitialSupported();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsRewardedSupported();
         
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeShowBanner(string position, string placement);

@@ -328,6 +328,10 @@
             window.getIsBannerSupported = function() {
                 return bridge.advertisement.isBannerSupported.toString()
             }
+
+            window.getIsInterstitialSupported = function() {
+                return bridge.advertisement.isInterstitialSupported.toString()
+            }
             
             window.getMinimumDelayBetweenInterstitial = function() {
                 return bridge.advertisement.minimumDelayBetweenInterstitial.toString()
@@ -335,6 +339,10 @@
 
             window.setMinimumDelayBetweenInterstitial = function(options) {
                 bridge.advertisement.setMinimumDelayBetweenInterstitial(options)
+            }
+
+            window.getIsRewardedSupported = function() {
+                return bridge.advertisement.isRewardedSupported.toString()
             }
 
             window.getRewardedPlacement = function() {

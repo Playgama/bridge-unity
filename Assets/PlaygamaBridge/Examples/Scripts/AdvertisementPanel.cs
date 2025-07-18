@@ -13,7 +13,9 @@ namespace Examples
         [SerializeField] private Text _bannerState;
         [SerializeField] private Text _interstitialState;
         [SerializeField] private Text _rewardedState;
-        [SerializeField] private Text _bannerSupported;
+        [SerializeField] private Text _isBannerSupported;
+        [SerializeField] private Text _isInterstitialSupported;
+        [SerializeField] private Text _isRewardedSupported;
         [SerializeField] private InputField _minimumDelayBetweenInterstitial;
         [SerializeField] private Button _setMinimumDelayBetweenInterstitialButton;
         [SerializeField] private Button _showBannerButton;
@@ -43,7 +45,9 @@ namespace Examples
             _showRewardedButton.onClick.AddListener(OnShowRewardedButtonClicked);
             _checkAdBlockButton.onClick.AddListener(OnCheckAdBlockButtonClicked);
 
-            _bannerSupported.text = $"Is Banner Supported: { Bridge.advertisement.isBannerSupported }";
+            _isBannerSupported.text = $"Is Banner Supported: { Bridge.advertisement.isBannerSupported }";
+            _isInterstitialSupported.text = $"Is Interstitial Supported: { Bridge.advertisement.isInterstitialSupported }";
+            _isRewardedSupported.text = $"Is Rewarded Supported: { Bridge.advertisement.isRewardedSupported }";
 
             OnBannerStateChanged(Bridge.advertisement.bannerState);
             OnInterstitialStateChanged(Bridge.advertisement.interstitialState);
