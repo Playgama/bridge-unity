@@ -10,12 +10,16 @@ using System.Runtime.InteropServices;
 namespace Playgama.Modules.Platform
 {
     public class PlatformModule : MonoBehaviour
-    {        
+    {
+        public event Action<bool> audioStateChanged;
+        public event Action<bool> pauseStateChanged;
+        
 #if !UNITY_EDITOR
         public string id { get; } = PlaygamaBridgeGetPlatformId();
         public string language { get; } = PlaygamaBridgeGetPlatformLanguage();
         public string payload { get; } = PlaygamaBridgeGetPlatformPayload();
         public string tld { get; } = PlaygamaBridgeGetPlatformTld();
+        public bool isAudioEnabled { get; } = PlaygamaBridgeIsPlatformAudioEnabled() == "true";
         public bool isGetAllGamesSupported { get; } = PlaygamaBridgeIsPlatformGetAllGamesSupported() == "true";
         public bool isGetGameByIdSupported { get; } = PlaygamaBridgeIsPlatformGetGameByIdSupported() == "true";
 
@@ -30,6 +34,9 @@ namespace Playgama.Modules.Platform
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeGetPlatformTld();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsPlatformAudioEnabled();
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsPlatformGetAllGamesSupported();
@@ -53,6 +60,7 @@ namespace Playgama.Modules.Platform
         public string language => "en";
         public string payload => null;
         public string tld => null;
+        public bool isAudioEnabled => true;
         public bool isGetAllGamesSupported => false;
         public bool isGetGameByIdSupported => false;
 #endif
@@ -132,6 +140,16 @@ namespace Playgama.Modules.Platform
 
 
         // Called from JS
+        private void OnAudioStateChanged(string isEnabled)
+        {
+            audioStateChanged?.Invoke(isEnabled == "true");
+        }
+        
+        private void OnPauseStateChanged(string isPaused)
+        {
+            pauseStateChanged?.Invoke(isPaused == "true");
+        }
+        
         private void OnGetServerTimeCompleted(string result)
         {
             DateTime? date = null;

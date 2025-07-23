@@ -31,6 +31,14 @@ mergeInto(LibraryManager.library, {
         stringToUTF8(platformTld, buffer, bufferSize)
         return buffer
     },
+    
+    PlaygamaBridgeIsPlatformAudioEnabled: function() {
+        var isAudioEnabled = window.getIsPlatformAudioEnabled()
+        var bufferSize = lengthBytesUTF8(isAudioEnabled) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isAudioEnabled, buffer, bufferSize)
+        return buffer
+    },
 
     PlaygamaBridgeIsPlatformGetAllGamesSupported: function() {
         var isAllGamesSupported = window.getIsPlatformGetAllGamesSupported()

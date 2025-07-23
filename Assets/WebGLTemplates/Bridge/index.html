@@ -66,6 +66,8 @@
                     bridge.advertisement.on('interstitial_state_changed', state => sendMessageToUnity('OnInterstitialStateChanged', state))
                     bridge.advertisement.on('rewarded_state_changed', state => sendMessageToUnity('OnRewardedStateChanged', state))
                     bridge.game.on('visibility_state_changed', state => sendMessageToUnity('OnVisibilityStateChanged', state))
+                    bridge.platform.on('audio_state_changed', isEnabled => sendMessageToUnity('OnAudioStateChanged', isEnabled.toString()))
+                    bridge.platform.on('pause_state_changed', isPaused => sendMessageToUnity('OnPauseStateChanged', isPaused.toString()))
 
                     let unityLoader = document.createElement('script')
                     unityLoader.src = 'Build/{{{ LOADER_FILENAME }}}'
@@ -128,6 +130,10 @@
                 } else {
                     return ''
                 }
+            }
+
+            window.getIsPlatformAudioEnabled = function() {
+                return bridge.platform.isAudioEnabled.toString()
             }
 
             window.getIsPlatformGetAllGamesSupported = function() {

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 #if UNITY_WEBGL
@@ -14,6 +15,7 @@ namespace Examples
         [SerializeField] private Text _language;
         [SerializeField] private Text _payload;
         [SerializeField] private Text _tld;
+        [SerializeField] private Text _isAudioEnabled;
         [SerializeField] private Text _isGetAllGamesSupported;
         [SerializeField] private Text _isGetGameByIdSupported;
         [SerializeField] private InputField _gameIdInputField;
@@ -38,6 +40,7 @@ namespace Examples
             _payload.text = $"Payload: { Bridge.platform.payload }";
             _tld.text = $"TLD: { Bridge.platform.tld }";
 
+            _isAudioEnabled.text = $"Is Audio Enabled: { Bridge.platform.isAudioEnabled }";
             _isGetAllGamesSupported.text = $"Is Get All Games Supported: { Bridge.platform.isGetAllGamesSupported }";
             _isGetGameByIdSupported.text = $"Is Get Game By Id Supported: { Bridge.platform.isGetGameByIdSupported }";
             
@@ -51,6 +54,29 @@ namespace Examples
             
             _getAllGamesButton.onClick.AddListener(OnGetAllGamesButtonClicked);
             _getGameByIdButton.onClick.AddListener(OnGetGameByIdButtonClicked);
+            
+            Bridge.platform.audioStateChanged += OnPlatformAudioStateChanged;
+            Bridge.platform.pauseStateChanged += OnPlatformPauseStateChanged;
+        }
+
+        private void OnDestroy()
+        {
+            if (Bridge.instance != null)
+            {
+                Bridge.platform.audioStateChanged -= OnPlatformAudioStateChanged;
+                Bridge.platform.pauseStateChanged -= OnPlatformPauseStateChanged;
+            }
+        }
+
+        private void OnPlatformAudioStateChanged(bool isEnabled)
+        {
+            _isAudioEnabled.text = $"Is Audio Enabled: { isEnabled }";
+            Debug.Log($"OnAudioStateChanged, isEnabled: {isEnabled}");
+        }
+        
+        private void OnPlatformPauseStateChanged(bool isPaused)
+        {
+            Debug.Log($"OnPauseStateChanged, isPaused: {isPaused}");
         }
 
         private void OnSendGameReadyMessageButtonClicked()
