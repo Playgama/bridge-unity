@@ -14,6 +14,7 @@ namespace Examples
         [SerializeField] private Button _setScoreButton;
         [SerializeField] private Button _getEntriesButton;
         [SerializeField] private GameObject _overlay;
+        [SerializeField] private Button _showNativePopupButton;
 
 #if UNITY_WEBGL
         private void Start()
@@ -22,6 +23,7 @@ namespace Examples
 
             _setScoreButton.onClick.AddListener(OnSetScoreButtonClicked);
             _getEntriesButton.onClick.AddListener(OnGetEntriesButtonClicked);
+            _showNativePopupButton.onClick.AddListener(OnShowNativePopupButtonClicked);
         }
 
         private void OnSetScoreButtonClicked()
@@ -54,6 +56,17 @@ namespace Examples
 
                     _overlay.SetActive(false);
                 });
+        }
+        
+        private void OnShowNativePopupButtonClicked()
+        {
+            _overlay.SetActive(true);
+            
+            Bridge.leaderboards.ShowNativePopup(_leaderboardIdInput.text, (success) =>
+            {
+                Debug.Log($"OnShowNativePopupCompleted, success: {success}");
+                _overlay.SetActive(false);
+            });
         }
 #endif
     }
