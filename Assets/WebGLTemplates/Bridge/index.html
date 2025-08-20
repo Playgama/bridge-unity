@@ -535,6 +535,16 @@
                         sendMessageToUnity('OnLeaderboardsGetEntriesCompletedFailed', 'false')
                     })
             }
+            
+             window.leaderboardsShowNativePopup = function(id) {
+                bridge.leaderboards.showNativePopup(id)
+                      .then(() => {
+                        sendMessageToUnity('OnLeaderboardsShowNativePopupCompleted', 'true')
+                    })
+                    .catch(error => {
+                        sendMessageToUnity('OnLeaderboardsShowNativePopupCompleted', 'false')
+                    })
+            }
 
             window.getIsPaymentsSupported = function() {
                 return bridge.payments.isSupported.toString()

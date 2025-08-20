@@ -24,6 +24,8 @@ namespace Playgama.Modules.Leaderboards
                         return LeaderboardType.InGame;
                     case "native":
                         return LeaderboardType.Native;
+                    case "native_popup":
+                        return LeaderboardType.NativePopup;
                 }
 
                 return LeaderboardType.NotAvailable;
@@ -42,10 +44,15 @@ namespace Playgama.Modules.Leaderboards
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeLeaderboardsGetEntries(string id);
+        
+        [DllImport("__Internal")]
+        private static extern void PlaygamaBridgeLeaderboardsShowNativePopup(string id);
+        
 #endif
 
         private Action<bool> _setScoreCallback;
         private Action<bool, List<Dictionary<string, string>>> _getEntriesCallback;
+        private Action<bool> _showNativePopupCallback;
 
         
         public void SetScore(string id, int score, Action<bool> onComplete = null)
@@ -70,6 +77,16 @@ namespace Playgama.Modules.Leaderboards
             PlaygamaBridgeLeaderboardsGetEntries(id);
 #else
             OnLeaderboardsGetEntriesCompletedFailed();
+#endif
+        }
+        
+        public void ShowNativePopup(string id, Action<bool> onComplete = null)
+        {
+            _showNativePopupCallback = onComplete;
+#if !UNITY_EDITOR
+            PlaygamaBridgeLeaderboardsShowNativePopup(id);
+#else
+            OnLeaderboardsShowNativePopupCompleted("false");
 #endif
         }
 
@@ -106,6 +123,14 @@ namespace Playgama.Modules.Leaderboards
             _getEntriesCallback?.Invoke(false, null);
             _getEntriesCallback = null;
         }
+        
+        private void OnLeaderboardsShowNativePopupCompleted(string result)
+        {
+            var isSuccess = result == "true";
+            _showNativePopupCallback?.Invoke(isSuccess);
+            _showNativePopupCallback = null;
+        }
+        
     }
 }
 #endif
