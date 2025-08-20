@@ -24,6 +24,8 @@ namespace Playgama.Modules.Leaderboards
                         return LeaderboardType.InGame;
                     case "native":
                         return LeaderboardType.Native;
+                    case "native_popup":
+                        return LeaderboardType.NativePopup;
                 }
 
                 return LeaderboardType.NotAvailable;

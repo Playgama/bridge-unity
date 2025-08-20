@@ -4,6 +4,7 @@ namespace Playgama.Modules.Leaderboards
     {
         NotAvailable,
         InGame,
-        Native
+        Native,
+        NativePopup
     }
 }
