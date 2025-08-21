@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/PlaygamaBridge/Examples/Scenes/Example.unity
+    path: Assets/PlaygamaBridge/Examples/Scenes/Example-Unity-fb.unity
     guid: be7fae25ef57e47c0a33a42f3d2a5122
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

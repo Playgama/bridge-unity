@@ -30,6 +30,7 @@ namespace Examples
         {
             _overlay.SetActive(true);
             Bridge.leaderboards.SetScore(_leaderboardIdInput.text, _leaderboardScoreInput.text, _ => { _overlay.SetActive(false); });
+            
         }
 
         private void OnGetEntriesButtonClicked()
