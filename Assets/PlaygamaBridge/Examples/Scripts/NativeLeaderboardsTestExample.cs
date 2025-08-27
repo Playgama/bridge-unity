@@ -32,7 +32,7 @@ public class NativeLeaderboardsTestExample : MonoBehaviour
             
         switch (Bridge.platform.id)
         {
-            case "fb":
+            case "facebook":
                 options.Add("isPage", true);
                 break;
         }
@@ -49,7 +49,7 @@ public class NativeLeaderboardsTestExample : MonoBehaviour
             
         switch (Bridge.platform.id)
         {
-            case "fb":
+            case "facebook":
                 options.Add("isPage", false);
                 break;
         }
