@@ -13,13 +13,23 @@ namespace Playgama.Modules.Platform
     {
         public event Action<bool> audioStateChanged;
         public event Action<bool> pauseStateChanged;
+        public bool isAudioEnabled
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return PlaygamaBridgeIsPlatformAudioEnabled() == "true";
+#else
+                return true;
+#endif
+            }
+        }
         
 #if !UNITY_EDITOR
         public string id { get; } = PlaygamaBridgeGetPlatformId();
         public string language { get; } = PlaygamaBridgeGetPlatformLanguage();
         public string payload { get; } = PlaygamaBridgeGetPlatformPayload();
         public string tld { get; } = PlaygamaBridgeGetPlatformTld();
-        public bool isAudioEnabled { get; } = PlaygamaBridgeIsPlatformAudioEnabled() == "true";
         public bool isGetAllGamesSupported { get; } = PlaygamaBridgeIsPlatformGetAllGamesSupported() == "true";
         public bool isGetGameByIdSupported { get; } = PlaygamaBridgeIsPlatformGetGameByIdSupported() == "true";
 
@@ -60,7 +70,6 @@ namespace Playgama.Modules.Platform
         public string language => "en";
         public string payload => null;
         public string tld => null;
-        public bool isAudioEnabled => true;
         public bool isGetAllGamesSupported => false;
         public bool isGetGameByIdSupported => false;
 #endif
