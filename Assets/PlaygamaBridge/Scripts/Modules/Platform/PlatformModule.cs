@@ -13,6 +13,17 @@ namespace Playgama.Modules.Platform
     {
         public event Action<bool> audioStateChanged;
         public event Action<bool> pauseStateChanged;
+        public bool isAudioEnabled
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return PlaygamaBridgeIsPlatformAudioEnabled() == "true";
+#else
+                return true;
+#endif
+            }
+        }
         
         public string id
         {
@@ -99,7 +110,6 @@ namespace Playgama.Modules.Platform
         }
         
 #if !UNITY_EDITOR
-
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeGetPlatformId();
 
@@ -132,7 +142,6 @@ namespace Playgama.Modules.Platform
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeGetGameById(string options);
-       
 #endif
         private Action<DateTime?> _getServerTimeCallback;
 
