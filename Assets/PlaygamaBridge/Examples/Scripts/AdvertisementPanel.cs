@@ -26,12 +26,13 @@ namespace Examples
         [SerializeField] private Text _adBlockDetectedText;
         [SerializeField] private Button _checkAdBlockButton;
         [SerializeField] private GameObject _overlay;
-
+        
+#if UNITY_WEBGL
         private readonly List<BannerState> _lastBannerStates = new();
         private readonly List<InterstitialState> _lastInterstitialStates = new();
         private readonly List<RewardedState> _lastRewardedStates = new();
 
-#if UNITY_WEBGL
+
         private void Start()
         {
             Bridge.advertisement.bannerStateChanged += OnBannerStateChanged;
