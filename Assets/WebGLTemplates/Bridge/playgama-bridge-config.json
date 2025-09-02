@@ -24,6 +24,18 @@
         "gamepush": {
             "projectId": "",
             "publicToken": ""
+        },
+        "jio_games": {
+            "packageName": ""
+        },
+        "facebook": {
+            "subscribeForNotificationsOnStart": true
+        },
+        "crazy_games": {
+            "useUserToken": false
+        },
+        "yandex": {
+            "useSignedData": false
         }
     },
     "advertisement": {

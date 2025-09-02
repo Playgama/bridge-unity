@@ -15,6 +15,7 @@ namespace Examples
         [SerializeField] private Text _isAuthorized;
         [SerializeField] private Text _id;
         [SerializeField] private Text _name;
+        [SerializeField] private Text _extra;
         [SerializeField] private Image _photo;
         [SerializeField] private Button _authorizeButton;
         [SerializeField] private GameObject _overlay;
@@ -54,6 +55,13 @@ namespace Examples
             _isAuthorized.text = $"Is Authorized: { Bridge.player.isAuthorized }";
             _id.text = $"ID: { Bridge.player.id }";
             _name.text = $"Name: { Bridge.player.name }";
+
+            var extra = "Extra: ";
+            foreach (var keyValuePair in Bridge.player.extra)
+            {
+                extra += $"{keyValuePair.Key}:{keyValuePair.Value};";
+            }
+            _extra.text = extra;
 
             if (Bridge.player.photos.Count > 0)
             {

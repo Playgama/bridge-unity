@@ -120,6 +120,14 @@ mergeInto(LibraryManager.library, {
         stringToUTF8(playerPhotos, buffer, bufferSize)
         return buffer
     },
+    
+    PlaygamaBridgePlayerExtra: function() {
+        var playerExtra = window.getPlayerExtra()
+        var bufferSize = lengthBytesUTF8(playerExtra) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(playerExtra, buffer, bufferSize)
+        return buffer
+    },
 
     PlaygamaBridgeAuthorizePlayer: function(options) {
         window.authorizePlayer(UTF8ToString(options))

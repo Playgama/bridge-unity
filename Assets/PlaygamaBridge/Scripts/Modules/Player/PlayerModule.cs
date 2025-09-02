@@ -92,6 +92,31 @@ namespace Playgama.Modules.Player
 #endif
             }
         }
+        
+        public Dictionary<string, string> extra
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                var json = PlaygamaBridgePlayerExtra();
+                if (string.IsNullOrEmpty(json))
+                {
+                    return new Dictionary<string, string>();
+                }
+                
+                try
+                {
+                    return JsonHelper.FromJsonToDictionary(json);
+                }
+                catch (Exception)
+                {
+                    return new Dictionary<string, string>();
+                }
+#else
+                return new Dictionary<string, string>();
+#endif
+            }
+        }
 
 #if !UNITY_EDITOR
         [DllImport("__Internal")]
@@ -108,6 +133,9 @@ namespace Playgama.Modules.Player
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgePlayerPhotos();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgePlayerExtra();
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeAuthorizePlayer(string options);

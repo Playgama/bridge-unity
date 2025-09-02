@@ -223,6 +223,14 @@
                 return ''
             }
 
+            window.getPlayerExtra = function() {
+                if (bridge.player.extra) {
+                    return JSON.stringify(bridge.player.extra)
+                }
+
+                return ''
+            }
+
             window.authorizePlayer = function(options) {
                 if (options) {
                     options = JSON.parse(options)
