@@ -58,10 +58,10 @@
             })
             
             // initialization
+            bridge.engine = 'unity'
             bridge
                 .initialize()
                 .then(() => {
-                    bridge.engine = 'unity'
                     bridge.game.setLoadingProgress(0)
                     bridge.advertisement.on('banner_state_changed', state => sendMessageToUnity('OnBannerStateChanged', state))
                     bridge.advertisement.on('interstitial_state_changed', state => sendMessageToUnity('OnInterstitialStateChanged', state))
