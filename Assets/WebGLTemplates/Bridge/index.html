@@ -24,7 +24,6 @@
     </head>
     <body>
         <canvas id="canvas" class="fullscreen-canvas"></canvas>
-        <script src="./playgama-bridge.js"></script>
         <script>
             if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
                 let meta = document.createElement('meta')
@@ -33,8 +32,7 @@
                 document.getElementsByTagName('head')[0].appendChild(meta)
             }
 
-            let canvas = document.getElementById('canvas')
-
+            const CANVAS = document.getElementById('canvas')
             const STORAGE_DATA_SEPARATOR = '{bridge_data_separator}'
             const STORAGE_KEYS_SEPARATOR = '{bridge_keys_separator}'
             const STORAGE_VALUES_SEPARATOR = '{bridge_values_separator}'
@@ -54,58 +52,67 @@
             
             window.addEventListener('pointerdown', () => {
                 window.focus()
-                canvas.focus()
+                CANVAS.focus()
             })
-            
-            // initialization
-            bridge.engine = 'unity'
-            bridge
-                .initialize()
-                .then(() => {
-                    bridge.game.setLoadingProgress(0)
-                    bridge.advertisement.on('banner_state_changed', state => sendMessageToUnity('OnBannerStateChanged', state))
-                    bridge.advertisement.on('interstitial_state_changed', state => sendMessageToUnity('OnInterstitialStateChanged', state))
-                    bridge.advertisement.on('rewarded_state_changed', state => sendMessageToUnity('OnRewardedStateChanged', state))
-                    bridge.game.on('visibility_state_changed', state => sendMessageToUnity('OnVisibilityStateChanged', state))
-                    bridge.platform.on('audio_state_changed', isEnabled => sendMessageToUnity('OnAudioStateChanged', isEnabled.toString()))
-                    bridge.platform.on('pause_state_changed', isPaused => sendMessageToUnity('OnPauseStateChanged', isPaused.toString()))
 
-                    let unityLoader = document.createElement('script')
-                    unityLoader.src = 'Build/{{{ LOADER_FILENAME }}}'
-                    unityLoader.onload = () => {
-                        createUnityInstance(
-                            canvas,
-                            {
-                                dataUrl: 'Build/{{{ DATA_FILENAME }}}',
-                                frameworkUrl: 'Build/{{{ FRAMEWORK_FILENAME }}}',
-                                codeUrl: 'Build/{{{ CODE_FILENAME }}}',
+            function addLocalBridge() {
+                const scriptElement = document.createElement('script')
+                scriptElement.src = './playgama-bridge.js'
+                document.body.appendChild(scriptElement)
+                scriptElement.onload = function() {
+                    initializeBridge()
+                }
+            }
+
+            function initializeBridge() {
+                bridge.engine = 'unity'
+                bridge
+                    .initialize()
+                    .then(() => {
+                        bridge.game.setLoadingProgress(0)
+                        bridge.advertisement.on('banner_state_changed', state => sendMessageToUnity('OnBannerStateChanged', state))
+                        bridge.advertisement.on('interstitial_state_changed', state => sendMessageToUnity('OnInterstitialStateChanged', state))
+                        bridge.advertisement.on('rewarded_state_changed', state => sendMessageToUnity('OnRewardedStateChanged', state))
+                        bridge.game.on('visibility_state_changed', state => sendMessageToUnity('OnVisibilityStateChanged', state))
+                        bridge.platform.on('audio_state_changed', isEnabled => sendMessageToUnity('OnAudioStateChanged', isEnabled.toString()))
+                        bridge.platform.on('pause_state_changed', isPaused => sendMessageToUnity('OnPauseStateChanged', isPaused.toString()))
+
+                        let unityLoader = document.createElement('script')
+                        unityLoader.src = 'Build/{{{ LOADER_FILENAME }}}'
+                        unityLoader.onload = () => {
+                            createUnityInstance(
+                                CANVAS,
+                                {
+                                    dataUrl: 'Build/{{{ DATA_FILENAME }}}',
+                                    frameworkUrl: 'Build/{{{ FRAMEWORK_FILENAME }}}',
+                                    codeUrl: 'Build/{{{ CODE_FILENAME }}}',
 #if MEMORY_FILENAME
-                                memoryUrl: 'Build/{{{ MEMORY_FILENAME }}}',
+                                    memoryUrl: 'Build/{{{ MEMORY_FILENAME }}}',
 #endif
 #if SYMBOLS_FILENAME
-                                symbolsUrl: 'Build/{{{ SYMBOLS_FILENAME }}}',
+                                    symbolsUrl: 'Build/{{{ SYMBOLS_FILENAME }}}',
 #endif
-                                streamingAssetsUrl: 'StreamingAssets',
-                                companyName: '{{{ COMPANY_NAME }}}',
-                                productName: '{{{ PRODUCT_NAME }}}',
-                                productVersion: '{{{ PRODUCT_VERSION }}}',
-                                // matchWebGLToCanvasSize: false, // Uncomment this to separately control WebGL canvas render size and DOM element size.
-                                // devicePixelRatio: 1, // Uncomment this to override low DPI rendering on high DPI displays.
-                            },
-                            onUnityLoadingProgressChanged)
-                            .then((unityInstance) => {
-                                window.unityInstance = unityInstance
-                                canvas.focus()
-                            })
-                            .catch((error) => {
-                                console.error(error)
-                            })
-                    }
-                    document.body.appendChild(unityLoader)
-                })
-                .catch(error => console.error(error))
+                                    streamingAssetsUrl: 'StreamingAssets',
+                                    companyName: '{{{ COMPANY_NAME }}}',
+                                    productName: '{{{ PRODUCT_NAME }}}',
+                                    productVersion: '{{{ PRODUCT_VERSION }}}',
+                                    // matchWebGLToCanvasSize: false, // Uncomment this to separately control WebGL canvas render size and DOM element size.
+                                    // devicePixelRatio: 1, // Uncomment this to override low DPI rendering on high DPI displays.
+                                },
+                                onUnityLoadingProgressChanged)
+                                .then((unityInstance) => {
+                                    window.unityInstance = unityInstance
+                                    CANVAS.focus()
+                                })
+                                .catch((error) => {
+                                    console.error(error)
+                                })
+                        }
+                        document.body.appendChild(unityLoader)
+                    })
+                    .catch(error => console.error(error))
+            }
             
-
             // platform
             window.getPlatformId = function() {
                 return bridge.platform.id
@@ -715,5 +722,6 @@
                     })
             }
         </script>
+        <script src="https://bridge.playgama.com/v1/stable/playgama-bridge.js" onload="initializeBridge()" onerror="addLocalBridge()"></script>
     </body>
 </html>
