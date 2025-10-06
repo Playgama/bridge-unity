@@ -375,8 +375,8 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
-    PlaygamaBridgePaymentsPurchase: function(id) {
-        window.paymentsPurchase(UTF8ToString(id))
+    PlaygamaBridgePaymentsPurchase: function(id, options) {
+        window.paymentsPurchase(UTF8ToString(id), UTF8ToString(options))
     },
 
     PlaygamaBridgePaymentsConsumePurchase: function(id) {

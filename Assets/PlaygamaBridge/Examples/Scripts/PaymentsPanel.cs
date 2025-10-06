@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.UI;
 #if UNITY_WEBGL
 using Playgama;
@@ -72,8 +73,13 @@ namespace Examples
         private void OnPurchaseButtonClicked()
         {
             _overlay.SetActive(true);
+
+            var options = new Dictionary<string, object>
+            {
+                { "externalId", "test_external_id" }
+            };
             
-            Bridge.payments.Purchase("test_product", (success, _) =>
+            Bridge.payments.Purchase("test_product", options, (success, _) =>
             {
                 Debug.Log($"OnPurchaseCompleted, success: {success}"); 
                 _overlay.SetActive(false);

@@ -566,8 +566,12 @@
                 return bridge.payments.isSupported.toString()
             }
 
-            window.paymentsPurchase = function(id) {
-                bridge.payments.purchase(id)
+            window.paymentsPurchase = function(id, options) {
+                if (options) {
+                    options = JSON.parse(options)
+                }
+                
+                bridge.payments.purchase(id, options)
                     .then(data => {
                         if (data) {
                             if (typeof data !== 'string') {

@@ -28,7 +28,7 @@ namespace Playgama.Modules.Payments
         private static extern string PlaygamaBridgeIsPaymentsSupported();
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgePaymentsPurchase(string id);
+        private static extern void PlaygamaBridgePaymentsPurchase(string id, string options);
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgePaymentsConsumePurchase(string id);
@@ -51,7 +51,18 @@ namespace Playgama.Modules.Payments
             _purchaseCallback = onComplete;
 
 #if !UNITY_EDITOR
-            PlaygamaBridgePaymentsPurchase(id);
+            PlaygamaBridgePaymentsPurchase(id, "");
+#else
+            OnPaymentsPurchaseFailed();
+#endif
+        }
+        
+        public void Purchase(string id, Dictionary<string, object> options, Action<bool, Dictionary<string, string>> onComplete = null)
+        {
+            _purchaseCallback = onComplete;
+
+#if !UNITY_EDITOR
+            PlaygamaBridgePaymentsPurchase(id, options.ToJson());
 #else
             OnPaymentsPurchaseFailed();
 #endif
