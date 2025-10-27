@@ -54,17 +54,46 @@
                 window.focus()
                 CANVAS.focus()
             })
+            
+            let bridgeScript = null;
+            let bridgeTimeout = null;
+            let bridgeLoaded = false;
 
             function addLocalBridge() {
-                const scriptElement = document.createElement('script')
-                scriptElement.src = './playgama-bridge.js'
-                document.body.appendChild(scriptElement)
+                if (bridgeLoaded) return;
+                bridgeLoaded = true;
+                clearTimeout(bridgeTimeout);
+
+                if (bridgeScript && bridgeScript.parentNode) {
+                    bridgeScript.onload = null;
+                    bridgeScript.onerror = null;
+                    bridgeScript.src = '';
+                    bridgeScript.parentNode.removeChild(bridgeScript);
+
+                }
+
+                const scriptElement = document.createElement('script');
+                scriptElement.src = './playgama-bridge.js';
+                document.body.appendChild(scriptElement);
                 scriptElement.onload = function() {
-                    initializeBridge()
+                    initializeBridge();
                 }
             }
 
+            bridgeScript = document.createElement('script');
+            bridgeScript.src = 'https://bridge.playgama.com/v1/stable/playgama-bridge.js';
+            bridgeScript.onload = initializeBridge;
+            bridgeScript.onerror = addLocalBridge;
+
+            bridgeTimeout = setTimeout(() => {
+                console.warn('CDN bridge failed to load within 2 seconds, loading local bridge');
+                addLocalBridge();
+            }, 2000);
+
+            document.head.appendChild(bridgeScript);
+
             function initializeBridge() {
+                clearTimeout(bridgeTimeout);
                 bridge.engine = 'unity'
                 bridge
                     .initialize()
@@ -726,6 +755,5 @@
                     })
             }
         </script>
-        <script src="https://bridge.playgama.com/v1/stable/playgama-bridge.js" onload="initializeBridge()" onerror="addLocalBridge()"></script>
     </body>
 </html>
