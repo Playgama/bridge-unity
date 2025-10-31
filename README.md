@@ -20,12 +20,14 @@ One SDK for cross-platform publishing HTML5 games.
 + [BitQuest](https://t.me/BitquestGamesBot/start)
 + [Huawei](https://appgallery.huawei.com)
 + [JioGames](https://play.jiogames.com)
++ [YouTube](https://www.youtube.com/playables)
++ [Reddit](https://www.reddit.com/r/GamesOnReddit/)
 + Other [Work In Progress]
 
 ## Plugins for game engines
 + [JS](https://github.com/playgama/bridge)
 + [Construct 3](https://github.com/playgama/bridge-construct)
-+ [Unity](https://github.com/playgama/bridge-unity)
++ Unity [Plugin](https://github.com/playgama/bridge-unity) | [Examples](https://github.com/playgama/bridge-unity-examples)
 + [Godot 3](https://github.com/playgama/bridge-godot)
 + [Godot 4](https://github.com/playgama/bridge-godot-4)
 + [GameMaker](https://github.com/playgama/bridge-gamemaker)
