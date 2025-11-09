@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>AnzuComponents</name>
+    </assembly>
+    <members>
+        <member name="T:Anzu.AnzuStats">
+             <summary>
+             Displays statistics related to the ad's placement.
+             </summary>
+            </member>
+        <member name="F:Anzu.AnzuStats.GUIDepth">
+             <summary>
+             The sorting depth of the currently executing GUI behaviour.
+             </summary>
+            </member>
+        <member name="F:Anzu.AnzuStats.FontSize">
+             <summary>
+             Specifies the size of the widget and the text displayed in the interface.
+             </summary>
+            </member>
+        <member name="F:Anzu.AnzuStats.BackgroundAlpha">
+             <summary>
+             Specifies the opacity of the stats background.
+             </summary>
+            </member>
+        <member name="F:Anzu.AnzuStats.ShowType">
+             <summary>
+             Enables or disables the visibility of the placement type.
+             </summary>
+            </member>
+        <member name="F:Anzu.AnzuStats.ShowState">
+             <summary>
+             Enables or disables the visibility of the placement state.
+             </summary>
+            </member>
+        <member name="F:Anzu.AnzuStats.ShowAngle">
+             <summary>
+             Enables or disables the visibility of the placement angle.
+             </summary>
+            </member>
+        <member name="F:Anzu.AnzuStats.ShowVisibility">
+             <summary>
+             Enables or disables the visibility of the placement visibility score percentage.
+             </summary>
+            </member>
+        <member name="F:Anzu.AnzuStats.ShowViewability">
+             <summary>
+             Enables or disables the visibility of the placement viewability score percentage.
+             </summary>
+            </member>
+        <member name="F:Anzu.AnzuStats.ShowImpressions">
+             <summary>
+             Enables or disables the visibility of the channel impression count.
+             </summary>
+            </member>
+        <member name="F:Anzu.AnzuStats.ShowEmpties">
+             <summary>
+             Enables or disables the visibility of the channel empty event count.
+             </summary>
+            </member>
+        <member name="T:Anzu.AnzuSDK">
+             <summary>
+             Synchronizes the Anzu SDK with Unity's execution order. 
+             This component is mandatory for the SDK to function correctly.
+             </summary>
+            </member>
+        <member name="P:Anzu.AnzuSDK.Instance">
+             <summary>
+             Static instance of the AnzuUnity component.
+             </summary>
+            </member>
+    </members>
+</doc>

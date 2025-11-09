@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>AnzuUtilities</name>
+    </assembly>
+    <members>
+        <member name="T:Anzu.AnzuCamera">
+             <summary>
+             Responsible for storing the camera used by `AnzuCore`. Allows manual camera setup when multiple cameras are used.
+             </summary>
+            </member>
+        <member name="P:Anzu.AnzuCamera.ActiveCamera">
+             <summary>
+             Gets the current active camera in the scene, used by the Anzu SDK.
+             </summary>
+            </member>
+        <member name="M:Anzu.AnzuCamera.SetManualCamera(UnityEngine.Camera)">
+             <summary>
+             Set `ActiveCamera` manually.
+             </summary>
+             <param name="cam">The camera to set.</param>
+            </member>
+        <member name="M:Anzu.AnzuCamera.ResetManualCamera">
+             <summary>
+             Disables manual camera. Enables `ActiveCamera` to be found automatically.
+             </summary>
+            </member>
+        <member name="F:Anzu.UriHookData.BaseUri">
+             <summary>
+             Base URI path.
+             </summary>
+            </member>
+        <member name="F:Anzu.UriHookData.Arguments">
+             <summary>
+             Stores a collection of arguments as key-value pairs.
+             </summary>
+            </member>
+        <member name="T:Anzu.AnzuUriHook">
+             <summary>
+             Manages the registration of URI schema callbacks.
+             </summary>
+            </member>
+        <member name="M:Anzu.AnzuUriHook.RegisterHook(System.String,System.Action{Anzu.UriHookData})">
+             <summary>
+             Adds a callback for the specified URI schema. If the schema already exists, the callback is not added.
+             </summary>
+             <param name="schema">The URI schema to register the callback for.</param>
+             <param name="callback">The callback to invoke when the schema is matched.</param>
+             <remarks>
+             All registered schema hooks are removed on AnzuCore uninitialization.
+             </remarks>
+            </member>
+    </members>
+</doc>
