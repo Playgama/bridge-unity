@@ -1,0 +1,24 @@
+{
+    "name": "com.playgama.bridge",
+    "version": "1.27.0-preview.1",
+    "displayName": "Playgama Bridge",
+    "description": "One SDK for cross-platform publishing HTML5 games",
+    "unity": "2022.3",
+    "keywords": [
+        "playgama",
+        "bridge",
+        "sdk",
+        "cross-platform",
+        "html5",
+        "webgl"
+    ],
+    "author": {
+        "name": "Playgama",
+        "url": "https://playgama.com"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/playgama/bridge-unity.git"
+    }
+}
