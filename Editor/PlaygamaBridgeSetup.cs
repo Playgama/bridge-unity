@@ -92,14 +92,13 @@ namespace Playgama.Editor
         private void OnGUI()
         {
             GUILayout.Space(10);
-            GUILayout.Label("Playgama Bridge Setup", EditorStyles.boldLabel);
-            GUILayout.Space(10);
-
             DrawWebGLTemplateSection();
         }
 
         private void DrawWebGLTemplateSection()
         {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
             GUILayout.Label("Add Bridge WebGL Template", EditorStyles.boldLabel);
             GUILayout.Space(5);
 
@@ -110,6 +109,7 @@ namespace Playgama.Editor
                 {
                     LoadTemplateFiles();
                 }
+                EditorGUILayout.EndVertical();
                 return;
             }
 
@@ -143,12 +143,14 @@ namespace Playgama.Editor
 
             EditorGUILayout.EndScrollView();
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             if (GUILayout.Button("Add", GUILayout.Height(30)))
             {
                 CopySelectedFiles();
             }
+
+            EditorGUILayout.EndVertical();
         }
 
         private void SetAllFilesEnabled(bool enabled)
