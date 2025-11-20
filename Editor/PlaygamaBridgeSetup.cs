@@ -14,7 +14,6 @@ namespace Playgama.Editor
 
         private List<TemplateFile> templateFiles = new List<TemplateFile>();
         private Vector2 scrollPosition;
-        private bool allFilesToggle = true;
 
         private class TemplateFile
         {
@@ -47,7 +46,6 @@ namespace Playgama.Editor
             }
 
             LoadFilesRecursive(sourcePath, sourcePath);
-            UpdateAllFilesToggle();
         }
 
         private void LoadFilesRecursive(string currentPath, string rootPath)
@@ -113,19 +111,8 @@ namespace Playgama.Editor
                 return;
             }
 
-            EditorGUILayout.BeginHorizontal();
-            EditorGUI.BeginChangeCheck();
-            allFilesToggle = EditorGUILayout.Toggle("Select All", allFilesToggle, GUILayout.Width(150));
-            if (EditorGUI.EndChangeCheck())
-            {
-                SetAllFilesEnabled(allFilesToggle);
-            }
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
-
-            GUILayout.Space(5);
-
-            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(200));
+            var height = Mathf.Min(templateFiles.Count * 20 + 5, 150);
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUI.skin.box, GUILayout.Height(height));
 
             foreach (var file in templateFiles)
             {
@@ -135,7 +122,6 @@ namespace Playgama.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     EditorPrefs.SetBool(PREFS_PREFIX + file.relativePath, file.enabled);
-                    UpdateAllFilesToggle();
                 }
                 GUILayout.Label(file.relativePath);
                 EditorGUILayout.EndHorizontal();
@@ -151,20 +137,6 @@ namespace Playgama.Editor
             }
 
             EditorGUILayout.EndVertical();
-        }
-
-        private void SetAllFilesEnabled(bool enabled)
-        {
-            foreach (var file in templateFiles)
-            {
-                file.enabled = enabled;
-                EditorPrefs.SetBool(PREFS_PREFIX + file.relativePath, enabled);
-            }
-        }
-
-        private void UpdateAllFilesToggle()
-        {
-            allFilesToggle = templateFiles.All(f => f.enabled);
         }
 
         private void CopySelectedFiles()
