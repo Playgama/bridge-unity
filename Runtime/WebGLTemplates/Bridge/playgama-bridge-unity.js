@@ -12,10 +12,22 @@ const STORAGE_VALUES_SEPARATOR = '{bridge_values_separator}'
 
 // utils
 window.unityInstance = null
+const messageQueue = []
 
 function sendMessageToUnity(name, value) {
     if (window.unityInstance !== null) {
         window.unityInstance.SendMessage('PlaygamaBridge', name, value)
+    } else {
+        messageQueue.push({ name, value })
+    }
+}
+
+function flushMessageQueue() {
+    while (messageQueue.length > 0) {
+        const message = messageQueue.shift()
+        if (window.unityInstance !== null) {
+            window.unityInstance.SendMessage('PlaygamaBridge', message.name, message.value)
+        }
     }
 }
 
@@ -42,7 +54,6 @@ function addLocalBridge() {
         bridgeScript.onerror = null
         bridgeScript.src = ''
         bridgeScript.parentNode.removeChild(bridgeScript)
-
     }
 
     const scriptElement = document.createElement('script')
@@ -105,6 +116,7 @@ function initializeBridge() {
                     .then((unityInstance) => {
                         window.unityInstance = unityInstance
                         CANVAS.focus()
+                        flushMessageQueue()
                     })
                     .catch((error) => {
                         console.error(error)
@@ -182,7 +194,7 @@ window.getGameById = function(options) {
     if (options) {
         options = JSON.parse(options)
     } else {
-        options = { }
+        options = {}
     }
 
     bridge.platform.getGameById(options)
@@ -554,9 +566,9 @@ window.leaderboardsGetEntries = function(id) {
         })
 }
 
- window.leaderboardsShowNativePopup = function(id) {
+window.leaderboardsShowNativePopup = function(id) {
     bridge.leaderboards.showNativePopup(id)
-          .then(() => {
+        .then(() => {
             sendMessageToUnity('OnLeaderboardsShowNativePopupCompleted', 'true')
         })
         .catch(error => {
