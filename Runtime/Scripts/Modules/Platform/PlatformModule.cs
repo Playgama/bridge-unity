@@ -5,6 +5,8 @@ using UnityEngine;
 using Playgama.Common;
 #if !UNITY_EDITOR
 using System.Runtime.InteropServices;
+#else
+using Playgama.Debug;
 #endif
 
 namespace Playgama.Modules.Platform
@@ -182,7 +184,11 @@ namespace Playgama.Modules.Platform
 #if !UNITY_EDITOR
             PlaygamaBridgeGetServerTime();
 #else
-            OnGetServerTimeCompleted(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
+            DebugWindow.ShowSimple(
+                "Get Server Time",
+                () => OnGetServerTimeCompleted(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString()),
+                () => OnGetServerTimeCompleted("")
+            );
 #endif
         }
 
@@ -244,7 +250,7 @@ namespace Playgama.Modules.Platform
                 }
                 catch (Exception e)
                 {
-                    Debug.Log(e);
+                    UnityEngine.Debug.Log(e);
                 }
             }
 
@@ -270,7 +276,7 @@ namespace Playgama.Modules.Platform
                 }
                 catch (Exception e)
                 {
-                    Debug.Log(e);
+                    UnityEngine.Debug.Log(e);
                 }
             }
 

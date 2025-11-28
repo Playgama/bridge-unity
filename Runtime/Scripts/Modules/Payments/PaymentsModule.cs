@@ -5,6 +5,8 @@ using Playgama.Common;
 using UnityEngine;
 #if !UNITY_EDITOR
 using System.Runtime.InteropServices;
+#else
+using Playgama.Debug;
 #endif
 
 namespace Playgama.Modules.Payments
@@ -18,7 +20,7 @@ namespace Playgama.Modules.Payments
 #if !UNITY_EDITOR
                 return PlaygamaBridgeIsPaymentsSupported() == "true";
 #else
-                return false;
+                return true;
 #endif
             }
         }
@@ -53,10 +55,14 @@ namespace Playgama.Modules.Payments
 #if !UNITY_EDITOR
             PlaygamaBridgePaymentsPurchase(id, "");
 #else
-            OnPaymentsPurchaseFailed();
+            DebugWindow.ShowSimple(
+                $"Purchase: {id}",
+                () => OnPaymentsPurchaseCompleted($"{{\"id\":\"{id}\"}}"),
+                () => OnPaymentsPurchaseFailed()
+            );
 #endif
         }
-        
+
         public void Purchase(string id, Dictionary<string, object> options, Action<bool, Dictionary<string, string>> onComplete = null)
         {
             _purchaseCallback = onComplete;
@@ -64,10 +70,14 @@ namespace Playgama.Modules.Payments
 #if !UNITY_EDITOR
             PlaygamaBridgePaymentsPurchase(id, options.ToJson());
 #else
-            OnPaymentsPurchaseFailed();
+            DebugWindow.ShowSimple(
+                $"Purchase: {id}",
+                () => OnPaymentsPurchaseCompleted($"{{\"id\":\"{id}\"}}"),
+                () => OnPaymentsPurchaseFailed()
+            );
 #endif
         }
-        
+
         public void ConsumePurchase(string id, Action<bool, Dictionary<string, string>> onComplete = null)
         {
             _consumePurchaseCallback = onComplete;
@@ -75,10 +85,14 @@ namespace Playgama.Modules.Payments
 #if !UNITY_EDITOR
             PlaygamaBridgePaymentsConsumePurchase(id);
 #else
-            OnPaymentsConsumePurchaseFailed();
+            DebugWindow.ShowSimple(
+                $"Consume: {id}",
+                () => OnPaymentsConsumePurchaseCompleted($"{{\"id\":\"{id}\"}}"),
+                () => OnPaymentsConsumePurchaseFailed()
+            );
 #endif
         }
-        
+
         public void GetPurchases(Action<bool, List<Dictionary<string, string>>> onComplete = null)
         {
             _getPurchasesCallback = onComplete;
@@ -86,10 +100,14 @@ namespace Playgama.Modules.Payments
 #if !UNITY_EDITOR
             PlaygamaBridgePaymentsGetPurchases();
 #else
-            OnPaymentsGetPurchasesCompletedFailed();
+            DebugWindow.ShowSimple(
+                "Get Purchases",
+                () => OnPaymentsGetPurchasesCompletedSuccess(""),
+                () => OnPaymentsGetPurchasesCompletedFailed()
+            );
 #endif
         }
-        
+
         public void GetCatalog(Action<bool, List<Dictionary<string, string>>> onComplete = null)
         {
             _getCatalogCallback = onComplete;
@@ -97,7 +115,11 @@ namespace Playgama.Modules.Payments
 #if !UNITY_EDITOR
             PlaygamaBridgePaymentsGetCatalog();
 #else
-            OnPaymentsGetCatalogCompletedFailed();
+            DebugWindow.ShowSimple(
+                "Get Catalog",
+                () => OnPaymentsGetCatalogCompletedSuccess(ConfigReader.GetPaymentsCatalog()),
+                () => OnPaymentsGetCatalogCompletedFailed()
+            );
 #endif
         }
 
@@ -115,7 +137,7 @@ namespace Playgama.Modules.Payments
                 }
                 catch (Exception e)
                 {
-                    Debug.Log(e);
+                    UnityEngine.Debug.Log(e);
                 }
             }
 
@@ -141,7 +163,7 @@ namespace Playgama.Modules.Payments
                 }
                 catch (Exception e)
                 {
-                    Debug.Log(e);
+                    UnityEngine.Debug.Log(e);
                 }
             }
 
@@ -167,7 +189,7 @@ namespace Playgama.Modules.Payments
                 }
                 catch (Exception e)
                 {
-                    Debug.Log(e);
+                    UnityEngine.Debug.Log(e);
                 }
             }
 
@@ -193,7 +215,7 @@ namespace Playgama.Modules.Payments
                 }
                 catch (Exception e)
                 {
-                    Debug.Log(e);
+                    UnityEngine.Debug.Log(e);
                 }
             }
 

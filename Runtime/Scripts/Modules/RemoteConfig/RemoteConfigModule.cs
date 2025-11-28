@@ -67,7 +67,7 @@ namespace Playgama.Modules.RemoteConfig
             }
             catch (Exception e)
             {
-                Debug.Log(e);
+                UnityEngine.Debug.Log(e);
             }
             
             _getCallback?.Invoke(true, values);

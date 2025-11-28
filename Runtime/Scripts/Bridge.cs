@@ -11,6 +11,9 @@ using Playgama.Modules.RemoteConfig;
 using Playgama.Modules.Social;
 using Playgama.Modules.Storage;
 using UnityEngine;
+#if UNITY_EDITOR
+using Playgama.Debug;
+#endif
 
 namespace Playgama
 {
@@ -44,6 +47,9 @@ namespace Playgama
         {
             base.Awake();
             instance.name = "PlaygamaBridge";
+#if UNITY_EDITOR
+            DebugWindow.Initialize();
+#endif
             _platform = gameObject.AddComponent<PlatformModule>();
             _game = gameObject.AddComponent<GameModule>();
             _player = gameObject.AddComponent<PlayerModule>();
@@ -58,7 +64,7 @@ namespace Playgama
         }
 
 #if UNITY_EDITOR
-        [RuntimeInitializeOnLoadMethod]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetOnLoad()
         {
             _instance = null;

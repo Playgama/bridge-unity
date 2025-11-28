@@ -54,7 +54,7 @@ namespace Playgama.Common
         }
 
 #if UNITY_EDITOR
-        [RuntimeInitializeOnLoadMethod]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetOnLoad()
         {
             _instance = null;

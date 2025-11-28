@@ -5,6 +5,8 @@ using UnityEngine;
 #if !UNITY_EDITOR
 using Playgama.Common;
 using System.Runtime.InteropServices;
+#else
+using Playgama.Debug;
 #endif
 
 namespace Playgama.Modules.Player
@@ -18,7 +20,7 @@ namespace Playgama.Modules.Player
 #if !UNITY_EDITOR
                 return PlaygamaBridgeIsPlayerAuthorizationSupported() == "true";
 #else
-                return false;
+                return true;
 #endif
             }
         }
@@ -30,7 +32,7 @@ namespace Playgama.Modules.Player
 #if !UNITY_EDITOR
                 return PlaygamaBridgeIsPlayerAuthorized() == "true";
 #else
-                return false;
+                return _isAuthorized;
 #endif
             }
         }
@@ -47,7 +49,7 @@ namespace Playgama.Modules.Player
 
                 return value;
 #else
-                return null;
+                return _isAuthorized ? _id : null;
 #endif
             }
         }
@@ -64,7 +66,7 @@ namespace Playgama.Modules.Player
 
                 return value;
 #else
-                return null;
+                return _isAuthorized ? _name : null;
 #endif
             }
         }
@@ -141,6 +143,11 @@ namespace Playgama.Modules.Player
         private static extern void PlaygamaBridgeAuthorizePlayer(string options);
 #endif
 
+#if UNITY_EDITOR
+		private bool _isAuthorized = false;
+		private string _id = "player_12345";
+		private string _name = "Player 12345";
+#endif
         private Action<bool> _authorizationCallback;
 
 
@@ -151,7 +158,17 @@ namespace Playgama.Modules.Player
 #if !UNITY_EDITOR
             PlaygamaBridgeAuthorizePlayer(options.ToJson());
 #else
-            OnAuthorizeCompleted("false");
+			if (_isAuthorized) {
+				OnAuthorizeCompleted("true");
+				return;
+			}
+
+            DebugWindow.ShowSimple("Authorize Player", 
+				() => {
+					_isAuthorized = true;
+					OnAuthorizeCompleted("true");
+				},
+				() => OnAuthorizeCompleted("false"));
 #endif
         }
 

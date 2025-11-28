@@ -131,7 +131,7 @@ namespace Playgama.Modules.Achievements
                 }
                 catch (Exception e)
                 {
-                    Debug.Log(e);
+                    UnityEngine.Debug.Log(e);
                 }
             }
 

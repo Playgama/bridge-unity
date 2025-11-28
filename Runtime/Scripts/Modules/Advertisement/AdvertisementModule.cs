@@ -4,6 +4,8 @@ using UnityEngine;
 #if !UNITY_EDITOR
 using Playgama.Common;
 using System.Runtime.InteropServices;
+#else
+using Playgama.Debug;
 #endif
 
 namespace Playgama.Modules.Advertisement
@@ -38,7 +40,7 @@ namespace Playgama.Modules.Advertisement
 #if !UNITY_EDITOR
                 return PlaygamaBridgeIsBannerSupported() == "true";
 #else
-                return false;
+                return true;
 #endif
             }
         }
@@ -131,7 +133,11 @@ namespace Playgama.Modules.Advertisement
             PlaygamaBridgeShowBanner(position.ToString().ToLower(), placement);
 #else
             OnBannerStateChanged(BannerState.Loading.ToString());
-            OnBannerStateChanged(BannerState.Shown.ToString());
+            DebugWindow.ShowSimple(
+                "Show Banner",
+                () => OnBannerStateChanged(BannerState.Shown.ToString()),
+                () => OnBannerStateChanged(BannerState.Failed.ToString())
+            );
 #endif
         }
 
@@ -164,7 +170,7 @@ namespace Playgama.Modules.Advertisement
             {
                 OnInterstitialStateChanged(InterstitialState.Loading.ToString());
                 OnInterstitialStateChanged(InterstitialState.Opened.ToString());
-                OnInterstitialStateChanged(InterstitialState.Closed.ToString());
+                DebugWindow.ShowInterstitial(state => OnInterstitialStateChanged(state));
             }
             else
             {
@@ -181,8 +187,7 @@ namespace Playgama.Modules.Advertisement
             _rewardedPlacement = placement;
             OnRewardedStateChanged(RewardedState.Loading.ToString());
             OnRewardedStateChanged(RewardedState.Opened.ToString());
-            OnRewardedStateChanged(RewardedState.Rewarded.ToString());
-            OnRewardedStateChanged(RewardedState.Closed.ToString());
+            DebugWindow.ShowRewarded(state => OnRewardedStateChanged(state));
 #endif
         }
 
@@ -192,7 +197,7 @@ namespace Playgama.Modules.Advertisement
 #if !UNITY_EDITOR
             PlaygamaBridgeCheckAdBlock();
 #else
-            OnCheckAdBlockCompleted("false");
+            DebugWindow.ShowYesNo("AdBlock Detected?", result => OnCheckAdBlockCompleted(result ? "true" : "false"));
 #endif
         }
 

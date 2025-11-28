@@ -110,7 +110,7 @@ namespace Playgama.Modules.Leaderboards
                 }
                 catch (Exception e)
                 {
-                    Debug.Log(e);
+                    UnityEngine.Debug.Log(e);
                 }
             }
 
