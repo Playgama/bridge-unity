@@ -10,7 +10,6 @@ using Playgama.Modules.Player;
 using Playgama.Modules.RemoteConfig;
 using Playgama.Modules.Social;
 using Playgama.Modules.Storage;
-using UnityEngine;
 
 namespace Playgama
 {
@@ -58,8 +57,7 @@ namespace Playgama
         }
 
 #if UNITY_EDITOR
-        [RuntimeInitializeOnLoadMethod]
-        private static void ResetOnLoad()
+        private void OnDestroy()
         {
             _instance = null;
             _isApplicationQuitting = false;
