@@ -64,8 +64,7 @@ namespace Playgama
         }
 
 #if UNITY_EDITOR
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetOnLoad()
+        private void OnDestroy()
         {
             _instance = null;
             _isApplicationQuitting = false;
