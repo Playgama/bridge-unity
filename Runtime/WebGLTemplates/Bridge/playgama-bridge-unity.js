@@ -13,6 +13,8 @@ const STORAGE_VALUES_SEPARATOR = '{bridge_values_separator}'
 // utils
 window.unityInstance = null
 const messageQueue = []
+let progressBarFillingInterval = null
+let progressBarCompleteFillingStarted = false
 
 function sendMessageToUnity(name, value) {
     if (window.unityInstance !== null) {
@@ -32,7 +34,49 @@ function flushMessageQueue() {
 }
 
 function onUnityLoadingProgressChanged(progress) {
+    if (progress >= 1) {
+        if (progressBarFillingInterval !== null) {
+            clearInterval(progressBarFillingInterval)
+            progressBarFillingInterval = null
+        }
+        bridge.game.setLoadingProgress(100)
+        return
+    }
+
+    if (progressBarCompleteFillingStarted) {
+        return
+    }
+
+    if (progress >= 0.9) {
+        progressBarCompleteFillingStarted = true
+        completeProgressBarFilling()
+        return
+    }
+
     bridge.game.setLoadingProgress(progress * 100)
+}
+
+function completeProgressBarFilling() {
+    if (progressBarFillingInterval !== null) {
+        return
+    }
+
+    let currentPercent = 90
+    bridge.game.setLoadingProgress(currentPercent)
+    progressBarFillingInterval = setInterval(() => {
+        currentPercent++
+        if (currentPercent > 100) {
+            currentPercent = 100
+        }
+
+        bridge.game.setLoadingProgress(currentPercent)
+
+        if (currentPercent >= 100) {
+            clearInterval(progressBarFillingInterval)
+            progressBarFillingInterval = null
+            return
+        }
+    }, 100)
 }
 
 window.addEventListener('pointerdown', () => {
