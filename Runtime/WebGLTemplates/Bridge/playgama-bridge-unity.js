@@ -65,18 +65,18 @@ function completeProgressBarFilling() {
     bridge.game.setLoadingProgress(currentPercent)
     progressBarFillingInterval = setInterval(() => {
         currentPercent++
-        if (currentPercent > 100) {
-            currentPercent = 100
+        if (currentPercent > 99) {
+            currentPercent = 99
         }
 
         bridge.game.setLoadingProgress(currentPercent)
 
-        if (currentPercent >= 100) {
+        if (currentPercent >= 99) {
             clearInterval(progressBarFillingInterval)
             progressBarFillingInterval = null
             return
         }
-    }, 100)
+    }, 500)
 }
 
 window.addEventListener('pointerdown', () => {
