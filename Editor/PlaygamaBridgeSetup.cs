@@ -159,12 +159,10 @@ namespace Playgama.Editor
                     return;
                 }
 
-                if (Directory.Exists(destinationPath))
+                if (!Directory.Exists(destinationPath))
                 {
-                    Directory.Delete(destinationPath, true);
+                    Directory.CreateDirectory(destinationPath);
                 }
-
-                Directory.CreateDirectory(destinationPath);
 
                 foreach (var file in enabledFiles)
                 {
@@ -176,7 +174,12 @@ namespace Playgama.Editor
                         Directory.CreateDirectory(destDir);
                     }
 
-                    File.Copy(file.fullPath, destFile, true);
+                    if (File.Exists(destFile))
+                    {
+                        File.Delete(destFile);
+                    }
+
+                    File.Copy(file.fullPath, destFile);
                 }
 
                 AssetDatabase.Refresh();
