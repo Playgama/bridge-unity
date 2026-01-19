@@ -11,6 +11,22 @@ const STORAGE_KEYS_SEPARATOR = '{bridge_keys_separator}'
 const STORAGE_VALUES_SEPARATOR = '{bridge_values_separator}'
 
 // utils
+function getOptimalDPR() {
+    const cores = navigator.hardwareConcurrency || 2;
+    const memory = navigator.deviceMemory || 2;
+    const hasTouch = navigator.maxTouchPoints > 0;
+    const width = window.innerWidth;
+    const dpr = window.devicePixelRatio || 1;
+    
+    const isWeak = cores <= 4 && memory <= 4;
+    
+    if (!isWeak) return dpr;
+    
+    if (hasTouch && width < 768) return 1;
+    if (hasTouch && width < 1200) return 1.5;
+    return Math.min(dpr, 1.5);
+}
+
 window.unityInstance = null
 const messageQueue = []
 let progressBarFillingInterval = null
@@ -154,7 +170,7 @@ function initializeBridge() {
                         productName: '{{{ PRODUCT_NAME }}}',
                         productVersion: '{{{ PRODUCT_VERSION }}}',
                         // matchWebGLToCanvasSize: false, // Uncomment this to separately control WebGL canvas render size and DOM element size.
-                        devicePixelRatio: 1, // Uncomment this to override low DPI rendering on high DPI displays.
+                        devicePixelRatio: getOptimalDPR(),
                     },
                     onUnityLoadingProgressChanged)
                     .then((unityInstance) => {
