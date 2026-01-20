@@ -12,16 +12,19 @@ const STORAGE_VALUES_SEPARATOR = '{bridge_values_separator}'
 
 // utils
 function getOptimalDPR() {
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    if (isIOS) return null;
+
     const cores = navigator.hardwareConcurrency || 2;
     const memory = navigator.deviceMemory || 2;
     const hasTouch = navigator.maxTouchPoints > 0;
     const width = window.innerWidth;
     const dpr = window.devicePixelRatio || 1;
-    
+
     const isWeak = cores <= 4 && memory <= 4;
-    
-    if (!isWeak) return dpr;
-    
+
+    if (!isWeak) return null;
+
     if (hasTouch && width < 768) return 1;
     if (hasTouch && width < 1200) return 1.5;
     return Math.min(dpr, 1.5);
@@ -153,26 +156,29 @@ function initializeBridge() {
             let unityLoader = document.createElement('script')
             unityLoader.src = 'Build/{{{ LOADER_FILENAME }}}'
             unityLoader.onload = () => {
-                createUnityInstance(
-                    CANVAS,
-                    {
-                        dataUrl: 'Build/{{{ DATA_FILENAME }}}',
-                        frameworkUrl: 'Build/{{{ FRAMEWORK_FILENAME }}}',
-                        codeUrl: 'Build/{{{ CODE_FILENAME }}}',
+                const config = {
+                    dataUrl: 'Build/{{{ DATA_FILENAME }}}',
+                    frameworkUrl: 'Build/{{{ FRAMEWORK_FILENAME }}}',
+                    codeUrl: 'Build/{{{ CODE_FILENAME }}}',
 #if MEMORY_FILENAME
-                        memoryUrl: 'Build/{{{ MEMORY_FILENAME }}}',
+                    memoryUrl: 'Build/{{{ MEMORY_FILENAME }}}',
 #endif
 #if SYMBOLS_FILENAME
-                        symbolsUrl: 'Build/{{{ SYMBOLS_FILENAME }}}',
+                    symbolsUrl: 'Build/{{{ SYMBOLS_FILENAME }}}',
 #endif
-                        streamingAssetsUrl: 'StreamingAssets',
-                        companyName: '{{{ COMPANY_NAME }}}',
-                        productName: '{{{ PRODUCT_NAME }}}',
-                        productVersion: '{{{ PRODUCT_VERSION }}}',
-                        // matchWebGLToCanvasSize: false, // Uncomment this to separately control WebGL canvas render size and DOM element size.
-                        devicePixelRatio: getOptimalDPR(),
-                    },
-                    onUnityLoadingProgressChanged)
+                    streamingAssetsUrl: 'StreamingAssets',
+                    companyName: '{{{ COMPANY_NAME }}}',
+                    productName: '{{{ PRODUCT_NAME }}}',
+                    productVersion: '{{{ PRODUCT_VERSION }}}',
+                    // matchWebGLToCanvasSize: false, // Uncomment this to separately control WebGL canvas render size and DOM element size.
+                }
+
+                const optimalDPR = getOptimalDPR()
+                if (optimalDPR !== null) {
+                    config.devicePixelRatio = optimalDPR
+                }
+
+                createUnityInstance(CANVAS, config, onUnityLoadingProgressChanged)
                     .then((unityInstance) => {
                         window.unityInstance = unityInstance
                         CANVAS.focus()
