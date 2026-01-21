@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Suit.Tabs
+namespace Playgama.Bridge.Tabs
 {
     /// <summary>
     /// Editor tab that displays tracked audio assets from the latest build analysis.
@@ -232,10 +232,10 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawHeader()
         {
-            _foldHeader = SuitStyles.DrawSectionHeader("Analysis Info", _foldHeader, "\u2139");
+            _foldHeader = BridgeStyles.DrawSectionHeader("Analysis Info", _foldHeader, "\u2139");
             if (_foldHeader)
             {
-                SuitStyles.BeginCard();
+                BridgeStyles.BeginCard();
                 EditorGUILayout.LabelField("Analysis Mode", _buildInfo.DataMode.ToString());
                 EditorGUILayout.LabelField("Tracked Assets", _buildInfo.TrackedAssetCount.ToString());
 
@@ -244,8 +244,8 @@ namespace Playgama.Suit.Tabs
                 EditorGUILayout.LabelField("Tracked Bytes", tb);
 
                 GUILayout.Space(4);
-                EditorGUILayout.LabelField("Batch operations modify AudioImporter settings and reimport assets.", SuitStyles.SubtitleStyle);
-                SuitStyles.EndCard();
+                EditorGUILayout.LabelField("Batch operations modify AudioImporter settings and reimport assets.", BridgeStyles.SubtitleStyle);
+                BridgeStyles.EndCard();
             }
         }
 
@@ -285,10 +285,10 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawBatchPanel()
         {
-            _foldBatch = SuitStyles.DrawSectionHeader("Batch Apply", _foldBatch, "\u2699");
+            _foldBatch = BridgeStyles.DrawSectionHeader("Batch Apply", _foldBatch, "\u2699");
             if (!_foldBatch) return;
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
 
             // First row: Load Type and Format
             using (new EditorGUILayout.HorizontalScope())
@@ -329,8 +329,8 @@ namespace Playgama.Suit.Tabs
             }
 
             GUILayout.Space(4);
-            EditorGUILayout.LabelField("Recommended: Vorbis, Compressed In Memory, Mono, Quality ~0.5–0.7", SuitStyles.SubtitleStyle);
-            SuitStyles.EndCard();
+            EditorGUILayout.LabelField("Recommended: Vorbis, Compressed In Memory, Mono, Quality ~0.5–0.7", BridgeStyles.SubtitleStyle);
+            BridgeStyles.EndCard();
         }
 
         /// <summary>
@@ -338,7 +338,7 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawList()
         {
-            _foldList = SuitStyles.DrawSectionHeader($"Audio List ({_rows.Count} items)", _foldList, "\u266A");
+            _foldList = BridgeStyles.DrawSectionHeader($"Audio List ({_rows.Count} items)", _foldList, "\u266A");
             if (!_foldList) return;
 
             using (var sv = new EditorGUILayout.ScrollViewScope(_scroll))
@@ -378,7 +378,7 @@ namespace Playgama.Suit.Tabs
             rect.y += 2;
             rect.height -= 4;
 
-            Color bg = r.ImporterFound ? SuitStyles.StatusGray : SuitStyles.StatusRed;
+            Color bg = r.ImporterFound ? BridgeStyles.StatusGray : BridgeStyles.StatusRed;
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), bg);
 
             // Calculate available width for content (excluding margins and buttons)
@@ -627,7 +627,7 @@ namespace Playgama.Suit.Tabs
             {
                 try
                 {
-                    Undo.SetCurrentGroupName("Suit AudioImporter Batch Apply");
+                    Undo.SetCurrentGroupName("Bridge AudioImporter Batch Apply");
 
                     AssetDatabase.StartAssetEditing();
 
@@ -638,7 +638,7 @@ namespace Playgama.Suit.Tabs
                     {
                         if (i % 8 == 0)
                             EditorUtility.DisplayProgressBar(
-                                "Playgama Suit",
+                                "Playgama Bridge",
                                 "Applying audio importer settings...",
                                 i / Mathf.Max(1f, (float)paths.Count));
 
@@ -647,7 +647,7 @@ namespace Playgama.Suit.Tabs
                         var imp = AssetImporter.GetAtPath(path) as AudioImporter;
                         if (imp == null) { skipped++; continue; }
 
-                        Undo.RecordObject(imp, "Suit AudioImporter Change");
+                        Undo.RecordObject(imp, "Bridge AudioImporter Change");
 
                         bool any = AudioOptimizationUtility.ApplyToImporter(imp, opt, out _);
 
@@ -665,7 +665,7 @@ namespace Playgama.Suit.Tabs
                     {
                         if (i % 8 == 0)
                             EditorUtility.DisplayProgressBar(
-                                "Playgama Suit",
+                                "Playgama Bridge",
                                 "Reimporting audio assets...",
                                 i / Mathf.Max(1f, (float)paths.Count));
 

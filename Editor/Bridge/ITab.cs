@@ -1,7 +1,7 @@
-namespace Playgama.Suit
+namespace Playgama.Bridge
 {
     /// <summary>
-    /// Contract for a tab that can be hosted in the Playgama Suit window.
+    /// Contract for a tab that can be hosted in the Playgama Bridge window.
     /// Implementers are responsible for their own IMGUI rendering and any deferred work.
     /// </summary>
     public interface ITab

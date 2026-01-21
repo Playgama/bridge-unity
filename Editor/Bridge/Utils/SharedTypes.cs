@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Playgama.Suit
+namespace Playgama.Bridge
 {
     /// <summary>
     /// Identifies the source of asset size data:

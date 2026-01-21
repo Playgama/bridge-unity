@@ -1,11 +1,12 @@
 using System;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Suit.Tabs
+namespace Playgama.Bridge.Tabs
 {
     /// <summary>
-    /// Home tab for Playgama Suite - the main landing page with branding and quick actions.
+    /// Home tab for Playgama Bridge - the main landing page with branding and quick actions.
     /// </summary>
     public sealed class HomeTab : ITab
     {
@@ -22,7 +23,9 @@ namespace Playgama.Suit.Tabs
         private static GUIStyle _menuDescStyle;
         private static Texture2D _headerBgTexture;
 
-        private const string Version = "1.0.0";
+        // Cached version from package.json
+        private static string _cachedVersion;
+        private static bool _versionLoaded;
         private const string DocsUrl = "https://wiki.playgama.com/playgama/sdk/engines/unity/intro";
         private const string SupportUrl = "https://discord.gg/TZg3rF3sdT";
 
@@ -61,7 +64,7 @@ namespace Playgama.Suit.Tabs
 
             // Purple accent line at top
             Rect accentRect = new Rect(headerRect.x, headerRect.y, headerRect.width, 4);
-            EditorGUI.DrawRect(accentRect, SuitStyles.BrandPurple);
+            EditorGUI.DrawRect(accentRect, BridgeStyles.BrandPurple);
 
             // Title
             Rect titleRect = new Rect(headerRect.x + 20, headerRect.y + 25, headerRect.width - 40, 40);
@@ -72,16 +75,41 @@ namespace Playgama.Suit.Tabs
             EditorGUI.LabelField(subRect, "Cross-Platform Game Publishing SDK", _subtitleStyle);
 
             // Version badge
-            Rect versionRect = new Rect(headerRect.x + headerRect.width - 80, headerRect.y + 30, 60, 20);
-            EditorGUI.DrawRect(versionRect, SuitStyles.BrandPurple);
-            EditorGUI.LabelField(versionRect, "v" + Version, _versionStyle);
+            string version = GetPackageVersion();
+            float versionWidth = version.Length > 6 ? 70 : 60; // Wider for longer versions
+            Rect versionRect = new Rect(headerRect.x + headerRect.width - versionWidth - 20, headerRect.y + 30, versionWidth, 20);
+            EditorGUI.DrawRect(versionRect, BridgeStyles.BrandPurple);
+            EditorGUI.LabelField(versionRect, "v" + version, _versionStyle);
         }
 
         private void DrawQuickActions()
         {
-            SuitStyles.DrawSectionTitle("Quick Actions", "\u26A1");
+            BridgeStyles.DrawSectionTitle("Quick Actions", "\u26A1");
 
             GUILayout.Space(8);
+
+            // Wizard button - prominent placement
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(10);
+
+                Color oldBg = GUI.backgroundColor;
+                GUI.backgroundColor = BridgeStyles.BrandPurple;
+
+                if (GUILayout.Button(new GUIContent("  Start Optimization Wizard  ", "Step-by-step guide to optimize your WebGL build"), GUILayout.Height(35)))
+                {
+                    OptimizationWizard.ShowWizard();
+                }
+
+                GUI.backgroundColor = oldBg;
+
+                GUILayout.FlexibleSpace();
+            }
+
+            GUILayout.Space(5);
+            EditorGUILayout.LabelField("New to optimization? The wizard will guide you through each step.", BridgeStyles.SubtitleStyle);
+
+            GUILayout.Space(15);
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -112,7 +140,7 @@ namespace Playgama.Suit.Tabs
                 // Open Settings button
                 using (new EditorGUILayout.VerticalScope(GUILayout.Width(180)))
                 {
-                    if (DrawMenuButton("Settings", "Configure Playgama Suite settings"))
+                    if (DrawMenuButton("Settings", "Configure Playgama Bridge settings"))
                     {
                         // Settings tab is index 9 (after Home, Summary, Textures, Audio, Meshes, Shaders, Fonts, Build Settings, Platform Checks)
                         OpenTab(9);
@@ -125,11 +153,11 @@ namespace Playgama.Suit.Tabs
 
         private void DrawFeatures()
         {
-            SuitStyles.DrawSectionTitle("Optimization Tools", "\u2699");
+            BridgeStyles.DrawSectionTitle("Optimization Tools", "\u2699");
 
             GUILayout.Space(8);
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
 
             DrawFeatureRow("\u25B6", "Textures", "Optimize texture compression, max sizes, and crunch settings", 2);
             DrawFeatureRow("\u266A", "Audio", "Configure audio compression and load settings for WebGL", 3);
@@ -139,7 +167,7 @@ namespace Playgama.Suit.Tabs
             DrawFeatureRow("\u2699", "Build Settings", "Control scenes, WebGL compression, and build options", 7);
             DrawFeatureRow("\u2714", "Platform Checks", "Validate build size against platform requirements", 8);
 
-            SuitStyles.EndCard();
+            BridgeStyles.EndCard();
         }
 
         private void DrawFeatureRow(string icon, string title, string description, int tabIndex)
@@ -179,7 +207,7 @@ namespace Playgama.Suit.Tabs
 
         private void DrawResources()
         {
-            SuitStyles.DrawSectionTitle("Resources", "\u2139");
+            BridgeStyles.DrawSectionTitle("Resources", "\u2139");
 
             GUILayout.Space(8);
 
@@ -240,7 +268,7 @@ namespace Playgama.Suit.Tabs
 
             // Purple left accent
             Rect accentRect = new Rect(btnRect.x, btnRect.y, 4, btnRect.height);
-            EditorGUI.DrawRect(accentRect, SuitStyles.BrandPurple);
+            EditorGUI.DrawRect(accentRect, BridgeStyles.BrandPurple);
 
             // Title
             Rect titleRect = new Rect(btnRect.x + 14, btnRect.y + 12, btnRect.width - 20, 22);
@@ -276,13 +304,13 @@ namespace Playgama.Suit.Tabs
             if (isHover)
             {
                 // Top border
-                EditorGUI.DrawRect(new Rect(btnRect.x, btnRect.y, btnRect.width, 1), SuitStyles.BrandPurple);
+                EditorGUI.DrawRect(new Rect(btnRect.x, btnRect.y, btnRect.width, 1), BridgeStyles.BrandPurple);
                 // Bottom border
-                EditorGUI.DrawRect(new Rect(btnRect.x, btnRect.y + btnRect.height - 1, btnRect.width, 1), SuitStyles.BrandPurple);
+                EditorGUI.DrawRect(new Rect(btnRect.x, btnRect.y + btnRect.height - 1, btnRect.width, 1), BridgeStyles.BrandPurple);
                 // Left border
-                EditorGUI.DrawRect(new Rect(btnRect.x, btnRect.y, 1, btnRect.height), SuitStyles.BrandPurple);
+                EditorGUI.DrawRect(new Rect(btnRect.x, btnRect.y, 1, btnRect.height), BridgeStyles.BrandPurple);
                 // Right border
-                EditorGUI.DrawRect(new Rect(btnRect.x + btnRect.width - 1, btnRect.y, 1, btnRect.height), SuitStyles.BrandPurple);
+                EditorGUI.DrawRect(new Rect(btnRect.x + btnRect.width - 1, btnRect.y, 1, btnRect.height), BridgeStyles.BrandPurple);
 
                 EditorGUIUtility.AddCursorRect(btnRect, MouseCursor.Link);
             }
@@ -291,7 +319,7 @@ namespace Playgama.Suit.Tabs
             GUIStyle centeredStyle = new GUIStyle(EditorStyles.miniLabel);
             centeredStyle.alignment = TextAnchor.MiddleCenter;
             centeredStyle.fontSize = 11;
-            centeredStyle.normal.textColor = isHover ? Color.white : SuitStyles.BrandPurple;
+            centeredStyle.normal.textColor = isHover ? Color.white : BridgeStyles.BrandPurple;
 
             EditorGUI.LabelField(btnRect, new GUIContent(title, tooltip), centeredStyle);
 
@@ -312,11 +340,11 @@ namespace Playgama.Suit.Tabs
 
         private void OpenTab(int index)
         {
-            // Find the SuitWindow and change tab
-            var window = EditorWindow.GetWindow<SuitWindow>();
+            // Find the BridgeWindow and change tab
+            var window = EditorWindow.GetWindow<BridgeWindow>();
             if (window != null)
             {
-                var field = typeof(SuitWindow).GetField("_selectedTab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var field = typeof(BridgeWindow).GetField("_selectedTab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (field != null)
                 {
                     field.SetValue(window, index);
@@ -357,6 +385,56 @@ namespace Playgama.Suit.Tabs
                 _menuDescStyle.normal.textColor = new Color(0.6f, 0.6f, 0.65f);
                 _menuDescStyle.wordWrap = true;
             }
+        }
+
+        /// <summary>
+        /// Reads the package version from package.json.
+        /// Caches the result for subsequent calls.
+        /// </summary>
+        private static string GetPackageVersion()
+        {
+            if (_versionLoaded)
+                return _cachedVersion ?? "1.0.0";
+
+            _versionLoaded = true;
+            _cachedVersion = "1.0.0"; // Default fallback
+
+            string[] possiblePaths = new[]
+            {
+                "Packages/com.playgama.bridge/package.json",
+                Path.Combine(Application.dataPath, "../Packages/com.playgama.bridge/package.json")
+            };
+
+            foreach (var path in possiblePaths)
+            {
+                try
+                {
+                    string fullPath = Path.GetFullPath(path);
+                    if (File.Exists(fullPath))
+                    {
+                        string json = File.ReadAllText(fullPath);
+                        // Simple parsing - find "version": "x.x.x"
+                        int versionIndex = json.IndexOf("\"version\"");
+                        if (versionIndex >= 0)
+                        {
+                            int colonIndex = json.IndexOf(":", versionIndex);
+                            int startQuote = json.IndexOf("\"", colonIndex + 1);
+                            int endQuote = json.IndexOf("\"", startQuote + 1);
+                            if (startQuote >= 0 && endQuote > startQuote)
+                            {
+                                _cachedVersion = json.Substring(startQuote + 1, endQuote - startQuote - 1);
+                                return _cachedVersion;
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // Ignore errors, try next path
+                }
+            }
+
+            return _cachedVersion;
         }
     }
 }

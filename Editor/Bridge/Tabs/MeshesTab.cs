@@ -4,7 +4,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Suit.Tabs
+namespace Playgama.Bridge.Tabs
 {
     /// <summary>
     /// Editor tab that displays tracked mesh/model assets from the latest build analysis.
@@ -260,10 +260,10 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawHeader()
         {
-            _foldHeader = SuitStyles.DrawSectionHeader("Analysis Info", _foldHeader, "\u2139");
+            _foldHeader = BridgeStyles.DrawSectionHeader("Analysis Info", _foldHeader, "\u2139");
             if (_foldHeader)
             {
-                SuitStyles.BeginCard();
+                BridgeStyles.BeginCard();
                 EditorGUILayout.LabelField("Analysis Mode", _buildInfo.DataMode.ToString());
                 EditorGUILayout.LabelField("Tracked Assets", _buildInfo.TrackedAssetCount.ToString());
 
@@ -272,8 +272,8 @@ namespace Playgama.Suit.Tabs
                 EditorGUILayout.LabelField("Tracked Bytes", tracked);
 
                 GUILayout.Space(4);
-                EditorGUILayout.LabelField("Batch operations: Mesh Compression, Read/Write, Static Flags", SuitStyles.SubtitleStyle);
-                SuitStyles.EndCard();
+                EditorGUILayout.LabelField("Batch operations: Mesh Compression, Read/Write, Static Flags", BridgeStyles.SubtitleStyle);
+                BridgeStyles.EndCard();
             }
         }
 
@@ -317,10 +317,10 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawBatchPanel()
         {
-            _foldBatch = SuitStyles.DrawSectionHeader("Batch Apply", _foldBatch, "\u2699");
+            _foldBatch = BridgeStyles.DrawSectionHeader("Batch Apply", _foldBatch, "\u2699");
             if (!_foldBatch) return;
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
 
             // First row: Mesh Compression
             using (new EditorGUILayout.HorizontalScope())
@@ -355,7 +355,7 @@ namespace Playgama.Suit.Tabs
 
                 GUI.enabled = true;
 
-                EditorGUILayout.LabelField("Static flags are applied to the imported model root.", SuitStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("Static flags are applied to the imported model root.", BridgeStyles.SubtitleStyle);
             }
 
             GUILayout.Space(8);
@@ -375,7 +375,7 @@ namespace Playgama.Suit.Tabs
 
                 GUI.enabled = true;
             }
-            SuitStyles.EndCard();
+            BridgeStyles.EndCard();
         }
 
         /// <summary>
@@ -439,7 +439,7 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawList()
         {
-            _foldList = SuitStyles.DrawSectionHeader($"Mesh List ({_rows.Count} items)", _foldList, "\u25B2");
+            _foldList = BridgeStyles.DrawSectionHeader($"Mesh List ({_rows.Count} items)", _foldList, "\u25B2");
             if (!_foldList) return;
 
             using (var sv = new EditorGUILayout.ScrollViewScope(_scroll))
@@ -496,7 +496,7 @@ namespace Playgama.Suit.Tabs
             rect.y += 2;
             rect.height -= 4;
 
-            Color bg = r.ImporterFound ? SuitStyles.StatusGray : SuitStyles.StatusRed;
+            Color bg = r.ImporterFound ? BridgeStyles.StatusGray : BridgeStyles.StatusRed;
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), bg);
 
             // Calculate available width for content (excluding margins and buttons)
@@ -747,7 +747,7 @@ namespace Playgama.Suit.Tabs
             {
                 try
                 {
-                    Undo.SetCurrentGroupName("Suit Mesh Batch Apply");
+                    Undo.SetCurrentGroupName("Bridge Mesh Batch Apply");
 
                     AssetDatabase.StartAssetEditing();
 
@@ -759,7 +759,7 @@ namespace Playgama.Suit.Tabs
                     {
                         if (i % 8 == 0)
                             EditorUtility.DisplayProgressBar(
-                                "Playgama Suit",
+                                "Playgama Bridge",
                                 "Applying mesh settings...",
                                 i / Mathf.Max(1f, (float)paths.Count));
 
@@ -768,7 +768,7 @@ namespace Playgama.Suit.Tabs
                         var imp = AssetImporter.GetAtPath(path) as ModelImporter;
                         if (imp != null)
                         {
-                            Undo.RecordObject(imp, "Suit ModelImporter Change");
+                            Undo.RecordObject(imp, "Bridge ModelImporter Change");
 
                             bool any = false;
 
@@ -800,7 +800,7 @@ namespace Playgama.Suit.Tabs
                             var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                             if (go != null)
                             {
-                                Undo.RecordObject(go, "Suit Static Flags Change");
+                                Undo.RecordObject(go, "Bridge Static Flags Change");
 
                                 var cur = GameObjectUtility.GetStaticEditorFlags(go);
                                 if (cur != _staticFlagsToSet)
@@ -822,7 +822,7 @@ namespace Playgama.Suit.Tabs
                         {
                             if (i % 8 == 0)
                                 EditorUtility.DisplayProgressBar(
-                                    "Playgama Suit",
+                                    "Playgama Bridge",
                                     "Reimporting models...",
                                     i / Mathf.Max(1f, (float)paths.Count));
 

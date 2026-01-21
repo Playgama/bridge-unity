@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Suit
+namespace Playgama.Bridge
 {
     /// <summary>
-    /// Main editor window for Playgama Suit.
+    /// Main editor window for Playgama Bridge.
     ///
     /// Responsibilities:
     /// - Hosts a vertical tab navigation on the left
@@ -18,13 +18,13 @@ namespace Playgama.Suit
     /// - Heavy work (list builds, calculations) is scheduled via EditorApplication.delayCall inside each tab
     /// - This window only handles layout, tab selection, and the Build & Analyze entry point
     /// </summary>
-    public sealed class SuitWindow : EditorWindow
+    public sealed class BridgeWindow : EditorWindow
     {
         /// <summary>Opens the window and returns the instance.</summary>
-        public static SuitWindow ShowWindow()
+        public static BridgeWindow ShowWindow()
         {
-            var w = GetWindow<SuitWindow>();
-            w.titleContent = new GUIContent("Playgama Suit");
+            var w = GetWindow<BridgeWindow>();
+            w.titleContent = new GUIContent("Playgama Bridge");
             w.minSize = new Vector2(820, 480);
             w.Show();
             return w;
@@ -174,7 +174,7 @@ namespace Playgama.Suit
             using (new EditorGUILayout.VerticalScope(GUILayout.Width(TabColumnWidth)))
             {
                 GUILayout.Space(6);
-                GUILayout.Label("Playgama Suit", EditorStyles.boldLabel);
+                GUILayout.Label("Playgama Bridge", EditorStyles.boldLabel);
                 GUILayout.Space(4);
 
                 using (var sv = new EditorGUILayout.ScrollViewScope(_tabScroll, GUILayout.ExpandHeight(true)))
@@ -184,7 +184,7 @@ namespace Playgama.Suit
                     for (int i = 0; i < _tabs.Count; i++)
                     {
                         bool selected = (i == _selectedTab);
-                        GUIStyle style = selected ? SuitStyles.TabButtonSelected : SuitStyles.TabButton;
+                        GUIStyle style = selected ? BridgeStyles.TabButtonSelected : BridgeStyles.TabButton;
 
                         if (GUILayout.Button(_tabs[i].TabName, style, GUILayout.Height(28)))
                         {
@@ -196,7 +196,7 @@ namespace Playgama.Suit
 
                 GUILayout.Space(8);
 
-                if (SuitStyles.DrawAccentButton(new GUIContent("Build & Analyze", "Build WebGL and run analysis."), GUILayout.Height(32)))
+                if (BridgeStyles.DrawAccentButton(new GUIContent("Build & Analyze", "Build WebGL and run analysis."), GUILayout.Height(32)))
                 {
                     EditorApplication.delayCall += () => BuildAnalyzer.BuildAndAnalyze();
                 }

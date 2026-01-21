@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Suit.Tabs
+namespace Playgama.Bridge.Tabs
 {
     /// <summary>
-    /// Editor tab that displays tracked font assets from the latest build analysis.
-    /// Shows font sizes from the build report with search and selection helpers.
+    /// Editor tab that displays tracked shader assets from the latest build analysis.
+    /// Shows shader sizes from the build report with search and selection helpers.
     /// </summary>
-    public sealed class FontsTab : ITab
+    public sealed class ShadersTab : ITab
     {
-        public string TabName => "Fonts";
+        public string TabName => "Shaders";
 
         private BuildInfo _buildInfo;
 
-        private readonly List<Row> _rows = new List<Row>(256);
+        private readonly List<Row> _rows = new List<Row>(512);
 
         private bool _needsRebuild = true;
         private bool _isRebuilding = false;
@@ -35,20 +35,20 @@ namespace Playgama.Suit.Tabs
             public long SizeBytes;
             public bool IsSizeEstimated;
             public bool Selected;
-            public string FontName;
-            public string FontType;
-            public bool IsTMP;
+            public string ShaderName;
+            public int PassCount;
+            public int PropertyCount;
         }
 
         private static class UI
         {
             public static readonly GUIContent Refresh = new GUIContent(
                 "Refresh",
-                "Rebuild the font list from the latest analysis data.");
+                "Rebuild the shader list from the latest analysis data.");
 
             public static readonly GUIContent SearchLabel = new GUIContent(
                 "Search",
-                "Filter fonts by path (case-insensitive substring match).");
+                "Filter shaders by path (case-insensitive substring match).");
 
             public static readonly GUIContent OnlySelected = new GUIContent(
                 "Only Selected",
@@ -105,7 +105,7 @@ namespace Playgama.Suit.Tabs
 
                 if (_isRebuilding)
                 {
-                    EditorGUILayout.HelpBox("Rebuilding font list...", MessageType.Info);
+                    EditorGUILayout.HelpBox("Rebuilding shader list...", MessageType.Info);
                     return;
                 }
 
@@ -120,10 +120,10 @@ namespace Playgama.Suit.Tabs
 
         private void DrawHeader()
         {
-            _foldHeader = SuitStyles.DrawSectionHeader("Analysis Info", _foldHeader, "\u2139");
+            _foldHeader = BridgeStyles.DrawSectionHeader("Analysis Info", _foldHeader, "\u2139");
             if (_foldHeader)
             {
-                SuitStyles.BeginCard();
+                BridgeStyles.BeginCard();
                 EditorGUILayout.LabelField("Analysis Mode", _buildInfo.DataMode.ToString());
                 EditorGUILayout.LabelField("Tracked Assets", _buildInfo.TrackedAssetCount.ToString());
 
@@ -132,8 +132,8 @@ namespace Playgama.Suit.Tabs
                 EditorGUILayout.LabelField("Tracked Bytes", tb);
 
                 GUILayout.Space(4);
-                EditorGUILayout.LabelField("Fonts (especially TMP fonts with many characters) can be large.", SuitStyles.SubtitleStyle);
-                SuitStyles.EndCard();
+                EditorGUILayout.LabelField("Shaders can significantly impact build size and compile time.", BridgeStyles.SubtitleStyle);
+                BridgeStyles.EndCard();
             }
         }
 
@@ -162,7 +162,7 @@ namespace Playgama.Suit.Tabs
 
         private void DrawList()
         {
-            _foldList = SuitStyles.DrawSectionHeader($"Font List ({_rows.Count} items)", _foldList, "\u0041");
+            _foldList = BridgeStyles.DrawSectionHeader($"Shader List ({_rows.Count} items)", _foldList, "\u2726");
             if (!_foldList) return;
 
             using (var sv = new EditorGUILayout.ScrollViewScope(_scroll))
@@ -171,7 +171,7 @@ namespace Playgama.Suit.Tabs
 
                 if (_rows.Count == 0)
                 {
-                    EditorGUILayout.HelpBox("No tracked font assets found.", MessageType.Info);
+                    EditorGUILayout.HelpBox("No tracked shader assets found.", MessageType.Info);
                     return;
                 }
 
@@ -193,9 +193,7 @@ namespace Playgama.Suit.Tabs
             rect.y += 2;
             rect.height -= 4;
 
-            // TMP fonts often larger, highlight them
-            Color bg = r.IsTMP ? SuitStyles.StatusYellow : SuitStyles.StatusGray;
-            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), bg);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), BridgeStyles.StatusGray);
 
             // Calculate available width for content (excluding margins and buttons)
             float availableWidth = rect.width - 12;
@@ -204,8 +202,8 @@ namespace Playgama.Suit.Tabs
             float contentWidth = availableWidth - buttonWidth - checkboxWidth;
 
             // Determine layout mode based on available width
-            bool compactMode = contentWidth < 320;
-            bool veryCompactMode = contentWidth < 200;
+            bool compactMode = contentWidth < 350;
+            bool veryCompactMode = contentWidth < 220;
 
             float x = rect.x + 4;
 
@@ -213,8 +211,8 @@ namespace Playgama.Suit.Tabs
             r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 2, 18, rect.height), r.Selected);
             x += checkboxWidth;
 
-            // Font name
-            string displayName = !string.IsNullOrEmpty(r.FontName) ? r.FontName : System.IO.Path.GetFileName(r.Path);
+            // Shader name
+            string displayName = !string.IsNullOrEmpty(r.ShaderName) ? r.ShaderName : System.IO.Path.GetFileName(r.Path);
             if (string.IsNullOrEmpty(displayName)) displayName = "—";
 
             string size = SharedTypes.FormatBytes(r.SizeBytes);
@@ -223,51 +221,50 @@ namespace Playgama.Suit.Tabs
             if (veryCompactMode)
             {
                 // Very compact: only name and size
-                float nameWidth = contentWidth * 0.6f;
-                float sizeWidth = contentWidth * 0.4f;
+                float nameWidth = contentWidth * 0.65f;
+                float sizeWidth = contentWidth * 0.35f;
 
-                string name = displayName;
-                if (r.IsTMP) name = "[TMP] " + name;
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(name, 16), r.Path), EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 18), r.Path), EditorStyles.miniLabel);
                 x += nameWidth;
 
                 EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
             }
             else if (compactMode)
             {
-                // Compact: name, size, TMP indicator
+                // Compact: name, size, passes
                 float nameWidth = contentWidth * 0.5f;
-                float sizeWidth = contentWidth * 0.3f;
-                float tmpWidth = contentWidth * 0.2f;
+                float sizeWidth = contentWidth * 0.25f;
+                float passWidth = contentWidth * 0.25f;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 22), r.Path), EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 25), r.Path), EditorStyles.miniLabel);
                 x += nameWidth;
 
                 EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
                 x += sizeWidth;
 
-                if (r.IsTMP)
-                    EditorGUI.LabelField(new Rect(x, rect.y + 2, tmpWidth, rect.height), "TMP", EditorStyles.miniBoldLabel);
+                if (r.PassCount > 0)
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, passWidth, rect.height), $"{r.PassCount}p", EditorStyles.miniLabel);
             }
             else
             {
                 // Full layout: all columns
-                float nameWidth = Mathf.Max(100, contentWidth * 0.35f);
+                float nameWidth = Mathf.Max(120, contentWidth * 0.4f);
                 float sizeWidth = Mathf.Max(70, contentWidth * 0.18f);
-                float typeWidth = Mathf.Max(80, contentWidth * 0.28f);
-                float tmpWidth = Mathf.Max(40, contentWidth * 0.12f);
+                float passWidth = Mathf.Max(60, contentWidth * 0.18f);
+                float propWidth = Mathf.Max(60, contentWidth * 0.18f);
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 28), r.Path), EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 35), r.Path), EditorStyles.miniLabel);
                 x += nameWidth;
 
                 EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
                 x += sizeWidth;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, typeWidth, rect.height), TruncateWithEllipsis(r.FontType, 15), EditorStyles.miniLabel);
-                x += typeWidth;
+                if (r.PassCount > 0)
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, passWidth, rect.height), $"{r.PassCount} passes", EditorStyles.miniLabel);
+                x += passWidth;
 
-                if (r.IsTMP)
-                    EditorGUI.LabelField(new Rect(x, rect.y + 2, tmpWidth, rect.height), "TMP", EditorStyles.miniBoldLabel);
+                if (r.PropertyCount > 0)
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, propWidth, rect.height), $"{r.PropertyCount} props", EditorStyles.miniLabel);
             }
 
             // Buttons always at the right edge
@@ -311,11 +308,10 @@ namespace Playgama.Suit.Tabs
                     {
                         var a = _buildInfo.Assets[i];
                         if (a == null) continue;
-                        if (a.Category != AssetCategory.Fonts) continue;
+                        if (a.Category != AssetCategory.Shaders) continue;
                         if (string.IsNullOrEmpty(a.Path)) continue;
 
-                        var mainAsset = AssetDatabase.LoadMainAssetAtPath(a.Path);
-                        string ext = System.IO.Path.GetExtension(a.Path).ToLowerInvariant();
+                        var shader = AssetDatabase.LoadAssetAtPath<Shader>(a.Path);
 
                         var row = new Row
                         {
@@ -323,49 +319,27 @@ namespace Playgama.Suit.Tabs
                             SizeBytes = a.SizeBytes,
                             IsSizeEstimated = a.IsSizeEstimated,
                             Selected = false,
-                            FontName = "",
-                            FontType = "Unknown",
-                            IsTMP = false
+                            ShaderName = shader != null ? shader.name : "",
+                            PassCount = 0,
+                            PropertyCount = 0
                         };
 
-                        // Determine font type and name
-                        if (mainAsset != null)
+                        // Try to get shader info
+                        if (shader != null)
                         {
-                            string typeName = mainAsset.GetType().Name;
-                            row.FontName = mainAsset.name;
-
-                            if (typeName == "TMP_FontAsset" || typeName == "FontAsset")
+                            try
                             {
-                                row.FontType = "TextMeshPro";
-                                row.IsTMP = true;
+                                row.PassCount = shader.passCount;
+                                row.PropertyCount = ShaderUtil.GetPropertyCount(shader);
                             }
-                            else if (mainAsset is Font)
-                            {
-                                row.FontType = "Legacy Font";
-                            }
-                            else
-                            {
-                                row.FontType = typeName;
-                            }
-                        }
-                        else
-                        {
-                            // Determine by extension
-                            if (ext == ".ttf" || ext == ".otf")
-                                row.FontType = "TrueType/OpenType";
-                            else if (ext == ".fnt")
-                                row.FontType = "Bitmap Font";
-                            else if (ext == ".fontsettings")
-                                row.FontType = "Font Settings";
-                            else if (ext == ".asset")
-                                row.FontType = "Font Asset";
+                            catch { }
                         }
 
                         _rows.Add(row);
                     }
 
                     _rows.Sort((x, y) => y.SizeBytes.CompareTo(x.SizeBytes));
-                    _status = $"Tracked fonts: {_rows.Count}";
+                    _status = $"Tracked shaders: {_rows.Count}";
 
                     try { EditorWindow.focusedWindow?.Repaint(); } catch { }
                 }

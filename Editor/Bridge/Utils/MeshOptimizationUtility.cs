@@ -5,7 +5,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Playgama.Suit
+namespace Playgama.Bridge
 {
     /// <summary>
     /// Helper methods for batch-optimizing model import settings and optionally applying Static flags
@@ -105,7 +105,7 @@ namespace Playgama.Suit
                     return false;
                 }
 
-                Undo.RecordObject(importer, "Suit Mesh Batch Apply");
+                Undo.RecordObject(importer, "Bridge Mesh Batch Apply");
 
                 bool dirty = false;
 
@@ -258,7 +258,7 @@ namespace Playgama.Suit
                 {
                     string sp = scenePaths[si];
                     float prog = (si + 1) / Mathf.Max(1f, (float)scenePaths.Length);
-                    EditorUtility.DisplayProgressBar("Playgama Suit", "Scanning scene: " + sp, prog);
+                    EditorUtility.DisplayProgressBar("Playgama Bridge", "Scanning scene: " + sp, prog);
 
                     var scene = EditorSceneManager.OpenScene(sp, OpenSceneMode.Single);
 
@@ -322,7 +322,7 @@ namespace Playgama.Suit
 
                 if (cur != flags)
                 {
-                    Undo.RecordObject(go, "Suit Set Static Flags");
+                    Undo.RecordObject(go, "Bridge Set Static Flags");
                     GameObjectUtility.SetStaticEditorFlags(go, flags);
                     changed++;
                 }

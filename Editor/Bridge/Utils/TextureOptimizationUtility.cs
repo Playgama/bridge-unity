@@ -1,10 +1,10 @@
-// Editor/Suit/Utils/TextureOptimizationUtility.cs
+// Editor/Bridge/Utils/TextureOptimizationUtility.cs
 using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Suit
+namespace Playgama.Bridge
 {
     public enum RowQuality
     {
@@ -125,7 +125,7 @@ namespace Playgama.Suit
                     if (importer == null)
                         continue;
 
-                    Undo.RecordObject(importer, "Suit Texture Batch Apply");
+                    Undo.RecordObject(importer, "Bridge Texture Batch Apply");
 
                     // Read/Write
                     if (settings.DisableReadWrite)

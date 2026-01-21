@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Suit.Tabs
+namespace Playgama.Bridge.Tabs
 {
     /// <summary>
     /// Editor tab that displays tracked texture assets from the latest build analysis.
@@ -276,10 +276,10 @@ namespace Playgama.Suit.Tabs
         /// <summary>Top summary panel describing current analysis context and the meaning of status colors.</summary>
         private void DrawHeader()
         {
-            _foldHeader = SuitStyles.DrawSectionHeader("Analysis Info", _foldHeader, "\u2139");
+            _foldHeader = BridgeStyles.DrawSectionHeader("Analysis Info", _foldHeader, "\u2139");
             if (_foldHeader)
             {
-                SuitStyles.BeginCard();
+                BridgeStyles.BeginCard();
                 EditorGUILayout.LabelField("Analysis Mode", _buildInfo.DataMode.ToString());
                 EditorGUILayout.LabelField("Tracked Assets", _buildInfo.TrackedAssetCount.ToString());
 
@@ -303,8 +303,8 @@ namespace Playgama.Suit.Tabs
 
                 GUILayout.Space(4);
                 EditorGUILayout.LabelField("Status Colors:", EditorStyles.miniBoldLabel);
-                EditorGUILayout.LabelField("\u2022 Green: optimized | Yellow: could improve | Red: needs attention", SuitStyles.SubtitleStyle);
-                SuitStyles.EndCard();
+                EditorGUILayout.LabelField("\u2022 Green: optimized | Yellow: could improve | Red: needs attention", BridgeStyles.SubtitleStyle);
+                BridgeStyles.EndCard();
             }
         }
 
@@ -343,10 +343,10 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawBatchPanel()
         {
-            _foldBatch = SuitStyles.DrawSectionHeader("Batch Apply", _foldBatch, "\u2699");
+            _foldBatch = BridgeStyles.DrawSectionHeader("Batch Apply", _foldBatch, "\u2699");
             if (_foldBatch)
             {
-                SuitStyles.BeginCard();
+                BridgeStyles.BeginCard();
 
                 // First row: Preset and Apply button
                 using (new EditorGUILayout.HorizontalScope())
@@ -401,8 +401,8 @@ namespace Playgama.Suit.Tabs
                 }
 
                 GUILayout.Space(4);
-                EditorGUILayout.LabelField("Presets: Balanced (1024) | Aggressive (512) | High Quality (2048)", SuitStyles.SubtitleStyle);
-                SuitStyles.EndCard();
+                EditorGUILayout.LabelField("Presets: Balanced (1024) | Aggressive (512) | High Quality (2048)", BridgeStyles.SubtitleStyle);
+                BridgeStyles.EndCard();
             }
         }
 
@@ -413,14 +413,14 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawTinifyPanel()
         {
-            _foldTinify = SuitStyles.DrawSectionHeader("Tinify (TinyPNG)", _foldTinify, "\u26A1");
+            _foldTinify = BridgeStyles.DrawSectionHeader("Tinify (TinyPNG)", _foldTinify, "\u26A1");
             if (_foldTinify)
             {
-                SuitStyles.BeginCard();
+                BridgeStyles.BeginCard();
                     bool hasKey = TinifyUtility.HasKey();
                     EditorGUILayout.LabelField("Key", hasKey ? "Set" : "Not set");
 
-                    EditorGUILayout.LabelField("Optimizes source PNG/JPG/JPEG files via Tinify API", SuitStyles.SubtitleStyle);
+                    EditorGUILayout.LabelField("Optimizes source PNG/JPG/JPEG files via Tinify API", BridgeStyles.SubtitleStyle);
 
                     GUILayout.Space(4);
 
@@ -428,7 +428,7 @@ namespace Playgama.Suit.Tabs
                     {
                         GUI.enabled = !_tinifyRunning && hasKey && GetSelectedCount() > 0;
 
-                        if (SuitStyles.DrawAccentButton(UI.TinifyButton, GUILayout.Height(28)))
+                        if (BridgeStyles.DrawAccentButton(UI.TinifyButton, GUILayout.Height(28)))
                             TinifySelected();
 
                         GUI.enabled = true;
@@ -438,7 +438,7 @@ namespace Playgama.Suit.Tabs
                         if (!hasKey)
                             GUILayout.Label("Set key in Settings tab.", EditorStyles.miniLabel);
                     }
-                SuitStyles.EndCard();
+                BridgeStyles.EndCard();
             }
         }
 
@@ -493,7 +493,7 @@ namespace Playgama.Suit.Tabs
                     if (res.Errors != null)
                     {
                         for (int i = 0; i < res.Errors.Count; i++)
-                            UnityEngine.Debug.LogWarning("Suit Tinify: " + res.Errors[i]);
+                            UnityEngine.Debug.LogWarning("Bridge Tinify: " + res.Errors[i]);
                     }
 
                     RequestRebuild("After Tinify");
@@ -507,7 +507,7 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawList()
         {
-            _foldList = SuitStyles.DrawSectionHeader($"Texture List ({_rows.Count} items)", _foldList, "\u25A6");
+            _foldList = BridgeStyles.DrawSectionHeader($"Texture List ({_rows.Count} items)", _foldList, "\u25A6");
             if (!_foldList) return;
 
             using (var sv = new EditorGUILayout.ScrollViewScope(_scroll))
@@ -846,7 +846,7 @@ namespace Playgama.Suit.Tabs
             {
                 try
                 {
-                    Undo.SetCurrentGroupName("Suit TextureImporter Batch Apply");
+                    Undo.SetCurrentGroupName("Bridge TextureImporter Batch Apply");
 
                     AssetDatabase.StartAssetEditing();
 
@@ -857,7 +857,7 @@ namespace Playgama.Suit.Tabs
                     {
                         if (i % 10 == 0)
                             EditorUtility.DisplayProgressBar(
-                                "Playgama Suit",
+                                "Playgama Bridge",
                                 "Applying texture importer settings...",
                                 i / Mathf.Max(1f, (float)paths.Count));
 
@@ -869,7 +869,7 @@ namespace Playgama.Suit.Tabs
                         var main = AssetDatabase.LoadMainAssetAtPath(path);
                         if (!(main is Texture2D)) { skipped++; continue; }
 
-                        Undo.RecordObject(imp, "Suit TextureImporter Change");
+                        Undo.RecordObject(imp, "Bridge TextureImporter Change");
 
                         bool any = false;
 
@@ -913,7 +913,7 @@ namespace Playgama.Suit.Tabs
                     {
                         if (i % 10 == 0)
                             EditorUtility.DisplayProgressBar(
-                                "Playgama Suit",
+                                "Playgama Bridge",
                                 "Reimporting textures...",
                                 i / Mathf.Max(1f, (float)paths.Count));
 
@@ -1028,10 +1028,10 @@ namespace Playgama.Suit.Tabs
         {
             switch (s)
             {
-                case StatusLevel.Red: return SuitStyles.StatusRed;
-                case StatusLevel.Yellow: return SuitStyles.StatusYellow;
-                case StatusLevel.Green: return SuitStyles.StatusGreen;
-                default: return SuitStyles.StatusGray;
+                case StatusLevel.Red: return BridgeStyles.StatusRed;
+                case StatusLevel.Yellow: return BridgeStyles.StatusYellow;
+                case StatusLevel.Green: return BridgeStyles.StatusGreen;
+                default: return BridgeStyles.StatusGray;
             }
         }
 

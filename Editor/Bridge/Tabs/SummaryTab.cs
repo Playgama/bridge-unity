@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Suit.Tabs
+namespace Playgama.Bridge.Tabs
 {
     public sealed class SummaryTab : ITab
     {
@@ -70,7 +70,7 @@ namespace Playgama.Suit.Tabs
 
         private static readonly GUIContent GC_EstimatedNote = new GUIContent(
             "Some asset sizes are estimated.",
-            "When PackedAssets mapping is unavailable, Playgama Suit falls back to dependencies and estimates per-asset sizes using file sizes on disk.\n" +
+            "When PackedAssets mapping is unavailable, Playgama Bridge falls back to dependencies and estimates per-asset sizes using file sizes on disk.\n" +
             "Total build size remains real.");
 
         public void Init(BuildInfo buildInfo)
@@ -85,7 +85,7 @@ namespace Playgama.Suit.Tabs
             {
                 _scroll = sv.scrollPosition;
 
-                SuitStyles.DrawSectionTitle("Summary", "\u2211");
+                BridgeStyles.DrawSectionTitle("Summary", "\u2211");
 
                 if (_buildInfo == null)
                 {
@@ -111,10 +111,10 @@ namespace Playgama.Suit.Tabs
 
                 EnsureCache();
 
-                _foldTotals = SuitStyles.DrawSectionHeader("Totals", _foldTotals, "\u2139");
+                _foldTotals = BridgeStyles.DrawSectionHeader("Totals", _foldTotals, "\u2139");
                 if (_foldTotals)
                 {
-                    SuitStyles.BeginCard();
+                    BridgeStyles.BeginCard();
                     DrawKeyValue(
                         "Total Build Size (real)",
                         "Actual build size reported by Unity BuildReport (summary.totalSize). This is not an estimate.",
@@ -151,7 +151,7 @@ namespace Playgama.Suit.Tabs
                             FormatTimeSpan(_buildInfo.BuildTime),
                             "Time spent by Unity building the player.");
                     }
-                    SuitStyles.EndCard();
+                    BridgeStyles.EndCard();
                 }
 
                 DrawBreakdownBlock();
@@ -163,10 +163,10 @@ namespace Playgama.Suit.Tabs
 
         private void DrawHeaderStatus()
         {
-            _foldStatus = SuitStyles.DrawSectionHeader("Last Build Snapshot", _foldStatus, "\u2713");
+            _foldStatus = BridgeStyles.DrawSectionHeader("Last Build Snapshot", _foldStatus, "\u2713");
             if (_foldStatus)
             {
-                SuitStyles.BeginCard();
+                BridgeStyles.BeginCard();
 
                 // Check if we have actual build data (not just a status message from "Analyzing...")
                 bool hasBuildData = _buildInfo.TotalBuildSizeBytes > 0 || _buildInfo.HasData;
@@ -178,11 +178,11 @@ namespace Playgama.Suit.Tabs
                         _buildInfo.StatusMessage.Contains("Analyzing"))
                     {
                         EditorGUILayout.LabelField("Build in progress...", EditorStyles.boldLabel);
-                        EditorGUILayout.LabelField(_buildInfo.StatusMessage, SuitStyles.SubtitleStyle);
+                        EditorGUILayout.LabelField(_buildInfo.StatusMessage, BridgeStyles.SubtitleStyle);
                     }
                     else
                     {
-                        EditorGUILayout.LabelField("No build has been run yet.", SuitStyles.SubtitleStyle);
+                        EditorGUILayout.LabelField("No build has been run yet.", BridgeStyles.SubtitleStyle);
                         EditorGUILayout.Space(4);
                         EditorGUILayout.LabelField("Click 'Build & Analyze' to create a snapshot.", EditorStyles.miniLabel);
                     }
@@ -220,18 +220,18 @@ namespace Playgama.Suit.Tabs
                     }
 
                     if (!string.IsNullOrEmpty(_buildInfo.StatusMessage))
-                        EditorGUILayout.LabelField(_buildInfo.StatusMessage, SuitStyles.SubtitleStyle);
+                        EditorGUILayout.LabelField(_buildInfo.StatusMessage, BridgeStyles.SubtitleStyle);
                 }
-                SuitStyles.EndCard();
+                BridgeStyles.EndCard();
             }
         }
 
         private void DrawBreakdownBlock()
         {
-            _foldBreakdown = SuitStyles.DrawSectionHeader("Category Breakdown", _foldBreakdown, "\u2630");
+            _foldBreakdown = BridgeStyles.DrawSectionHeader("Category Breakdown", _foldBreakdown, "\u2630");
             if (_foldBreakdown)
             {
-                SuitStyles.BeginCard();
+                BridgeStyles.BeginCard();
                 DrawBreakdownRow(AssetCategory.Textures, new GUIContent(
                     "Textures", "Texture assets tracked by the analysis mode (Texture2D and related)."));
 
@@ -256,28 +256,28 @@ namespace Playgama.Suit.Tabs
                 if (_nullAssetCount > 0)
                 {
                     GUILayout.Space(4);
-                    EditorGUILayout.LabelField($"Warning: {_nullAssetCount} AssetInfo entries were null.", SuitStyles.SubtitleStyle);
+                    EditorGUILayout.LabelField($"Warning: {_nullAssetCount} AssetInfo entries were null.", BridgeStyles.SubtitleStyle);
                 }
 
                 if (_anyEstimated || _buildInfo.DataMode == BuildDataMode.DependenciesFallback)
                 {
                     GUILayout.Space(4);
-                    EditorGUILayout.LabelField("Some asset sizes are estimated.", SuitStyles.SubtitleStyle);
+                    EditorGUILayout.LabelField("Some asset sizes are estimated.", BridgeStyles.SubtitleStyle);
                 }
-                SuitStyles.EndCard();
+                BridgeStyles.EndCard();
             }
         }
 
         private void DrawTop10Block()
         {
-            _foldTop10 = SuitStyles.DrawSectionHeader($"Top 10 Largest Assets ({_top10.Count} items)", _foldTop10, "\u2B06");
+            _foldTop10 = BridgeStyles.DrawSectionHeader($"Top 10 Largest Assets ({_top10.Count} items)", _foldTop10, "\u2B06");
             if (!_foldTop10) return;
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
             if (_top10.Count == 0)
             {
-                EditorGUILayout.LabelField("Top list is empty.", SuitStyles.SubtitleStyle);
-                SuitStyles.EndCard();
+                EditorGUILayout.LabelField("Top list is empty.", BridgeStyles.SubtitleStyle);
+                BridgeStyles.EndCard();
                 return;
             }
 
@@ -291,7 +291,7 @@ namespace Playgama.Suit.Tabs
                 rect.y += 2;
                 rect.height -= 4;
 
-                SuitStyles.DrawListRowBackground(rect, i, SuitStyles.CardBackground);
+                BridgeStyles.DrawListRowBackground(rect, i, BridgeStyles.CardBackground);
 
                 // Calculate available width for content (excluding margins and button)
                 float availableWidth = rect.width - 8;
@@ -371,15 +371,15 @@ namespace Playgama.Suit.Tabs
                     if (obj != null) EditorGUIUtility.PingObject(obj);
                 }
             }
-            SuitStyles.EndCard();
+            BridgeStyles.EndCard();
         }
 
         private void DrawSavedReportsBlock()
         {
-            _foldSavedReports = SuitStyles.DrawSectionHeader("Saved Reports", _foldSavedReports, "\u2630");
+            _foldSavedReports = BridgeStyles.DrawSectionHeader("Saved Reports", _foldSavedReports, "\u2630");
             if (!_foldSavedReports) return;
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
 
             // Refresh button
             using (new EditorGUILayout.HorizontalScope())
@@ -409,7 +409,7 @@ namespace Playgama.Suit.Tabs
 
             if (_savedReports.Count == 0)
             {
-                EditorGUILayout.LabelField("No saved reports found.", SuitStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("No saved reports found.", BridgeStyles.SubtitleStyle);
                 EditorGUILayout.LabelField("Reports are auto-saved after each Build & Analyze.", EditorStyles.miniLabel);
             }
             else
@@ -428,17 +428,17 @@ namespace Playgama.Suit.Tabs
                 if (_savedReports.Count > 10)
                 {
                     GUILayout.Space(4);
-                    EditorGUILayout.LabelField($"... and {_savedReports.Count - 10} more", SuitStyles.SubtitleStyle);
+                    EditorGUILayout.LabelField($"... and {_savedReports.Count - 10} more", BridgeStyles.SubtitleStyle);
                 }
             }
 
-            SuitStyles.EndCard();
+            BridgeStyles.EndCard();
         }
 
         private void DrawSavedReportRow(ReportFileInfo report, int index)
         {
             Rect rowRect = EditorGUILayout.GetControlRect(false, 28);
-            SuitStyles.DrawListRowBackground(rowRect, index, SuitStyles.CardBackground);
+            BridgeStyles.DrawListRowBackground(rowRect, index, BridgeStyles.CardBackground);
 
             float x = rowRect.x + 4;
 
@@ -464,7 +464,7 @@ namespace Playgama.Suit.Tabs
                 var loadedInfo = BuildReportStorage.LoadReport(report.FilePath);
                 if (loadedInfo != null)
                 {
-                    var window = EditorWindow.GetWindow<SuitWindow>();
+                    var window = EditorWindow.GetWindow<BridgeWindow>();
                     if (window != null)
                     {
                         window.LoadSavedReport(loadedInfo);
@@ -487,10 +487,10 @@ namespace Playgama.Suit.Tabs
 
         private void DrawDiagnosticsBlock()
         {
-            _foldDiagnostics = SuitStyles.DrawSectionHeader("Diagnostics", _foldDiagnostics, "\u2699");
+            _foldDiagnostics = BridgeStyles.DrawSectionHeader("Diagnostics", _foldDiagnostics, "\u2699");
             if (_foldDiagnostics)
             {
-                SuitStyles.BeginCard();
+                BridgeStyles.BeginCard();
                 DrawKeyValue(
                     "Mode",
                     "Active analysis mode used to build the tracked asset list.",
@@ -514,9 +514,9 @@ namespace Playgama.Suit.Tabs
                 if (!string.IsNullOrEmpty(_buildInfo.ModeDiagnostics))
                 {
                     GUILayout.Space(4);
-                    EditorGUILayout.LabelField(_buildInfo.ModeDiagnostics, SuitStyles.SubtitleStyle);
+                    EditorGUILayout.LabelField(_buildInfo.ModeDiagnostics, BridgeStyles.SubtitleStyle);
                 }
-                SuitStyles.EndCard();
+                BridgeStyles.EndCard();
             }
         }
 

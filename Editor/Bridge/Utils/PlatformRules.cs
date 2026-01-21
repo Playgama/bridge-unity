@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Playgama.Suit
+namespace Playgama.Bridge
 {
     public enum RuleSeverity
     {

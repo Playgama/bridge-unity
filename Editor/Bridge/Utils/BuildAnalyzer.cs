@@ -8,7 +8,7 @@ using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
-namespace Playgama.Suit
+namespace Playgama.Bridge
 {
     /// <summary>
     /// Builds a WebGL player with a DetailedBuildReport and extracts build-size analytics into <see cref="BuildInfo"/>.
@@ -63,10 +63,20 @@ namespace Playgama.Suit
 
         /// <summary>
         /// Schedules a WebGL build using the default/last-used folder.
+        /// Uses "Shorter Build Time" optimization for faster analysis.
         /// </summary>
         public static void BuildAndAnalyze()
         {
-            BuildAndAnalyze(GetLastBuildFolder());
+            BuildAndAnalyze(GetLastBuildFolder(), useReleaseOptimization: false);
+        }
+
+        /// <summary>
+        /// Schedules a WebGL build optimized for release (smallest size).
+        /// Uses "Disk Size with LTO" optimization - takes longer but produces smallest build.
+        /// </summary>
+        public static void BuildForRelease()
+        {
+            BuildAndAnalyze(GetLastBuildFolder(), useReleaseOptimization: true);
         }
 
         /// <summary>
@@ -77,7 +87,9 @@ namespace Playgama.Suit
         /// - Ensures there is at least one enabled scene in Build Settings.
         /// - Optionally switches the active build target to WebGL after a user confirmation dialog.
         /// </summary>
-        public static void BuildAndAnalyze(string buildFolder)
+        /// <param name="buildFolder">Output folder for the build.</param>
+        /// <param name="useReleaseOptimization">If true, uses "Disk Size with LTO" for smallest build. If false, uses "Shorter Build Time" for faster builds.</param>
+        public static void BuildAndAnalyze(string buildFolder, bool useReleaseOptimization = false)
         {
             EditorApplication.delayCall += () =>
             {
@@ -101,7 +113,7 @@ namespace Playgama.Suit
                     if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.WebGL)
                     {
                         bool go = EditorUtility.DisplayDialog(
-                            "Playgama Suit",
+                            "Playgama Bridge",
                             "Active Build Target is not WebGL.\nSwitch to WebGL and continue?",
                             "Switch & Continue",
                             "Cancel");
@@ -112,7 +124,7 @@ namespace Playgama.Suit
                             return;
                         }
 
-                        EditorUtility.DisplayProgressBar("Playgama Suit", "Switching Build Target to WebGL...", 0.1f);
+                        EditorUtility.DisplayProgressBar("Playgama Bridge", "Switching Build Target to WebGL...", 0.1f);
                         bool switched = EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
                         EditorUtility.ClearProgressBar();
 
@@ -121,6 +133,20 @@ namespace Playgama.Suit
                             PublishError("Failed to switch build target to WebGL.");
                             return;
                         }
+                    }
+
+                    // Set code optimization based on build type
+                    if (useReleaseOptimization)
+                    {
+                        // Use Disk Size with LTO for smallest possible build
+                        Tabs.BuildSettingsTab.TrySetCodeOptimization(Tabs.BuildSettingsTab.CodeOptimizationState.DiskSizeLTO);
+                        Debug.Log("[Bridge] Using 'Disk Size with LTO' optimization for release build (smallest size, longer build time)");
+                    }
+                    else
+                    {
+                        // Use Shorter Build Time for faster analysis builds
+                        Tabs.BuildSettingsTab.TrySetCodeOptimization(Tabs.BuildSettingsTab.CodeOptimizationState.ShorterBuildTime);
+                        Debug.Log("[Bridge] Using 'Shorter Build Time' optimization for faster analysis");
                     }
 
                     var opts = new BuildPlayerOptions
@@ -135,11 +161,15 @@ namespace Playgama.Suit
                     if (EditorUserBuildSettings.development)
                         opts.options |= BuildOptions.Development;
 
-                    Debug.Log($"[Suit] Starting clean WebGL build with options: {opts.options}");
+                    string buildType = useReleaseOptimization ? "Release (Disk Size with LTO)" : "Analysis (Shorter Build Time)";
+                    Debug.Log($"[Bridge] Starting clean WebGL build - {buildType} with options: {opts.options}");
 
                     var start = DateTime.UtcNow;
 
-                    EditorUtility.DisplayProgressBar("Playgama Suit", "Building WebGL (DetailedBuildReport)...", 0.05f);
+                    string progressMessage = useReleaseOptimization
+                        ? "Building WebGL for Release (this may take a while)..."
+                        : "Building WebGL for Analysis...";
+                    EditorUtility.DisplayProgressBar("Playgama Bridge", progressMessage, 0.05f);
                     BuildReport report = null;
                     try
                     {
@@ -182,11 +212,11 @@ namespace Playgama.Suit
             {
                 if (!Directory.Exists(buildFolder))
                 {
-                    Debug.LogWarning("[Suit] Cannot create archive: build folder does not exist.");
+                    Debug.LogWarning("[Bridge] Cannot create archive: build folder does not exist.");
                     return;
                 }
 
-                EditorUtility.DisplayProgressBar("Playgama Suit", "Creating ZIP archive...", 0.5f);
+                EditorUtility.DisplayProgressBar("Playgama Bridge", "Creating ZIP archive...", 0.5f);
 
                 // Generate archive name with timestamp
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
@@ -208,14 +238,14 @@ namespace Playgama.Suit
                 var archiveInfo = new FileInfo(archivePath);
                 string sizeStr = SharedTypes.FormatBytes(archiveInfo.Length);
 
-                Debug.Log($"[Suit] Build archive created: {archivePath} ({sizeStr})");
+                Debug.Log($"[Bridge] Build archive created: {archivePath} ({sizeStr})");
 
                 // Show in explorer/finder
                 EditorUtility.RevealInFinder(archivePath);
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[Suit] Failed to create build archive: {ex.Message}");
+                Debug.LogError($"[Bridge] Failed to create build archive: {ex.Message}");
             }
             finally
             {
@@ -334,14 +364,14 @@ namespace Playgama.Suit
             try
             {
                 // Log build report info for diagnostics
-                Debug.Log($"[Suit] BuildReport summary: result={report.summary.result}, totalSize={report.summary.totalSize}, totalTime={report.summary.totalTime}");
+                Debug.Log($"[Bridge] BuildReport summary: result={report.summary.result}, totalSize={report.summary.totalSize}, totalTime={report.summary.totalTime}");
 
                 // Try packedAssets first (preferred, gives per-asset sizes)
                 var packedAssetsArray = report.packedAssets;
 
                 if (packedAssetsArray != null && packedAssetsArray.Length > 0)
                 {
-                    Debug.Log($"[Suit] Found {packedAssetsArray.Length} packed asset groups");
+                    Debug.Log($"[Bridge] Found {packedAssetsArray.Length} packed asset groups");
 
                     var map = new Dictionary<string, long>(4096);
                     int groups = 0;
@@ -389,7 +419,7 @@ namespace Playgama.Suit
                         }
                     }
 
-                    Debug.Log($"[Suit] PackedAssets analysis: Groups={groups}, TotalContents={totalContents}, EmptyPaths={empty}, ZeroSize={zeroSize}, Mapped={map.Count}");
+                    Debug.Log($"[Bridge] PackedAssets analysis: Groups={groups}, TotalContents={totalContents}, EmptyPaths={empty}, ZeroSize={zeroSize}, Mapped={map.Count}");
 
                     if (map.Count > 0)
                     {
@@ -411,40 +441,40 @@ namespace Playgama.Suit
 
                         assets.Sort((a, b) => b.SizeBytes.CompareTo(a.SizeBytes));
                         diagnostics = $"PackedAssets OK | Groups={groups} | Contents={totalContents} | Mapped={assets.Count}";
-                        Debug.Log("[Suit] " + diagnostics);
+                        Debug.Log("[Bridge] " + diagnostics);
                         return true;
                     }
                 }
 
                 // Fallback: Try to use GetFiles() to get build output file information
-                Debug.Log("[Suit] packedAssets empty, trying GetFiles() fallback...");
+                Debug.Log("[Bridge] packedAssets empty, trying GetFiles() fallback...");
 
 #if UNITY_2020_1_OR_NEWER
                 var files = report.GetFiles();
                 if (files != null && files.Length > 0)
                 {
-                    Debug.Log($"[Suit] Found {files.Length} files in build report");
+                    Debug.Log($"[Bridge] Found {files.Length} files in build report");
 
                     // Log first few files for diagnostics
                     for (int i = 0; i < Mathf.Min(5, files.Length); i++)
                     {
-                        Debug.Log($"[Suit] File[{i}]: path={files[i].path}, role={files[i].role}, size={files[i].size}");
+                        Debug.Log($"[Bridge] File[{i}]: path={files[i].path}, role={files[i].role}, size={files[i].size}");
                     }
                 }
                 else
                 {
-                    Debug.Log("[Suit] GetFiles() returned null or empty");
+                    Debug.Log("[Bridge] GetFiles() returned null or empty");
                 }
 #endif
 
                 diagnostics = $"BuildReport.packedAssets is null or empty (Length={packedAssetsArray?.Length ?? 0}). WebGL builds may not provide per-asset packed sizes.";
-                Debug.Log("[Suit] " + diagnostics);
+                Debug.Log("[Bridge] " + diagnostics);
                 return false;
             }
             catch (Exception ex)
             {
                 diagnostics = "PackedAssets exception: " + ex.Message;
-                Debug.LogError("[Suit] " + diagnostics + "\n" + ex.StackTrace);
+                Debug.LogError("[Bridge] " + diagnostics + "\n" + ex.StackTrace);
                 return false;
             }
         }
@@ -462,7 +492,7 @@ namespace Playgama.Suit
             string[] deps = null;
             try
             {
-                EditorUtility.DisplayProgressBar("Playgama Suit", "Collecting dependencies...", 0.15f);
+                EditorUtility.DisplayProgressBar("Playgama Bridge", "Collecting dependencies...", 0.15f);
                 deps = AssetDatabase.GetDependencies(scenes, true);
             }
             finally
@@ -479,7 +509,7 @@ namespace Playgama.Suit
             {
                 idx++;
                 if (idx % 250 == 0)
-                    EditorUtility.DisplayProgressBar("Playgama Suit", "Analyzing dependencies...", idx / Mathf.Max(1f, (float)set.Count));
+                    EditorUtility.DisplayProgressBar("Playgama Bridge", "Analyzing dependencies...", idx / Mathf.Max(1f, (float)set.Count));
 
                 if (string.IsNullOrEmpty(p)) continue;
 

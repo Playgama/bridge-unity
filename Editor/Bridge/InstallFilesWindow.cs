@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Suit
+namespace Playgama.Bridge
 {
     /// <summary>
     /// Popup window for selecting and installing Playgama Bridge WebGL template files.
@@ -161,7 +161,7 @@ namespace Playgama.Suit
 
             // Purple accent line
             Rect lineRect = EditorGUILayout.GetControlRect(false, 2);
-            EditorGUI.DrawRect(lineRect, SuitStyles.BrandPurple);
+            EditorGUI.DrawRect(lineRect, BridgeStyles.BrandPurple);
 
             EditorGUILayout.Space(10);
 
@@ -266,7 +266,7 @@ namespace Playgama.Suit
                 // Install button with accent color
                 GUI.enabled = selectedCount > 0;
                 Color oldBg = GUI.backgroundColor;
-                GUI.backgroundColor = SuitStyles.BrandPurple;
+                GUI.backgroundColor = BridgeStyles.BrandPurple;
 
                 if (GUILayout.Button("Install Selected", GUILayout.Width(130), GUILayout.Height(30)))
                 {
@@ -296,7 +296,7 @@ namespace Playgama.Suit
             if (file.Enabled)
             {
                 Rect accentRect = new Rect(boxRect.x, boxRect.y, 3, boxRect.height);
-                EditorGUI.DrawRect(accentRect, SuitStyles.BrandPurple);
+                EditorGUI.DrawRect(accentRect, BridgeStyles.BrandPurple);
             }
 
             // Checkbox

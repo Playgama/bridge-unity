@@ -4,7 +4,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Suit.Tabs
+namespace Playgama.Bridge.Tabs
 {
     /// <summary>
     /// Build workflow tab focused on build size control:
@@ -59,7 +59,11 @@ namespace Playgama.Suit.Tabs
         /// Controls the tradeoff between build size, build time, and runtime performance.
         /// Maps to Unity's WebGLCodeOptimization / Il2CppCodeGeneration enums.
         /// </summary>
-        private enum CodeOptimizationState
+        /// <summary>
+        /// Code optimization states for WebGL builds.
+        /// Made internal so BuildAnalyzer can use it.
+        /// </summary>
+        internal enum CodeOptimizationState
         {
             Unknown,
             None,               // No optimization - fastest build time
@@ -83,7 +87,7 @@ namespace Playgama.Suit.Tabs
             public static readonly GUIContent HeaderHelp = new GUIContent(
                 "This tab is focused on build size workflow: selecting scenes, WebGL build-size toggles, and a single Build & Analyze entry point.\n" +
                 "Build is always triggered via EditorApplication.delayCall (never inside OnGUI).",
-                "General notes about how Playgama Suit triggers builds and why it avoids running build logic inside OnGUI.");
+                "General notes about how Playgama Bridge triggers builds and why it avoids running build logic inside OnGUI.");
 
             public static readonly GUIContent OutputTitle = new GUIContent(
                 "Output Path",
@@ -109,7 +113,7 @@ namespace Playgama.Suit.Tabs
             public static readonly GUIContent ScenesTitle = new GUIContent(
                 "Scenes (Build Settings)",
                 "These are scenes from Unity Build Settings.\n" +
-                "Playgama Suit uses only enabled scenes when triggering a build.");
+                "Playgama Bridge uses only enabled scenes when triggering a build.");
 
             public static readonly GUIContent EnableAll = new GUIContent(
                 "Enable All",
@@ -131,7 +135,7 @@ namespace Playgama.Suit.Tabs
             public static readonly GUIContent SceneEnabled = new GUIContent(
                 "",
                 "Enable/disable this scene for builds.\n" +
-                "Only enabled scenes are included when Playgama Suit triggers the build.");
+                "Only enabled scenes are included when Playgama Bridge triggers the build.");
 
             public static readonly GUIContent ScenePath = new GUIContent(
                 "",
@@ -184,12 +188,12 @@ namespace Playgama.Suit.Tabs
 
             public static readonly GUIContent BuildAnalyzeTitle = new GUIContent(
                 "Build & Analyze",
-                "Trigger a WebGL build and run Playgama Suit analysis.\n" +
+                "Trigger a WebGL build and run Playgama Bridge analysis.\n" +
                 "The build is scheduled via delayCall to keep IMGUI safe and responsive.");
 
             public static readonly GUIContent BuildAnalyzeButton = new GUIContent(
                 "Build & Analyze (WebGL)",
-                "Starts a WebGL build to the selected output path, then runs Playgama Suit analysis.\n" +
+                "Starts a WebGL build to the selected output path, then runs Playgama Bridge analysis.\n" +
                 "Only enabled Build Settings scenes are included.\n" +
                 "Note: does not silently switch Build Target.");
 
@@ -201,7 +205,7 @@ namespace Playgama.Suit.Tabs
                 "Build runs with DetailedBuildReport. Analysis mode is chosen automatically:\n" +
                 "• Packed Assets (if BuildReport provides usable mapping)\n" +
                 "• Dependencies Fallback (guaranteed)\n",
-                "Playgama Suit chooses the strongest analysis mode available for the current Unity build pipeline output.");
+                "Playgama Bridge chooses the strongest analysis mode available for the current Unity build pipeline output.");
 
             public static readonly GUIContent LastSnapshotTitle = new GUIContent(
                 "Last Analysis Snapshot",
@@ -265,12 +269,12 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawHeader()
         {
-            _foldHeader = SuitStyles.DrawSectionHeader("About Build Settings", _foldHeader, "\u2139");
+            _foldHeader = BridgeStyles.DrawSectionHeader("About Build Settings", _foldHeader, "\u2139");
             if (_foldHeader)
             {
-                SuitStyles.BeginCard();
-                EditorGUILayout.LabelField("Build-size workflow: scenes, WebGL toggles, Build & Analyze.", SuitStyles.SubtitleStyle);
-                SuitStyles.EndCard();
+                BridgeStyles.BeginCard();
+                EditorGUILayout.LabelField("Build-size workflow: scenes, WebGL toggles, Build & Analyze.", BridgeStyles.SubtitleStyle);
+                BridgeStyles.EndCard();
             }
         }
 
@@ -279,10 +283,10 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawOutputBlock()
         {
-            _foldOutput = SuitStyles.DrawSectionHeader("Output Path", _foldOutput, "\u2301");
+            _foldOutput = BridgeStyles.DrawSectionHeader("Output Path", _foldOutput, "\u2301");
             if (!_foldOutput) return;
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUILayout.LabelField(UI.OutputFolder, GUILayout.Width(50));
@@ -290,7 +294,7 @@ namespace Playgama.Suit.Tabs
 
                 if (GUILayout.Button(UI.Browse, GUILayout.Width(80)))
                 {
-                    string chosen = EditorUtility.SaveFolderPanel("Playgama Suit - Choose Build Output Folder", _outputPath, "");
+                    string chosen = EditorUtility.SaveFolderPanel("Playgama Bridge - Choose Build Output Folder", _outputPath, "");
                     if (!string.IsNullOrEmpty(chosen))
                     {
                         _outputPath = chosen.Replace('\\', '/');
@@ -307,8 +311,8 @@ namespace Playgama.Suit.Tabs
                 }
             }
 
-            EditorGUILayout.LabelField("Tip: keep build output outside Assets/ to avoid accidental imports.", SuitStyles.SubtitleStyle);
-            SuitStyles.EndCard();
+            EditorGUILayout.LabelField("Tip: keep build output outside Assets/ to avoid accidental imports.", BridgeStyles.SubtitleStyle);
+            BridgeStyles.EndCard();
         }
 
         /// <summary>
@@ -317,10 +321,10 @@ namespace Playgama.Suit.Tabs
         private void DrawScenesBlock()
         {
             int sceneCount = EditorBuildSettings.scenes?.Length ?? 0;
-            _foldScenes = SuitStyles.DrawSectionHeader($"Scenes ({sceneCount} in Build Settings)", _foldScenes, "\u2302");
+            _foldScenes = BridgeStyles.DrawSectionHeader($"Scenes ({sceneCount} in Build Settings)", _foldScenes, "\u2302");
             if (!_foldScenes) return;
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
             var scenes = EditorBuildSettings.scenes;
 
             using (new EditorGUILayout.HorizontalScope())
@@ -370,8 +374,8 @@ namespace Playgama.Suit.Tabs
                 }
             }
 
-            EditorGUILayout.LabelField("Playgama Suit uses enabled scenes from Build Settings for the build.", SuitStyles.SubtitleStyle);
-            SuitStyles.EndCard();
+            EditorGUILayout.LabelField("Playgama Bridge uses enabled scenes from Build Settings for the build.", BridgeStyles.SubtitleStyle);
+            BridgeStyles.EndCard();
         }
 
         /// <summary>
@@ -379,10 +383,10 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawWebGLBuildSizeBlock()
         {
-            _foldWebGL = SuitStyles.DrawSectionHeader("WebGL Build Size Toggles", _foldWebGL, "\u2699");
+            _foldWebGL = BridgeStyles.DrawSectionHeader("WebGL Build Size Toggles", _foldWebGL, "\u2699");
             if (!_foldWebGL) return;
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
 
             // First row: Development Build and Name Files As Hashes toggles
             using (new EditorGUILayout.HorizontalScope())
@@ -425,8 +429,8 @@ namespace Playgama.Suit.Tabs
             }
 
             GUILayout.Space(4);
-            EditorGUILayout.LabelField("Development Build OFF + Compression ON + 'Disk Size with LTO' for smallest build. Name Files As Hashes improves caching.", SuitStyles.SubtitleStyle);
-            SuitStyles.EndCard();
+            EditorGUILayout.LabelField("Development Build OFF + Compression ON + 'Disk Size with LTO' for smallest build. Name Files As Hashes improves caching.", BridgeStyles.SubtitleStyle);
+            BridgeStyles.EndCard();
         }
 
         /// <summary>
@@ -434,15 +438,15 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawBuildAndAnalyzeBlock()
         {
-            _foldBuild = SuitStyles.DrawSectionHeader("Build & Analyze", _foldBuild, "\u26A1");
+            _foldBuild = BridgeStyles.DrawSectionHeader("Build & Analyze", _foldBuild, "\u26A1");
             if (!_foldBuild) return;
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUI.enabled = HasEnabledScenes();
 
-                if (SuitStyles.DrawAccentButton(UI.BuildAnalyzeButton, GUILayout.Height(32)))
+                if (BridgeStyles.DrawAccentButton(UI.BuildAnalyzeButton, GUILayout.Height(32)))
                 {
                     // Build must never run inside OnGUI; delayCall is safe for long operations.
                     EditorApplication.delayCall += () =>
@@ -453,7 +457,7 @@ namespace Playgama.Suit.Tabs
 
                             if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.WebGL)
                             {
-                                UnityEngine.Debug.LogWarning("Suit: Active build target is not WebGL. Build size for WebGL may be invalid unless you switch target.");
+                                UnityEngine.Debug.LogWarning("Bridge: Active build target is not WebGL. Build size for WebGL may be invalid unless you switch target.");
                             }
 
                             InvokeBuildAnalyzer(_outputPath);
@@ -479,8 +483,58 @@ namespace Playgama.Suit.Tabs
                 }
             }
 
-            EditorGUILayout.LabelField("Analysis mode chosen automatically: Packed Assets or Dependencies Fallback.", SuitStyles.SubtitleStyle);
-            SuitStyles.EndCard();
+            EditorGUILayout.LabelField("Uses 'Shorter Build Time' optimization for faster analysis.", BridgeStyles.SubtitleStyle);
+            BridgeStyles.EndCard();
+
+            EditorGUILayout.Space(10);
+
+            // Build for Release section
+            BridgeStyles.BeginCard();
+            EditorGUILayout.LabelField("Build for Release", EditorStyles.boldLabel);
+            EditorGUILayout.Space(5);
+
+            EditorGUILayout.LabelField(
+                "Create the smallest possible build for publishing. Uses 'Disk Size with LTO' optimization.",
+                EditorStyles.wordWrappedMiniLabel);
+
+            EditorGUILayout.Space(5);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUI.enabled = HasEnabledScenes();
+
+                Color oldBg = GUI.backgroundColor;
+                GUI.backgroundColor = new Color(0.2f, 0.7f, 0.3f); // Green for release
+
+                if (GUILayout.Button(new GUIContent("  Build for Release  ", "Creates smallest possible WebGL build. Takes longer to compile."), GUILayout.Height(32)))
+                {
+                    EditorApplication.delayCall += () =>
+                    {
+                        try
+                        {
+                            EnsureDirectory(_outputPath);
+                            BuildAnalyzer.BuildForRelease();
+                            _status = "Release build started (this may take a while)...";
+                        }
+                        catch (Exception ex)
+                        {
+                            UnityEngine.Debug.LogException(ex);
+                            _status = "Build failed to start: " + ex.Message;
+                        }
+                    };
+                }
+
+                GUI.backgroundColor = oldBg;
+                GUI.enabled = true;
+
+                GUILayout.FlexibleSpace();
+            }
+
+            EditorGUILayout.Space(3);
+            EditorGUILayout.HelpBox(
+                "Release builds use Link Time Optimization (LTO) for smallest file size.\nThis takes significantly longer than a regular build.",
+                MessageType.Info);
+            BridgeStyles.EndCard();
         }
 
         /// <summary>
@@ -488,10 +542,10 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawLastBuildBlock()
         {
-            _foldLastBuild = SuitStyles.DrawSectionHeader("Last Build Snapshot", _foldLastBuild, "\u2139");
+            _foldLastBuild = BridgeStyles.DrawSectionHeader("Last Build Snapshot", _foldLastBuild, "\u2139");
             if (!_foldLastBuild) return;
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
 
             // Check if we have actual build data (not just a status message from "Analyzing...")
             bool hasBuildData = _buildInfo != null && (_buildInfo.TotalBuildSizeBytes > 0 || _buildInfo.HasData);
@@ -503,15 +557,15 @@ namespace Playgama.Suit.Tabs
                     _buildInfo.StatusMessage.Contains("Analyzing"))
                 {
                     EditorGUILayout.LabelField("Build in progress...", EditorStyles.boldLabel);
-                    EditorGUILayout.LabelField(_buildInfo.StatusMessage, SuitStyles.SubtitleStyle);
+                    EditorGUILayout.LabelField(_buildInfo.StatusMessage, BridgeStyles.SubtitleStyle);
                 }
                 else
                 {
-                    EditorGUILayout.LabelField(UI.NoSnapshot.text, SuitStyles.SubtitleStyle);
+                    EditorGUILayout.LabelField(UI.NoSnapshot.text, BridgeStyles.SubtitleStyle);
                     EditorGUILayout.Space(4);
                     EditorGUILayout.LabelField("Click 'Build & Analyze' to create a snapshot.", EditorStyles.miniLabel);
                 }
-                SuitStyles.EndCard();
+                BridgeStyles.EndCard();
                 return;
             }
 
@@ -550,7 +604,7 @@ namespace Playgama.Suit.Tabs
             if (GUILayout.Button(UI.CopySnapshot, GUILayout.Width(220)))
             {
                 string txt =
-                    "Playgama Suit Build Snapshot\n" +
+                    "Playgama Bridge Build Snapshot\n" +
                     "-------------------\n" +
                     $"Build Result: {(_buildInfo.BuildSucceeded ? "Success" : "Failed")}\n" +
                     $"Target: {_buildInfo.BuildTargetName}\n" +
@@ -561,7 +615,7 @@ namespace Playgama.Suit.Tabs
                 EditorGUIUtility.systemCopyBuffer = txt;
                 _status = "Snapshot copied to clipboard.";
             }
-            SuitStyles.EndCard();
+            BridgeStyles.EndCard();
         }
 
         /// <summary>
@@ -1000,7 +1054,7 @@ namespace Playgama.Suit.Tabs
             }
             catch (Exception ex)
             {
-                UnityEngine.Debug.LogWarning($"[Playgama Suit] Failed to read Code Optimization: {ex.Message}");
+                UnityEngine.Debug.LogWarning($"[Playgama Bridge] Failed to read Code Optimization: {ex.Message}");
                 state = CodeOptimizationState.Unknown;
             }
         }
@@ -1057,8 +1111,9 @@ namespace Playgama.Suit.Tabs
         /// Attempts to set Code Optimization via reflection (best-effort).
         /// Tries multiple API locations across Unity versions.
         /// Returns false if the API is not available or the enum cannot be mapped.
+        /// Made internal so BuildAnalyzer can use it.
         /// </summary>
-        private static bool TrySetCodeOptimization(CodeOptimizationState desired)
+        internal static bool TrySetCodeOptimization(CodeOptimizationState desired)
         {
             try
             {
@@ -1136,7 +1191,7 @@ namespace Playgama.Suit.Tabs
             }
             catch (Exception ex)
             {
-                UnityEngine.Debug.LogWarning($"[Playgama Suit] Failed to set Code Optimization: {ex.Message}");
+                UnityEngine.Debug.LogWarning($"[Playgama Bridge] Failed to set Code Optimization: {ex.Message}");
                 return false;
             }
         }
@@ -1268,10 +1323,10 @@ namespace Playgama.Suit.Tabs
             try
             {
                 var asm = typeof(BuildSettingsTab).Assembly;
-                Type t = asm.GetType("Playgama.Suit.BuildAnalyzer") ?? asm.GetType("Playgama.Suit.Utils.BuildAnalyzer");
+                Type t = asm.GetType("Playgama.Bridge.BuildAnalyzer") ?? asm.GetType("Playgama.Bridge.Utils.BuildAnalyzer");
                 if (t == null)
                 {
-                    UnityEngine.Debug.LogError("Suit: BuildAnalyzer type not found.");
+                    UnityEngine.Debug.LogError("Bridge: BuildAnalyzer type not found.");
                     return;
                 }
 
@@ -1289,7 +1344,7 @@ namespace Playgama.Suit.Tabs
                     return;
                 }
 
-                UnityEngine.Debug.LogError("Suit: BuildAnalyzer.BuildAndAnalyze method not found.");
+                UnityEngine.Debug.LogError("Bridge: BuildAnalyzer.BuildAndAnalyze method not found.");
             }
             catch (Exception ex)
             {

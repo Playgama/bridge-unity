@@ -4,7 +4,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Suit
+namespace Playgama.Bridge
 {
     /// <summary>
     /// Handles saving and loading build reports to/from disk.
@@ -50,12 +50,12 @@ namespace Playgama.Suit
 
                 File.WriteAllText(filePath, json);
 
-                Debug.Log($"[Playgama Suit] Build report saved: {filePath}");
+                Debug.Log($"[Playgama Bridge] Build report saved: {filePath}");
                 return filePath;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[Playgama Suit] Failed to save build report: {ex.Message}");
+                Debug.LogError($"[Playgama Bridge] Failed to save build report: {ex.Message}");
                 return null;
             }
         }
@@ -76,7 +76,7 @@ namespace Playgama.Suit
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[Playgama Suit] Failed to load build report: {ex.Message}");
+                Debug.LogError($"[Playgama Bridge] Failed to load build report: {ex.Message}");
                 return null;
             }
         }
@@ -110,7 +110,7 @@ namespace Playgama.Suit
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[Playgama Suit] Failed to get saved reports: {ex.Message}");
+                Debug.LogError($"[Playgama Bridge] Failed to get saved reports: {ex.Message}");
             }
 
             return reports;
@@ -126,13 +126,13 @@ namespace Playgama.Suit
                 if (File.Exists(filePath))
                 {
                     File.Delete(filePath);
-                    Debug.Log($"[Playgama Suit] Build report deleted: {filePath}");
+                    Debug.Log($"[Playgama Bridge] Build report deleted: {filePath}");
                     return true;
                 }
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[Playgama Suit] Failed to delete build report: {ex.Message}");
+                Debug.LogError($"[Playgama Bridge] Failed to delete build report: {ex.Message}");
             }
             return false;
         }

@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Suit.Tabs
+namespace Playgama.Bridge.Tabs
 {
     /// <summary>
     /// Plugin settings tab.
@@ -127,12 +127,12 @@ namespace Playgama.Suit.Tabs
             {
                 _scroll = sv.scrollPosition;
 
-                _foldHeader = SuitStyles.DrawSectionHeader("About Settings", _foldHeader, "\u2139");
+                _foldHeader = BridgeStyles.DrawSectionHeader("About Settings", _foldHeader, "\u2139");
                 if (_foldHeader)
                 {
-                    SuitStyles.BeginCard();
-                    EditorGUILayout.LabelField("Configure Playgama Bridge and optimization settings.", SuitStyles.SubtitleStyle);
-                    SuitStyles.EndCard();
+                    BridgeStyles.BeginCard();
+                    EditorGUILayout.LabelField("Configure Playgama Bridge and optimization settings.", BridgeStyles.SubtitleStyle);
+                    BridgeStyles.EndCard();
                 }
 
                 DrawBridgeSettingsBlock();
@@ -148,10 +148,10 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawBridgeSettingsBlock()
         {
-            _foldBridge = SuitStyles.DrawSectionHeader("Bridge Settings", _foldBridge, "\u2699");
+            _foldBridge = BridgeStyles.DrawSectionHeader("Bridge Settings", _foldBridge, "\u2699");
             if (!_foldBridge) return;
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
 
             bool newShowDebug = EditorGUILayout.ToggleLeft(UI.ShowEditorDebugWindows, _showEditorDebugWindows);
             if (newShowDebug != _showEditorDebugWindows)
@@ -164,8 +164,8 @@ namespace Playgama.Suit.Tabs
             }
 
             GUILayout.Space(4);
-            EditorGUILayout.LabelField("Controls whether Bridge shows ad debug popups in the Editor.", SuitStyles.SubtitleStyle);
-            SuitStyles.EndCard();
+            EditorGUILayout.LabelField("Controls whether Bridge shows ad debug popups in the Editor.", BridgeStyles.SubtitleStyle);
+            BridgeStyles.EndCard();
         }
 
         /// <summary>
@@ -176,10 +176,10 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawTinifyKeyBlock()
         {
-            _foldTinify = SuitStyles.DrawSectionHeader("Tinify (TinyPNG) API Key", _foldTinify, "\u26A1");
+            _foldTinify = BridgeStyles.DrawSectionHeader("Tinify (TinyPNG) API Key", _foldTinify, "\u26A1");
             if (!_foldTinify) return;
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.Label(UI.KeyLabel, GUILayout.Width(30));
@@ -205,7 +205,7 @@ namespace Playgama.Suit.Tabs
             {
                 GUI.enabled = !_validating;
 
-                if (SuitStyles.DrawAccentButton(UI.Validate, GUILayout.Width(90)))
+                if (BridgeStyles.DrawAccentButton(UI.Validate, GUILayout.Width(90)))
                     ValidateKey();
 
                 GUI.enabled = true;
@@ -223,8 +223,8 @@ namespace Playgama.Suit.Tabs
             }
 
             GUILayout.Space(4);
-            EditorGUILayout.LabelField("Validation sends a minimal image to verify auth. No project assets uploaded.", SuitStyles.SubtitleStyle);
-            SuitStyles.EndCard();
+            EditorGUILayout.LabelField("Validation sends a minimal image to verify auth. No project assets uploaded.", BridgeStyles.SubtitleStyle);
+            BridgeStyles.EndCard();
         }
 
         /// <summary>

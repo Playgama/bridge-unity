@@ -1,13 +1,13 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace Playgama.Suit
+namespace Playgama.Bridge
 {
     /// <summary>
-    /// Shared UI styles, colors, and helper methods for Playgama Suit tabs.
+    /// Shared UI styles, colors, and helper methods for Playgama Bridge tabs.
     /// Provides Material Design-inspired visuals with Playgama branding.
     /// </summary>
-    public static class SuitStyles
+    public static class BridgeStyles
     {
         // Brand Colors
         /// <summary>Playgama brand purple (#9748ff)</summary>

@@ -5,7 +5,7 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Suit.Tabs
+namespace Playgama.Bridge.Tabs
 {
     /// <summary>
     /// UI tab that runs build-size-only compliance checks for a selected target platform.
@@ -50,7 +50,7 @@ namespace Playgama.Suit.Tabs
         {
             public static readonly GUIContent HeaderTitle = new GUIContent(
                 "Platform Checks (Build Size Only)",
-                "Runs build-size-focused checks against the latest Playgama Suit analysis data.\n" +
+                "Runs build-size-focused checks against the latest Playgama Bridge analysis data.\n" +
                 "This tab does not change anything in the project.");
 
             public static readonly GUIContent HeaderHelp = new GUIContent(
@@ -75,7 +75,7 @@ namespace Playgama.Suit.Tabs
 
             public static readonly GUIContent AnalysisMode = new GUIContent(
                 "Analysis Mode",
-                "Which Playgama Suit analysis source was used to estimate per-asset size mapping.");
+                "Which Playgama Bridge analysis source was used to estimate per-asset size mapping.");
 
             public static readonly GUIContent NoData = new GUIContent(
                 "No analysis data yet. Run Build & Analyze first.",
@@ -180,12 +180,12 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawHeader()
         {
-            _foldHeader = SuitStyles.DrawSectionHeader("About Platform Checks", _foldHeader, "\u2139");
+            _foldHeader = BridgeStyles.DrawSectionHeader("About Platform Checks", _foldHeader, "\u2139");
             if (_foldHeader)
             {
-                SuitStyles.BeginCard();
-                EditorGUILayout.LabelField("Build-size-focused checks only. No auto-fixes, no non-size rules.", SuitStyles.SubtitleStyle);
-                SuitStyles.EndCard();
+                BridgeStyles.BeginCard();
+                EditorGUILayout.LabelField("Build-size-focused checks only. No auto-fixes, no non-size rules.", BridgeStyles.SubtitleStyle);
+                BridgeStyles.EndCard();
             }
         }
 
@@ -197,10 +197,10 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawPlatformSelector()
         {
-            _foldPlatform = SuitStyles.DrawSectionHeader("Target Platform", _foldPlatform, "\u2316");
+            _foldPlatform = BridgeStyles.DrawSectionHeader("Target Platform", _foldPlatform, "\u2316");
             if (_foldPlatform)
             {
-                SuitStyles.BeginCard();
+                BridgeStyles.BeginCard();
                 var newPlat = (TargetPlatform)EditorGUILayout.EnumPopup(UI.PlatformField, _platform);
                 if (newPlat != _platform)
                 {
@@ -214,7 +214,7 @@ namespace Playgama.Suit.Tabs
                     EditorGUILayout.LabelField(UI.BuildSizeReal, SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes));
                     EditorGUILayout.LabelField(UI.AnalysisMode, _buildInfo.DataMode.ToString());
                 }
-                SuitStyles.EndCard();
+                BridgeStyles.EndCard();
             }
         }
 
@@ -230,14 +230,14 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawInsights(List<RuleResult> results)
         {
-            _foldInsights = SuitStyles.DrawSectionHeader("Insights", _foldInsights, "\u26A0");
+            _foldInsights = BridgeStyles.DrawSectionHeader("Insights", _foldInsights, "\u26A0");
             if (!_foldInsights) return;
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
             if (results == null || results.Count == 0)
             {
-                EditorGUILayout.LabelField(UI.NoRulesLoaded.text, SuitStyles.SubtitleStyle);
-                SuitStyles.EndCard();
+                EditorGUILayout.LabelField(UI.NoRulesLoaded.text, BridgeStyles.SubtitleStyle);
+                BridgeStyles.EndCard();
                 return;
             }
 
@@ -250,8 +250,8 @@ namespace Playgama.Suit.Tabs
 
             if (failing.Count == 0)
             {
-                EditorGUILayout.LabelField(UI.LooksGood.text, SuitStyles.SubtitleStyle);
-                SuitStyles.EndCard();
+                EditorGUILayout.LabelField(UI.LooksGood.text, BridgeStyles.SubtitleStyle);
+                BridgeStyles.EndCard();
                 return;
             }
 
@@ -271,11 +271,11 @@ namespace Playgama.Suit.Tabs
 
                 if (!string.IsNullOrEmpty(rr.Message))
                     EditorGUILayout.LabelField(new GUIContent("→ " + rr.Message, "Rule-specific guidance/details."),
-                        SuitStyles.SubtitleStyle);
+                        BridgeStyles.SubtitleStyle);
 
                 GUILayout.Space(4);
             }
-            SuitStyles.EndCard();
+            BridgeStyles.EndCard();
         }
 
         // --------------------------
@@ -289,20 +289,20 @@ namespace Playgama.Suit.Tabs
         private void DrawRules(List<RuleResult> results)
         {
             int ruleCount = results?.Count ?? 0;
-            _foldRules = SuitStyles.DrawSectionHeader($"All Rules ({ruleCount} items)", _foldRules, "\u2714");
+            _foldRules = BridgeStyles.DrawSectionHeader($"All Rules ({ruleCount} items)", _foldRules, "\u2714");
             if (!_foldRules) return;
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
             if (results == null || results.Count == 0)
             {
-                EditorGUILayout.LabelField(UI.NoRulesAvailable.text, SuitStyles.SubtitleStyle);
-                SuitStyles.EndCard();
+                EditorGUILayout.LabelField(UI.NoRulesAvailable.text, BridgeStyles.SubtitleStyle);
+                BridgeStyles.EndCard();
                 return;
             }
 
             for (int i = 0; i < results.Count; i++)
                 DrawRuleRow(results[i]);
-            SuitStyles.EndCard();
+            BridgeStyles.EndCard();
         }
 
         /// <summary>
@@ -320,7 +320,7 @@ namespace Playgama.Suit.Tabs
             r.y += 2;
             r.height -= 4;
 
-            Color bg = rr.Passed ? SuitStyles.StatusGreen : SeverityColor(rr.Rule.Severity);
+            Color bg = rr.Passed ? BridgeStyles.StatusGreen : SeverityColor(rr.Rule.Severity);
             EditorGUI.DrawRect(new Rect(r.x, r.y, r.width, r.height), bg);
 
             Rect iconR = new Rect(r.x + 6, r.y + 2, 60, r.height);
@@ -354,9 +354,9 @@ namespace Playgama.Suit.Tabs
         {
             switch (s)
             {
-                case RuleSeverity.Critical: return SuitStyles.StatusRed;
-                case RuleSeverity.Warning: return SuitStyles.StatusYellow;
-                default: return SuitStyles.StatusGray;
+                case RuleSeverity.Critical: return BridgeStyles.StatusRed;
+                case RuleSeverity.Warning: return BridgeStyles.StatusYellow;
+                default: return BridgeStyles.StatusGray;
             }
         }
 
@@ -369,13 +369,13 @@ namespace Playgama.Suit.Tabs
         /// </summary>
         private void DrawCopyReport(List<RuleResult> results)
         {
-            _foldReport = SuitStyles.DrawSectionHeader("Copy Report", _foldReport, "\u2398");
+            _foldReport = BridgeStyles.DrawSectionHeader("Copy Report", _foldReport, "\u2398");
             if (!_foldReport) return;
 
-            SuitStyles.BeginCard();
+            BridgeStyles.BeginCard();
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (SuitStyles.DrawAccentButton(UI.CopyReport, GUILayout.Height(28)))
+                if (BridgeStyles.DrawAccentButton(UI.CopyReport, GUILayout.Height(28)))
                 {
                     string text = BuildReportText(results);
                     EditorGUIUtility.systemCopyBuffer = text;
@@ -385,8 +385,8 @@ namespace Playgama.Suit.Tabs
                 GUILayout.FlexibleSpace();
             }
 
-            EditorGUILayout.LabelField("Includes platform, real build size, analysis mode, and rule results.", SuitStyles.SubtitleStyle);
-            SuitStyles.EndCard();
+            EditorGUILayout.LabelField("Includes platform, real build size, analysis mode, and rule results.", BridgeStyles.SubtitleStyle);
+            BridgeStyles.EndCard();
         }
 
         /// <summary>
@@ -399,7 +399,7 @@ namespace Playgama.Suit.Tabs
         {
             var sb = new StringBuilder(2048);
 
-            sb.AppendLine("Playgama Suit Platform Checks Report (Build Size Only)");
+            sb.AppendLine("Playgama Bridge Platform Checks Report (Build Size Only)");
             sb.AppendLine("------------------------------------------------");
             sb.AppendLine("Platform: " + _platform);
 

@@ -15,21 +15,21 @@ namespace Playgama.Editor
         [MenuItem("Playgama/Bridge Setup", priority = 0)]
         public static void ShowBridgeSetup()
         {
-            Suit.InstallFilesWindow.Show();
+            Bridge.InstallFilesWindow.Show();
         }
 
         /// <summary>
-        /// Opens the Playgama Suit window.
+        /// Opens the Playgama Bridge window.
         /// </summary>
-        [MenuItem("Playgama/Suit", priority = 100)]
-        public static void ShowSuit()
+        [MenuItem("Playgama/Bridge", priority = 100)]
+        public static void ShowBridge()
         {
-            Suit.SuitWindow.ShowWindow();
+            Bridge.BridgeWindow.ShowWindow();
         }
     }
 
     /// <summary>
-    /// Shows the Suit window and Install Files popup on new install or update.
+    /// Shows the Bridge window and Install Files popup on new install or update.
     /// Tracks package version in EditorPrefs to detect changes.
     /// </summary>
     [InitializeOnLoad]
@@ -109,11 +109,11 @@ namespace Playgama.Editor
         {
             EditorApplication.delayCall += () =>
             {
-                Suit.SuitWindow.ShowWindow();
+                Bridge.BridgeWindow.ShowWindow();
 
                 EditorApplication.delayCall += () =>
                 {
-                    Suit.InstallFilesWindow.Show();
+                    Bridge.InstallFilesWindow.Show();
                 };
             };
         }

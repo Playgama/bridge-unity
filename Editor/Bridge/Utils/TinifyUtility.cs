@@ -6,7 +6,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace Playgama.Suit
+namespace Playgama.Bridge
 {
     /// <summary>
     /// Tinify (TinyPNG) helper for editor-side PNG/JPG optimization.
@@ -251,7 +251,7 @@ namespace Playgama.Suit
 
             string msg = "Uploading to Tinify: " + j.AssetPath;
             _onProgress?.Invoke(done, _result.Total, msg);
-            EditorUtility.DisplayProgressBar("Playgama Suit Tinify", msg, p);
+            EditorUtility.DisplayProgressBar("Playgama Bridge Tinify", msg, p);
 
             byte[] bytes;
             try
@@ -284,7 +284,7 @@ namespace Playgama.Suit
 
             string msg = "Downloading optimized: " + j.AssetPath;
             _onProgress?.Invoke(done, _result.Total, msg);
-            EditorUtility.DisplayProgressBar("Playgama Suit Tinify", msg, p);
+            EditorUtility.DisplayProgressBar("Playgama Bridge Tinify", msg, p);
 
             var req = UnityWebRequest.Get(j.LocationUrl);
             ApplyAuth(req, _apiKey);
@@ -375,7 +375,7 @@ namespace Playgama.Suit
 
                 int done = _result.Optimized + _result.Failed + _result.Skipped;
                 float p = done / Mathf.Max(1f, (float)_result.Total);
-                EditorUtility.DisplayProgressBar("Playgama Suit Tinify", "Done: " + done + "/" + _result.Total, p);
+                EditorUtility.DisplayProgressBar("Playgama Bridge Tinify", "Done: " + done + "/" + _result.Total, p);
                 return;
             }
 
@@ -396,7 +396,7 @@ namespace Playgama.Suit
 
             int done = _result.Optimized + _result.Failed + _result.Skipped;
             float p = done / Mathf.Max(1f, (float)_result.Total);
-            EditorUtility.DisplayProgressBar("Playgama Suit Tinify", "Error: " + done + "/" + _result.Total, p);
+            EditorUtility.DisplayProgressBar("Playgama Bridge Tinify", "Error: " + done + "/" + _result.Total, p);
         }
 
         private static void Finish()
