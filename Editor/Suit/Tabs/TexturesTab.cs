@@ -91,8 +91,11 @@ namespace Playgama.Suit.Tabs
             /// <summary>AssetDatabase path (e.g., "Assets/Textures/foo.png").</summary>
             public string Path;
 
-            /// <summary>Tracked size from analysis (bytes). May be estimated depending on analysis mode.</summary>
+            /// <summary>Compressed/runtime size in bytes (calculated from texture format and dimensions).</summary>
             public long SizeBytes;
+
+            /// <summary>Original source file size in bytes.</summary>
+            public long SourceSizeBytes;
 
             /// <summary>True if the size value is an estimate rather than an exact measurement.</summary>
             public bool IsSizeEstimated;
@@ -283,6 +286,20 @@ namespace Playgama.Suit.Tabs
                 string tb = SharedTypes.FormatBytes(_buildInfo.TrackedBytes);
                 if (_buildInfo.DataMode == BuildDataMode.DependenciesFallback) tb += " (estimated)";
                 EditorGUILayout.LabelField("Tracked Bytes", tb);
+
+                GUILayout.Space(4);
+
+                // Show size data source info
+                if (_buildInfo.DataMode == BuildDataMode.PackedAssets)
+                {
+                    EditorGUILayout.LabelField("Sizes: From build report (actual packed sizes)", EditorStyles.miniBoldLabel);
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox(
+                        "Sizes are estimated from source file sizes. Run 'Build & Analyze' to get actual compressed sizes from the build report.",
+                        MessageType.Warning);
+                }
 
                 GUILayout.Space(4);
                 EditorGUILayout.LabelField("Status Colors:", EditorStyles.miniBoldLabel);
@@ -592,13 +609,18 @@ namespace Playgama.Suit.Tabs
 
                         var main = AssetDatabase.LoadMainAssetAtPath(a.Path);
                         bool isTex2D = main is Texture2D;
+                        Texture2D tex = main as Texture2D;
 
                         var imp = AssetImporter.GetAtPath(a.Path) as TextureImporter;
 
+                        // Always use build report size (a.SizeBytes) as primary source
+                        // In PackedAssets mode: this is the actual packed size from build report
+                        // In DependenciesFallback mode: this is the file size (estimated)
                         var row = new Row
                         {
                             Path = a.Path,
                             SizeBytes = a.SizeBytes,
+                            SourceSizeBytes = a.SizeBytes,
                             IsSizeEstimated = a.IsSizeEstimated,
                             Selected = false,
 
@@ -618,6 +640,9 @@ namespace Playgama.Suit.Tabs
 
                     _rows.Sort((x, y) => y.SizeBytes.CompareTo(x.SizeBytes));
                     _status = $"Tracked textures: {_rows.Count}";
+
+                    // Force repaint to show updated values
+                    try { EditorWindow.focusedWindow?.Repaint(); } catch { }
                 }
                 catch (Exception ex)
                 {
@@ -627,6 +652,8 @@ namespace Playgama.Suit.Tabs
                 finally
                 {
                     _isRebuilding = false;
+                    // Force another repaint after rebuild completes
+                    try { EditorWindow.focusedWindow?.Repaint(); } catch { }
                 }
             };
         }
@@ -935,6 +962,110 @@ namespace Playgama.Suit.Tabs
             if (string.IsNullOrEmpty(search)) return true;
             if (string.IsNullOrEmpty(path)) return false;
             return path.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Calculates the actual compressed/runtime size of a texture.
+        /// Uses Unity's Profiler to get the accurate runtime memory size.
+        /// </summary>
+        private static long CalculateCompressedTextureSize(Texture2D tex, TextureImporter imp)
+        {
+            if (tex == null) return 0;
+
+            try
+            {
+                // Use Unity's Profiler to get the actual runtime memory size
+                // This gives us the size after compression is applied
+                long runtimeSize = UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(tex);
+                if (runtimeSize > 0)
+                {
+                    return runtimeSize;
+                }
+            }
+            catch { }
+
+            // Fallback: estimate based on texture format and dimensions
+            try
+            {
+                int width = tex.width;
+                int height = tex.height;
+                TextureFormat format = tex.format;
+
+                // Get bits per pixel for the format
+                int bitsPerPixel = GetBitsPerPixel(format);
+                if (bitsPerPixel <= 0) bitsPerPixel = 32; // Default to RGBA32
+
+                // Calculate base size
+                long baseSize = (long)width * height * bitsPerPixel / 8;
+
+                // Account for mipmaps (adds ~33% for full mip chain)
+                if (imp != null && imp.mipmapEnabled)
+                {
+                    baseSize = (long)(baseSize * 1.33f);
+                }
+
+                return baseSize;
+            }
+            catch { }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Returns the bits per pixel for common texture formats.
+        /// </summary>
+        private static int GetBitsPerPixel(TextureFormat format)
+        {
+            switch (format)
+            {
+                // Compressed formats
+                case TextureFormat.DXT1:
+                case TextureFormat.DXT1Crunched:
+                case TextureFormat.ETC_RGB4:
+                case TextureFormat.ETC2_RGB:
+                case TextureFormat.PVRTC_RGB4:
+                case TextureFormat.PVRTC_RGBA4:
+                    return 4;
+
+                case TextureFormat.DXT5:
+                case TextureFormat.DXT5Crunched:
+                case TextureFormat.ETC2_RGBA8:
+                case TextureFormat.BC7:
+                case TextureFormat.ASTC_4x4:
+                case TextureFormat.ASTC_5x5:
+                case TextureFormat.ASTC_6x6:
+                case TextureFormat.ASTC_8x8:
+                case TextureFormat.ASTC_10x10:
+                case TextureFormat.ASTC_12x12:
+                    return 8;
+
+                // Uncompressed formats
+                case TextureFormat.Alpha8:
+                case TextureFormat.R8:
+                    return 8;
+
+                case TextureFormat.R16:
+                case TextureFormat.RG16:
+                case TextureFormat.RGB565:
+                case TextureFormat.RGBA4444:
+                case TextureFormat.ARGB4444:
+                    return 16;
+
+                case TextureFormat.RGB24:
+                    return 24;
+
+                case TextureFormat.RGBA32:
+                case TextureFormat.ARGB32:
+                case TextureFormat.BGRA32:
+                case TextureFormat.RGBAHalf:
+                    return 32;
+
+                case TextureFormat.RGBAFloat:
+                    return 128;
+
+                default:
+                    return 32; // Default assumption
+            }
         }
     }
 }

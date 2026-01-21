@@ -64,9 +64,18 @@ namespace Playgama.Suit
             _tabs.Add(new Tabs.TexturesTab());
             _tabs.Add(new Tabs.AudioTab());
             _tabs.Add(new Tabs.MeshesTab());
+            _tabs.Add(new Tabs.ShadersTab());
+            _tabs.Add(new Tabs.FontsTab());
             _tabs.Add(new Tabs.BuildSettingsTab());
             _tabs.Add(new Tabs.PlatformChecksTab());
             _tabs.Add(new Tabs.SettingsTab());
+
+            // Try to load the most recent saved report
+            var savedReport = BuildReportStorage.LoadMostRecentReport();
+            if (savedReport != null)
+            {
+                CopyBuildInfo(savedReport, _buildInfo);
+            }
 
             for (int i = 0; i < _tabs.Count; i++)
                 _tabs[i].Init(_buildInfo);
@@ -92,21 +101,49 @@ namespace Playgama.Suit
         {
             if (info == null) return;
 
-            // Copy all fields from the new BuildInfo
-            _buildInfo.TotalBuildSizeBytes = info.TotalBuildSizeBytes;
-            _buildInfo.DataMode = info.DataMode;
-            _buildInfo.Assets = info.Assets;
-            _buildInfo.HasData = info.HasData;
-            _buildInfo.TrackedAssetCount = info.TrackedAssetCount;
-            _buildInfo.TrackedBytes = info.TrackedBytes;
-            _buildInfo.StatusMessage = info.StatusMessage;
-            _buildInfo.BuildTargetName = info.BuildTargetName;
-            _buildInfo.BuildTime = info.BuildTime;
-            _buildInfo.BuildSucceeded = info.BuildSucceeded;
-            _buildInfo.UsedBuildReport = info.UsedBuildReport;
-            _buildInfo.PackedGroupsCount = info.PackedGroupsCount;
-            _buildInfo.EmptyPathsCount = info.EmptyPathsCount;
-            _buildInfo.ModeDiagnostics = info.ModeDiagnostics;
+            CopyBuildInfo(info, _buildInfo);
+
+            for (int i = 0; i < _tabs.Count; i++)
+                _tabs[i].Init(_buildInfo);
+
+            Repaint();
+
+            // Schedule additional repaint to ensure UI updates after delayed rebuilds
+            EditorApplication.delayCall += () =>
+            {
+                Repaint();
+            };
+        }
+
+        /// <summary>
+        /// Copies all fields from source BuildInfo to destination.
+        /// </summary>
+        private static void CopyBuildInfo(BuildInfo source, BuildInfo dest)
+        {
+            dest.TotalBuildSizeBytes = source.TotalBuildSizeBytes;
+            dest.DataMode = source.DataMode;
+            dest.Assets = source.Assets;
+            dest.HasData = source.HasData;
+            dest.TrackedAssetCount = source.TrackedAssetCount;
+            dest.TrackedBytes = source.TrackedBytes;
+            dest.StatusMessage = source.StatusMessage;
+            dest.BuildTargetName = source.BuildTargetName;
+            dest.BuildTime = source.BuildTime;
+            dest.BuildSucceeded = source.BuildSucceeded;
+            dest.UsedBuildReport = source.UsedBuildReport;
+            dest.PackedGroupsCount = source.PackedGroupsCount;
+            dest.EmptyPathsCount = source.EmptyPathsCount;
+            dest.ModeDiagnostics = source.ModeDiagnostics;
+        }
+
+        /// <summary>
+        /// Loads a saved report and updates all tabs.
+        /// </summary>
+        public void LoadSavedReport(BuildInfo info)
+        {
+            if (info == null) return;
+
+            CopyBuildInfo(info, _buildInfo);
 
             for (int i = 0; i < _tabs.Count; i++)
                 _tabs[i].Init(_buildInfo);

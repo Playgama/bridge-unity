@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using Playgama.Common;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,6 +15,9 @@ namespace Playgama.Debug
         private GameObject _window;
         private readonly Queue<Action> _windowQueue = new Queue<Action>();
         private bool _isWindowActive;
+        
+        private const string Pref_ShowEditorDebugWindows = "PlaygamaBridge_ShowEditorDebugWindows";
+        private static bool ShouldShowDebugWindows => EditorPrefs.GetBool(Pref_ShowEditorDebugWindows, true);
 
         public static void Initialize()
         {
@@ -40,6 +44,12 @@ namespace Playgama.Debug
         public static void ShowSimple(string title, Action onSuccess, Action onFail)
         {
             if (instance == null) return;
+            
+            if (!ShouldShowDebugWindows)
+            {
+                onSuccess?.Invoke();
+                return;
+            }
 
             instance.EnqueueWindow(() =>
             {
@@ -54,6 +64,12 @@ namespace Playgama.Debug
         public static void ShowYesNo(string title, Action<bool> callback)
         {
             if (instance == null) return;
+            
+            if (!ShouldShowDebugWindows)
+            {
+                callback?.Invoke(false);
+                return;
+            }
 
             instance.EnqueueWindow(() =>
             {
@@ -68,6 +84,12 @@ namespace Playgama.Debug
         public static void ShowInterstitial(Action<string> onStateChanged)
         {
             if (instance == null) return;
+            
+            if (!ShouldShowDebugWindows)
+            {
+                onStateChanged?.Invoke("Closed");
+                return;
+            }
 
             instance.EnqueueWindow(() =>
             {
@@ -78,6 +100,13 @@ namespace Playgama.Debug
         public static void ShowRewarded(Action<string> onStateChanged)
         {
             if (instance == null) return;
+
+            if (!ShouldShowDebugWindows)
+            {
+                onStateChanged?.Invoke("Rewarded");
+                onStateChanged?.Invoke("Closed");
+                return;
+            }
 
             instance.EnqueueWindow(() =>
             {

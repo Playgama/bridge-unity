@@ -114,8 +114,8 @@ namespace Playgama.Suit.Tabs
                 {
                     if (DrawMenuButton("Settings", "Configure Playgama Suite settings"))
                     {
-                        // Settings tab is index 7 (after Home)
-                        OpenTab(7);
+                        // Settings tab is index 9 (after Home, Summary, Textures, Audio, Meshes, Shaders, Fonts, Build Settings, Platform Checks)
+                        OpenTab(9);
                     }
                 }
 
@@ -134,8 +134,10 @@ namespace Playgama.Suit.Tabs
             DrawFeatureRow("\u25B6", "Textures", "Optimize texture compression, max sizes, and crunch settings", 2);
             DrawFeatureRow("\u266A", "Audio", "Configure audio compression and load settings for WebGL", 3);
             DrawFeatureRow("\u25B2", "Meshes", "Manage mesh compression and read/write settings", 4);
-            DrawFeatureRow("\u2699", "Build Settings", "Control scenes, WebGL compression, and build options", 5);
-            DrawFeatureRow("\u2714", "Platform Checks", "Validate build size against platform requirements", 6);
+            DrawFeatureRow("\u2726", "Shaders", "View shader sizes and pass counts from build report", 5);
+            DrawFeatureRow("\u0041", "Fonts", "View font sizes including TextMeshPro assets", 6);
+            DrawFeatureRow("\u2699", "Build Settings", "Control scenes, WebGL compression, and build options", 7);
+            DrawFeatureRow("\u2714", "Platform Checks", "Validate build size against platform requirements", 8);
 
             SuitStyles.EndCard();
         }

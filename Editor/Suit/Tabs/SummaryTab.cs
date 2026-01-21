@@ -29,6 +29,11 @@ namespace Playgama.Suit.Tabs
         private bool _foldBreakdown = true;
         private bool _foldTop10 = true;
         private bool _foldDiagnostics = false;
+        private bool _foldSavedReports = false;
+
+        // Saved reports cache
+        private List<ReportFileInfo> _savedReports = new List<ReportFileInfo>();
+        private bool _savedReportsNeedRefresh = true;
 
         // --- UI content (labels + tooltips) ---
         private static readonly GUIContent GC_Title = new GUIContent(
@@ -93,8 +98,11 @@ namespace Playgama.Suit.Tabs
                 if (!_buildInfo.HasData || _buildInfo.Assets == null || _buildInfo.Assets.Count == 0)
                 {
                     EditorGUILayout.HelpBox(
-                        "No analysis data. Open the Build Settings tab and click Build & Analyze.",
+                        "No analysis data. Click 'Build & Analyze' or load a saved report below.",
                         MessageType.Warning);
+
+                    // Show saved reports so user can load a previous one
+                    DrawSavedReportsBlock();
 
                     // Diagnostics are still shown to explain what is missing.
                     DrawDiagnosticsBlock();
@@ -148,31 +156,72 @@ namespace Playgama.Suit.Tabs
 
                 DrawBreakdownBlock();
                 DrawTop10Block();
+                DrawSavedReportsBlock();
                 DrawDiagnosticsBlock();
             }
         }
 
         private void DrawHeaderStatus()
         {
-            _foldStatus = SuitStyles.DrawSectionHeader("Build Status", _foldStatus, "\u2713");
+            _foldStatus = SuitStyles.DrawSectionHeader("Last Build Snapshot", _foldStatus, "\u2713");
             if (_foldStatus)
             {
                 SuitStyles.BeginCard();
-                string buildResult = _buildInfo.BuildSucceeded ? "Success" : "Failed";
-                DrawKeyValue(
-                    "Build Result",
-                    "Whether the last build step reported success.",
-                    buildResult);
 
-                DrawKeyValue(
-                    "Target",
-                    "Build target name captured in the snapshot.",
-                    string.IsNullOrEmpty(_buildInfo.BuildTargetName) ? "—" : _buildInfo.BuildTargetName);
+                // Check if we have actual build data (not just a status message from "Analyzing...")
+                bool hasBuildData = _buildInfo.TotalBuildSizeBytes > 0 || _buildInfo.HasData;
 
-                if (!string.IsNullOrEmpty(_buildInfo.StatusMessage))
-                    EditorGUILayout.LabelField(_buildInfo.StatusMessage, SuitStyles.SubtitleStyle);
+                if (!hasBuildData)
+                {
+                    // Check if build is in progress
+                    if (!string.IsNullOrEmpty(_buildInfo.StatusMessage) &&
+                        _buildInfo.StatusMessage.Contains("Analyzing"))
+                    {
+                        EditorGUILayout.LabelField("Build in progress...", EditorStyles.boldLabel);
+                        EditorGUILayout.LabelField(_buildInfo.StatusMessage, SuitStyles.SubtitleStyle);
+                    }
+                    else
+                    {
+                        EditorGUILayout.LabelField("No build has been run yet.", SuitStyles.SubtitleStyle);
+                        EditorGUILayout.Space(4);
+                        EditorGUILayout.LabelField("Click 'Build & Analyze' to create a snapshot.", EditorStyles.miniLabel);
+                    }
+                }
                 else
-                    EditorGUILayout.LabelField(GC_NoData.text, SuitStyles.SubtitleStyle);
+                {
+                    // Show build result with color
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        GUILayout.Label(new GUIContent("Build Result", "Whether the last build step reported success."), GUILayout.Width(170));
+                        GUILayout.FlexibleSpace();
+
+                        Color prevColor = GUI.color;
+                        GUI.color = _buildInfo.BuildSucceeded ? new Color(0.4f, 0.9f, 0.4f) : new Color(0.9f, 0.4f, 0.4f);
+                        GUILayout.Label(_buildInfo.BuildSucceeded ? "Success" : "Failed", EditorStyles.boldLabel);
+                        GUI.color = prevColor;
+                    }
+
+                    DrawKeyValue(
+                        "Target",
+                        "Build target name captured in the snapshot.",
+                        string.IsNullOrEmpty(_buildInfo.BuildTargetName) ? "—" : _buildInfo.BuildTargetName);
+
+                    DrawKeyValue(
+                        "Total Build Size",
+                        "Total size of the build output.",
+                        SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes));
+
+                    if (_buildInfo.BuildTime.TotalSeconds > 0)
+                    {
+                        DrawKeyValue(
+                            "Build Time",
+                            "How long the build took.",
+                            FormatTimeSpan(_buildInfo.BuildTime));
+                    }
+
+                    if (!string.IsNullOrEmpty(_buildInfo.StatusMessage))
+                        EditorGUILayout.LabelField(_buildInfo.StatusMessage, SuitStyles.SubtitleStyle);
+                }
                 SuitStyles.EndCard();
             }
         }
@@ -194,6 +243,12 @@ namespace Playgama.Suit.Tabs
 
                 DrawBreakdownRow(AssetCategory.Models, new GUIContent(
                     "Models", "Model file assets (e.g., FBX) tracked by the analysis mode."));
+
+                DrawBreakdownRow(AssetCategory.Shaders, new GUIContent(
+                    "Shaders", "Shader assets tracked by the analysis mode."));
+
+                DrawBreakdownRow(AssetCategory.Fonts, new GUIContent(
+                    "Fonts", "Font assets including TrueType, OpenType, and TextMeshPro fonts."));
 
                 DrawBreakdownRow(AssetCategory.Other, new GUIContent(
                     "Other", "Everything that does not fit into the main categories above."));
@@ -270,6 +325,117 @@ namespace Playgama.Suit.Tabs
                 }
             }
             SuitStyles.EndCard();
+        }
+
+        private void DrawSavedReportsBlock()
+        {
+            _foldSavedReports = SuitStyles.DrawSectionHeader("Saved Reports", _foldSavedReports, "\u2630");
+            if (!_foldSavedReports) return;
+
+            SuitStyles.BeginCard();
+
+            // Refresh button
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Refresh List", GUILayout.Width(100)))
+                {
+                    _savedReportsNeedRefresh = true;
+                }
+
+                GUILayout.FlexibleSpace();
+
+                if (GUILayout.Button("Open Folder", GUILayout.Width(100)))
+                {
+                    string folderPath = BuildReportStorage.GetReportsFolderPath();
+                    EditorUtility.RevealInFinder(folderPath);
+                }
+            }
+
+            GUILayout.Space(8);
+
+            // Load saved reports list
+            if (_savedReportsNeedRefresh)
+            {
+                _savedReports = BuildReportStorage.GetSavedReports();
+                _savedReportsNeedRefresh = false;
+            }
+
+            if (_savedReports.Count == 0)
+            {
+                EditorGUILayout.LabelField("No saved reports found.", SuitStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("Reports are auto-saved after each Build & Analyze.", EditorStyles.miniLabel);
+            }
+            else
+            {
+                EditorGUILayout.LabelField($"{_savedReports.Count} saved report(s)", EditorStyles.miniBoldLabel);
+                GUILayout.Space(4);
+
+                // Show up to 10 most recent reports
+                int maxToShow = Mathf.Min(_savedReports.Count, 10);
+                for (int i = 0; i < maxToShow; i++)
+                {
+                    var report = _savedReports[i];
+                    DrawSavedReportRow(report, i);
+                }
+
+                if (_savedReports.Count > 10)
+                {
+                    GUILayout.Space(4);
+                    EditorGUILayout.LabelField($"... and {_savedReports.Count - 10} more", SuitStyles.SubtitleStyle);
+                }
+            }
+
+            SuitStyles.EndCard();
+        }
+
+        private void DrawSavedReportRow(ReportFileInfo report, int index)
+        {
+            Rect rowRect = EditorGUILayout.GetControlRect(false, 28);
+            SuitStyles.DrawListRowBackground(rowRect, index, SuitStyles.CardBackground);
+
+            float x = rowRect.x + 4;
+
+            // Date/time
+            EditorGUI.LabelField(
+                new Rect(x, rowRect.y + 5, 140, 18),
+                new GUIContent(report.GetDisplayName(), report.FilePath),
+                EditorStyles.miniLabel);
+            x += 145;
+
+            // File size
+            string sizeStr = SharedTypes.FormatBytes(report.FileSize);
+            EditorGUI.LabelField(
+                new Rect(x, rowRect.y + 5, 70, 18),
+                new GUIContent(sizeStr, "Report file size"),
+                EditorStyles.miniLabel);
+            x += 75;
+
+            // Load button
+            Rect loadRect = new Rect(rowRect.x + rowRect.width - 120, rowRect.y + 4, 55, 20);
+            if (GUI.Button(loadRect, new GUIContent("Load", "Load this report")))
+            {
+                var loadedInfo = BuildReportStorage.LoadReport(report.FilePath);
+                if (loadedInfo != null)
+                {
+                    var window = EditorWindow.GetWindow<SuitWindow>();
+                    if (window != null)
+                    {
+                        window.LoadSavedReport(loadedInfo);
+                    }
+                }
+            }
+
+            // Delete button
+            Rect deleteRect = new Rect(rowRect.x + rowRect.width - 60, rowRect.y + 4, 55, 20);
+            if (GUI.Button(deleteRect, new GUIContent("Delete", "Delete this report")))
+            {
+                if (EditorUtility.DisplayDialog("Delete Report",
+                    $"Delete report from {report.GetDisplayName()}?", "Delete", "Cancel"))
+                {
+                    BuildReportStorage.DeleteReport(report.FilePath);
+                    _savedReportsNeedRefresh = true;
+                }
+            }
         }
 
         private void DrawDiagnosticsBlock()
@@ -356,6 +522,8 @@ namespace Playgama.Suit.Tabs
             InitBucket(AssetCategory.Audio);
             InitBucket(AssetCategory.Meshes);
             InitBucket(AssetCategory.Models);
+            InitBucket(AssetCategory.Shaders);
+            InitBucket(AssetCategory.Fonts);
             InitBucket(AssetCategory.Other);
 
             // Single-pass aggregation + incremental Top-10 insertion.

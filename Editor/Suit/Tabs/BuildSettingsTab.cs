@@ -38,6 +38,7 @@ namespace Playgama.Suit.Tabs
         private string _outputPath;
         private bool _devBuild;
         private WebGLCompressionState _compressionState;
+        private CodeOptimizationState _codeOptimizationState;
 
         /// <summary>
         /// Summary state for WebGL compression setting read via reflection.
@@ -50,6 +51,23 @@ namespace Playgama.Suit.Tabs
             Enabled_Brotli,
             Enabled_Gzip,
             Enabled_Other
+        }
+
+        /// <summary>
+        /// Code optimization setting for IL2CPP code generation.
+        /// Controls the tradeoff between build size, build time, and runtime performance.
+        /// Maps to Unity's WebGLCodeOptimization / Il2CppCodeGeneration enums.
+        /// </summary>
+        private enum CodeOptimizationState
+        {
+            Unknown,
+            None,               // No optimization - fastest build time
+            Size,               // Optimize for size - smallest build
+            Speed,              // Optimize for runtime speed - fastest execution
+            ShorterBuildTime,   // Faster incremental builds (Unity 2022+)
+            RuntimeSpeedLTO,    // Link Time Optimization for max speed (Unity 2022+)
+            DiskSize,           // Optimize for disk size (Unity 2022+)
+            DiskSizeLTO         // Disk size with Link Time Optimization (Unity 2022+)
         }
 
         /// <summary>
@@ -142,6 +160,16 @@ namespace Playgama.Suit.Tabs
                 "Current WebGL compression setting (best-effort).\n" +
                 "Click to choose Disabled / Brotli / Gzip.");
 
+            public static readonly GUIContent CodeOptimizationLabel = new GUIContent(
+                "Code Optimization",
+                "IL2CPP code generation optimization mode.\n" +
+                "Controls the tradeoff between build size, build time, and runtime performance.");
+
+            public static readonly GUIContent CodeOptimizationButton = new GUIContent(
+                "Unknown",
+                "Current code optimization setting.\n" +
+                "Click to choose optimization mode.");
+
             public static readonly GUIContent WebGLTip = new GUIContent(
                 "For build size you generally want:\n" +
                 "• Development Build OFF (release size)\n" +
@@ -199,6 +227,7 @@ namespace Playgama.Suit.Tabs
             _devBuild = EditorUserBuildSettings.development;
 
             ReadWebGLCompression(out _compressionState);
+            ReadCodeOptimization(out _codeOptimizationState);
 
             _status = "";
         }
@@ -347,6 +376,8 @@ namespace Playgama.Suit.Tabs
             if (!_foldWebGL) return;
 
             SuitStyles.BeginCard();
+
+            // First row: Development Build toggle
             using (new EditorGUILayout.HorizontalScope())
             {
                 bool newDev = EditorGUILayout.ToggleLeft(UI.DevelopmentBuild, _devBuild, GUILayout.Width(160));
@@ -357,15 +388,27 @@ namespace Playgama.Suit.Tabs
                     _status = "Development Build updated.";
                 }
 
-                GUILayout.Space(12);
+                GUILayout.FlexibleSpace();
+            }
 
+            GUILayout.Space(6);
+
+            // Second row: Compression and Code Optimization dropdowns
+            using (new EditorGUILayout.HorizontalScope())
+            {
                 GUILayout.Label(UI.CompressionLabel, GUILayout.Width(90));
                 DrawCompressionDropdown();
+
+                GUILayout.Space(20);
+
+                GUILayout.Label(UI.CodeOptimizationLabel, GUILayout.Width(110));
+                DrawCodeOptimizationDropdown();
 
                 GUILayout.FlexibleSpace();
             }
 
-            EditorGUILayout.LabelField("Development Build OFF + WebGL compression ON for smallest size.", SuitStyles.SubtitleStyle);
+            GUILayout.Space(4);
+            EditorGUILayout.LabelField("Development Build OFF + Compression ON + 'Disk Size with LTO' for smallest build.", SuitStyles.SubtitleStyle);
             SuitStyles.EndCard();
         }
 
@@ -432,26 +475,68 @@ namespace Playgama.Suit.Tabs
             if (!_foldLastBuild) return;
 
             SuitStyles.BeginCard();
-            if (_buildInfo == null || !_buildInfo.HasData)
+
+            // Check if we have actual build data (not just a status message from "Analyzing...")
+            bool hasBuildData = _buildInfo != null && (_buildInfo.TotalBuildSizeBytes > 0 || _buildInfo.HasData);
+
+            if (!hasBuildData)
             {
-                EditorGUILayout.LabelField(UI.NoSnapshot.text, SuitStyles.SubtitleStyle);
+                // Check if build is in progress
+                if (_buildInfo != null && !string.IsNullOrEmpty(_buildInfo.StatusMessage) &&
+                    _buildInfo.StatusMessage.Contains("Analyzing"))
+                {
+                    EditorGUILayout.LabelField("Build in progress...", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField(_buildInfo.StatusMessage, SuitStyles.SubtitleStyle);
+                }
+                else
+                {
+                    EditorGUILayout.LabelField(UI.NoSnapshot.text, SuitStyles.SubtitleStyle);
+                    EditorGUILayout.Space(4);
+                    EditorGUILayout.LabelField("Click 'Build & Analyze' to create a snapshot.", EditorStyles.miniLabel);
+                }
                 SuitStyles.EndCard();
                 return;
             }
 
-            EditorGUILayout.LabelField(new GUIContent("Total Build Size (real)", "Total build size as measured from build output."), SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes));
-            EditorGUILayout.LabelField(new GUIContent("Analysis Mode", "Which data source Playgama Suit used to map assets to size."), _buildInfo.DataMode.ToString());
-            EditorGUILayout.LabelField(new GUIContent("Tracked Asset Count", "Number of assets included in the analysis."), _buildInfo.TrackedAssetCount.ToString());
+            // Show build result with color
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Label(new GUIContent("Build Result", "Whether the last build step reported success."), GUILayout.Width(130));
+                GUILayout.FlexibleSpace();
+
+                Color prevColor = GUI.color;
+                GUI.color = _buildInfo.BuildSucceeded ? new Color(0.4f, 0.9f, 0.4f) : new Color(0.9f, 0.4f, 0.4f);
+                GUILayout.Label(_buildInfo.BuildSucceeded ? "Success" : "Failed", EditorStyles.boldLabel);
+                GUI.color = prevColor;
+            }
+
+            DrawLabelValue("Target", string.IsNullOrEmpty(_buildInfo.BuildTargetName) ? "—" : _buildInfo.BuildTargetName);
+            DrawLabelValue("Total Build Size", SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes));
+
+            if (_buildInfo.BuildTime.TotalSeconds > 0)
+            {
+                string timeStr = _buildInfo.BuildTime.TotalMinutes >= 1
+                    ? $"{(int)_buildInfo.BuildTime.TotalMinutes}m {_buildInfo.BuildTime.Seconds}s"
+                    : $"{_buildInfo.BuildTime.TotalSeconds:0.0}s";
+                DrawLabelValue("Build Time", timeStr);
+            }
+
+            DrawLabelValue("Analysis Mode", _buildInfo.DataMode.ToString());
+            DrawLabelValue("Tracked Assets", _buildInfo.TrackedAssetCount.ToString());
 
             string tracked = SharedTypes.FormatBytes(_buildInfo.TrackedBytes);
             if (_buildInfo.DataMode == BuildDataMode.DependenciesFallback) tracked += " (estimated)";
-            EditorGUILayout.LabelField(new GUIContent("Tracked Bytes", "Sum of tracked asset sizes (may be estimated in fallback mode)."), tracked);
+            DrawLabelValue("Tracked Bytes", tracked);
+
+            GUILayout.Space(4);
 
             if (GUILayout.Button(UI.CopySnapshot, GUILayout.Width(220)))
             {
                 string txt =
                     "Playgama Suit Build Snapshot\n" +
                     "-------------------\n" +
+                    $"Build Result: {(_buildInfo.BuildSucceeded ? "Success" : "Failed")}\n" +
+                    $"Target: {_buildInfo.BuildTargetName}\n" +
                     $"Total Build Size: {SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes)}\n" +
                     $"Mode: {_buildInfo.DataMode}\n" +
                     $"Tracked Assets: {_buildInfo.TrackedAssetCount}\n" +
@@ -460,6 +545,19 @@ namespace Playgama.Suit.Tabs
                 _status = "Snapshot copied to clipboard.";
             }
             SuitStyles.EndCard();
+        }
+
+        /// <summary>
+        /// Helper to draw a label-value pair consistently.
+        /// </summary>
+        private static void DrawLabelValue(string label, string value)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Label(label, GUILayout.Width(130));
+                GUILayout.FlexibleSpace();
+                GUILayout.Label(value);
+            }
         }
 
         /// <summary>
@@ -682,6 +780,464 @@ namespace Playgama.Suit.Tabs
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Draws a dropdown-like button for Code Optimization setting.
+        /// Reads current state best-effort and offers a context menu to set a desired mode.
+        /// </summary>
+        private void DrawCodeOptimizationDropdown()
+        {
+            ReadCodeOptimization(out _codeOptimizationState);
+
+            // Default to Disk Size with LTO if Unknown (best for WebGL size optimization)
+            if (_codeOptimizationState == CodeOptimizationState.Unknown)
+            {
+                _codeOptimizationState = CodeOptimizationState.DiskSizeLTO;
+            }
+
+            UI.CodeOptimizationButton.text = CodeOptimizationLabel(_codeOptimizationState);
+
+            if (GUILayout.Button(UI.CodeOptimizationButton, GUILayout.Width(160)))
+            {
+                var menu = new GenericMenu();
+
+                // Size optimization options
+                AddCodeOptimizationItem(menu, "Disk Size with LTO", CodeOptimizationState.DiskSizeLTO,
+                    "Disk size optimization with Link Time Optimization. Smallest build, longer build time.");
+
+                AddCodeOptimizationItem(menu, "Disk Size", CodeOptimizationState.DiskSize,
+                    "Optimize for disk size. Reduces file size on disk.");
+
+                menu.AddSeparator("");
+
+                // Speed optimization options
+                AddCodeOptimizationItem(menu, "Runtime Speed with LTO", CodeOptimizationState.RuntimeSpeedLTO,
+                    "Maximum runtime speed with Link Time Optimization. Longest build time.");
+
+                AddCodeOptimizationItem(menu, "Speed", CodeOptimizationState.Speed,
+                    "Faster runtime performance. Larger build size.");
+
+                menu.AddSeparator("");
+
+                // Build time options
+                AddCodeOptimizationItem(menu, "Shorter Build Time", CodeOptimizationState.ShorterBuildTime,
+                    "Faster incremental builds. Less optimized code.");
+
+                AddCodeOptimizationItem(menu, "None", CodeOptimizationState.None,
+                    "No optimization. Fastest build, largest size, slowest runtime.");
+
+                menu.ShowAsContext();
+            }
+        }
+
+        /// <summary>
+        /// Adds an item to the code optimization menu.
+        /// </summary>
+        private void AddCodeOptimizationItem(GenericMenu menu, string title, CodeOptimizationState state, string tooltip)
+        {
+            bool on = _codeOptimizationState == state;
+            menu.AddItem(new GUIContent(title, tooltip), on, () =>
+            {
+                bool ok = TrySetCodeOptimization(state);
+                if (ok)
+                {
+                    _codeOptimizationState = state;
+                    _status = $"Code optimization set to '{title}'.";
+                }
+                else
+                {
+                    _status = $"Failed to set '{title}' - option may not be available in this Unity version.";
+                }
+            });
+        }
+
+        /// <summary>
+        /// Converts code optimization state to a short label for the dropdown button.
+        /// </summary>
+        private static string CodeOptimizationLabel(CodeOptimizationState s)
+        {
+            switch (s)
+            {
+                case CodeOptimizationState.Size: return "Size";
+                case CodeOptimizationState.Speed: return "Speed";
+                case CodeOptimizationState.None: return "None";
+                case CodeOptimizationState.ShorterBuildTime: return "Shorter Build Time";
+                case CodeOptimizationState.RuntimeSpeedLTO: return "Runtime Speed (LTO)";
+                case CodeOptimizationState.DiskSize: return "Disk Size";
+                case CodeOptimizationState.DiskSizeLTO: return "Disk Size (LTO)";
+                default: return "Unknown";
+            }
+        }
+
+        /// <summary>
+        /// Gets the raw Code Optimization value from Unity for debugging purposes.
+        /// </summary>
+        private static string GetRawCodeOptimizationValue()
+        {
+            try
+            {
+                // Try GetPlatformSettings first
+                var getPlatformSettings = typeof(EditorUserBuildSettings).GetMethod(
+                    "GetPlatformSettings",
+                    BindingFlags.Public | BindingFlags.Static,
+                    null,
+                    new[] { typeof(string), typeof(string) },
+                    null);
+
+                if (getPlatformSettings != null)
+                {
+                    object result = getPlatformSettings.Invoke(null, new object[] { "WebGL", "CodeOptimization" });
+                    if (result != null && !string.IsNullOrEmpty(result.ToString()))
+                    {
+                        return result.ToString();
+                    }
+                }
+
+                // Try il2CppCodeGeneration
+                var il2cppProp = typeof(EditorUserBuildSettings).GetProperty("il2CppCodeGeneration", BindingFlags.Public | BindingFlags.Static);
+                if (il2cppProp != null)
+                {
+                    object v = il2cppProp.GetValue(null, null);
+                    if (v != null) return v.ToString();
+                }
+            }
+            catch { }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Reads Code Optimization setting via reflection (best-effort).
+        /// Tries multiple API locations across Unity versions.
+        /// </summary>
+        private static void ReadCodeOptimization(out CodeOptimizationState state)
+        {
+            state = CodeOptimizationState.Unknown;
+
+            try
+            {
+                // Method 1: EditorUserBuildSettings.GetPlatformSettings (Unity 2022+ Build Profiles)
+                // This is the primary API used by Build Profiles for Code Optimization
+                var getPlatformSettings = typeof(EditorUserBuildSettings).GetMethod(
+                    "GetPlatformSettings",
+                    BindingFlags.Public | BindingFlags.Static,
+                    null,
+                    new[] { typeof(string), typeof(string) },
+                    null);
+
+                if (getPlatformSettings != null)
+                {
+                    // Try with "WebGL" as platform name
+                    object result = getPlatformSettings.Invoke(null, new object[] { "WebGL", "CodeOptimization" });
+                    if (result != null && !string.IsNullOrEmpty(result.ToString()))
+                    {
+                        state = ParseCodeOptimizationValue(result.ToString());
+                        if (state != CodeOptimizationState.Unknown) return;
+                    }
+
+                    // Try with BuildTargetGroup name
+                    result = getPlatformSettings.Invoke(null, new object[] { BuildTargetGroup.WebGL.ToString(), "CodeOptimization" });
+                    if (result != null && !string.IsNullOrEmpty(result.ToString()))
+                    {
+                        state = ParseCodeOptimizationValue(result.ToString());
+                        if (state != CodeOptimizationState.Unknown) return;
+                    }
+                }
+
+                // Method 2: PlayerSettings.GetIl2CppCodeGeneration (Unity 2022+)
+                var getIl2CppCodeGen = typeof(PlayerSettings).GetMethod(
+                    "GetIl2CppCodeGeneration",
+                    BindingFlags.Public | BindingFlags.Static);
+
+                if (getIl2CppCodeGen != null)
+                {
+                    // Try to get NamedBuildTarget.WebGL via reflection (safe for older Unity versions)
+                    var namedBuildTargetType = Type.GetType("UnityEditor.Build.NamedBuildTarget, UnityEditor");
+                    if (namedBuildTargetType != null)
+                    {
+                        var webglTarget = namedBuildTargetType.GetProperty("WebGL", BindingFlags.Public | BindingFlags.Static);
+                        if (webglTarget != null)
+                        {
+                            object target = webglTarget.GetValue(null);
+                            object result = getIl2CppCodeGen.Invoke(null, new[] { target });
+                            if (result != null)
+                            {
+                                state = ParseCodeOptimizationValue(result.ToString());
+                                if (state != CodeOptimizationState.Unknown) return;
+                            }
+                        }
+                    }
+                }
+
+                // Method 3: EditorUserBuildSettings.il2CppCodeGeneration (legacy)
+                var il2cppProp = typeof(EditorUserBuildSettings).GetProperty("il2CppCodeGeneration", BindingFlags.Public | BindingFlags.Static);
+                if (il2cppProp != null)
+                {
+                    object v = il2cppProp.GetValue(null, null);
+                    if (v != null)
+                    {
+                        state = ParseCodeOptimizationValue(v.ToString());
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogWarning($"[Playgama Suit] Failed to read Code Optimization: {ex.Message}");
+                state = CodeOptimizationState.Unknown;
+            }
+        }
+
+        /// <summary>
+        /// Parses a string value from Unity's code optimization enums or platform settings into our state enum.
+        /// Handles both enum names (OptimizeSize) and setting values (diskSizeLto).
+        /// </summary>
+        private static CodeOptimizationState ParseCodeOptimizationValue(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return CodeOptimizationState.Unknown;
+
+            string s = value.ToLowerInvariant();
+
+            // Exact matches first (platform settings values)
+            if (s == "disksizelto") return CodeOptimizationState.DiskSizeLTO;
+            if (s == "runtimespeedlto") return CodeOptimizationState.RuntimeSpeedLTO;
+            if (s == "disksize") return CodeOptimizationState.DiskSize;
+            if (s == "shorterbuildtime") return CodeOptimizationState.ShorterBuildTime;
+            if (s == "size") return CodeOptimizationState.Size;
+            if (s == "speed") return CodeOptimizationState.Speed;
+            if (s == "none") return CodeOptimizationState.None;
+
+            // Check for Disk Size with LTO (pattern matching for enum names)
+            if ((s.Contains("disk") && s.Contains("lto")) || s.Contains("disksizewithlto"))
+                return CodeOptimizationState.DiskSizeLTO;
+
+            // Check for Runtime Speed with LTO
+            if ((s.Contains("speed") && s.Contains("lto")) || s.Contains("runtimespeedwithlto"))
+                return CodeOptimizationState.RuntimeSpeedLTO;
+
+            // Check for Disk Size (without LTO)
+            if (s.Contains("disksize") || (s.Contains("disk") && s.Contains("size") && !s.Contains("lto")))
+                return CodeOptimizationState.DiskSize;
+
+            // Check for shorter build time / faster build
+            if (s.Contains("shorterbuildtime") || s.Contains("fasterwithoutlto") || s.Contains("fasterbuilds"))
+                return CodeOptimizationState.ShorterBuildTime;
+
+            // Standard options - check for enum names like "OptimizeSize", "OptimizeSpeed"
+            if (s.Contains("optimizesize") || s.Contains("optforsize") || (s.Contains("size") && !s.Contains("disk")))
+                return CodeOptimizationState.Size;
+
+            if (s.Contains("optimizespeed") || s.Contains("optforspeed") || (s.Contains("speed") && !s.Contains("lto")))
+                return CodeOptimizationState.Speed;
+
+            if (s.Contains("disabled"))
+                return CodeOptimizationState.None;
+
+            return CodeOptimizationState.Unknown;
+        }
+
+        /// <summary>
+        /// Attempts to set Code Optimization via reflection (best-effort).
+        /// Tries multiple API locations across Unity versions.
+        /// Returns false if the API is not available or the enum cannot be mapped.
+        /// </summary>
+        private static bool TrySetCodeOptimization(CodeOptimizationState desired)
+        {
+            try
+            {
+                bool anySuccess = false;
+
+                // Get the string value for the desired state (used by SetPlatformSettings)
+                string settingValue = GetCodeOptimizationSettingValue(desired);
+
+                // Method 1: EditorUserBuildSettings.SetPlatformSettings (Unity 2022+ Build Profiles)
+                // This is the primary API used by Build Profiles for Code Optimization
+                var setPlatformSettings = typeof(EditorUserBuildSettings).GetMethod(
+                    "SetPlatformSettings",
+                    BindingFlags.Public | BindingFlags.Static,
+                    null,
+                    new[] { typeof(string), typeof(string), typeof(string) },
+                    null);
+
+                if (setPlatformSettings != null && !string.IsNullOrEmpty(settingValue))
+                {
+                    // Set for WebGL platform
+                    setPlatformSettings.Invoke(null, new object[] { "WebGL", "CodeOptimization", settingValue });
+                    anySuccess = true;
+                }
+
+                // Method 2: PlayerSettings.SetIl2CppCodeGeneration (Unity 2022+)
+                var setIl2CppCodeGen = typeof(PlayerSettings).GetMethod(
+                    "SetIl2CppCodeGeneration",
+                    BindingFlags.Public | BindingFlags.Static);
+
+                if (setIl2CppCodeGen != null)
+                {
+                    // Try to get NamedBuildTarget.WebGL via reflection (safe for older Unity versions)
+                    var namedBuildTargetType = Type.GetType("UnityEditor.Build.NamedBuildTarget, UnityEditor");
+                    if (namedBuildTargetType != null)
+                    {
+                        var webglTarget = namedBuildTargetType.GetProperty("WebGL", BindingFlags.Public | BindingFlags.Static);
+
+                        if (webglTarget != null)
+                        {
+                            object target = webglTarget.GetValue(null);
+
+                            // Find the Il2CppCodeGeneration enum type via reflection
+                            var il2cppEnumType = Type.GetType("UnityEditor.Build.Il2CppCodeGeneration, UnityEditor");
+                            if (il2cppEnumType != null)
+                            {
+                                object enumValue = FindEnumValue(il2cppEnumType, desired);
+
+                                if (enumValue != null)
+                                {
+                                    setIl2CppCodeGen.Invoke(null, new[] { target, enumValue });
+                                    anySuccess = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Method 3: EditorUserBuildSettings.il2CppCodeGeneration (legacy)
+                var il2cppProp = typeof(EditorUserBuildSettings).GetProperty("il2CppCodeGeneration", BindingFlags.Public | BindingFlags.Static);
+                if (il2cppProp != null && il2cppProp.CanWrite)
+                {
+                    Type enumType = il2cppProp.PropertyType;
+                    if (enumType.IsEnum)
+                    {
+                        object value = FindEnumValue(enumType, desired);
+                        if (value != null)
+                        {
+                            il2cppProp.SetValue(null, value, null);
+                            anySuccess = true;
+                        }
+                    }
+                }
+
+                return anySuccess;
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogWarning($"[Playgama Suit] Failed to set Code Optimization: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Converts our CodeOptimizationState to the string value used by SetPlatformSettings.
+        /// These values match what Unity's Build Profiles use internally.
+        /// </summary>
+        private static string GetCodeOptimizationSettingValue(CodeOptimizationState state)
+        {
+            switch (state)
+            {
+                case CodeOptimizationState.Size: return "size";
+                case CodeOptimizationState.Speed: return "speed";
+                case CodeOptimizationState.None: return "none";
+                case CodeOptimizationState.ShorterBuildTime: return "shorterBuildTime";
+                case CodeOptimizationState.RuntimeSpeedLTO: return "runtimeSpeedLto";
+                case CodeOptimizationState.DiskSize: return "diskSize";
+                case CodeOptimizationState.DiskSizeLTO: return "diskSizeLto";
+                default: return null;
+            }
+        }
+
+        /// <summary>
+        /// Finds an enum value that matches the desired code optimization state.
+        /// Handles multiple naming conventions across Unity versions.
+        /// </summary>
+        private static object FindEnumValue(Type enumType, CodeOptimizationState desired)
+        {
+            var names = Enum.GetNames(enumType);
+
+            // For LTO variants, we need to check for combined patterns first
+            if (desired == CodeOptimizationState.DiskSizeLTO)
+            {
+                for (int i = 0; i < names.Length; i++)
+                {
+                    string n = names[i].ToLowerInvariant();
+                    if ((n.Contains("disk") && n.Contains("lto")) || n.Contains("disksizewithlto") || n.Contains("disksizelto"))
+                        return Enum.Parse(enumType, names[i]);
+                }
+                return null;
+            }
+
+            if (desired == CodeOptimizationState.RuntimeSpeedLTO)
+            {
+                for (int i = 0; i < names.Length; i++)
+                {
+                    string n = names[i].ToLowerInvariant();
+                    if ((n.Contains("speed") && n.Contains("lto")) || n.Contains("runtimespeedwithlto") || n.Contains("runtimespeedlto"))
+                        return Enum.Parse(enumType, names[i]);
+                }
+                return null;
+            }
+
+            if (desired == CodeOptimizationState.DiskSize)
+            {
+                for (int i = 0; i < names.Length; i++)
+                {
+                    string n = names[i].ToLowerInvariant();
+                    // Match disk size but NOT disk size with LTO
+                    if ((n.Contains("disksize") || (n.Contains("disk") && n.Contains("size"))) && !n.Contains("lto"))
+                        return Enum.Parse(enumType, names[i]);
+                }
+                return null;
+            }
+
+            // Build search patterns based on desired state
+            string[] patterns;
+            string[] excludePatterns = null;
+
+            switch (desired)
+            {
+                case CodeOptimizationState.Size:
+                    patterns = new[] { "size", "optforsize", "optimizesize" };
+                    excludePatterns = new[] { "disk", "lto" }; // Exclude disk size variants
+                    break;
+                case CodeOptimizationState.Speed:
+                    patterns = new[] { "speed", "runtime", "optforspeed", "optimizespeed" };
+                    excludePatterns = new[] { "lto" }; // Exclude LTO variants
+                    break;
+                case CodeOptimizationState.None:
+                    patterns = new[] { "none", "disabled", "off" };
+                    break;
+                case CodeOptimizationState.ShorterBuildTime:
+                    patterns = new[] { "shorterbuildtime", "fasterwithoutlto", "fasterbuilds", "fasterbuild" };
+                    break;
+                default:
+                    return null;
+            }
+
+            // Search for matching enum value
+            for (int i = 0; i < names.Length; i++)
+            {
+                string n = names[i].ToLowerInvariant();
+
+                // Check exclusion patterns first
+                if (excludePatterns != null)
+                {
+                    bool excluded = false;
+                    foreach (var ex in excludePatterns)
+                    {
+                        if (n.Contains(ex))
+                        {
+                            excluded = true;
+                            break;
+                        }
+                    }
+                    if (excluded) continue;
+                }
+
+                foreach (var pattern in patterns)
+                {
+                    if (n.Contains(pattern))
+                        return Enum.Parse(enumType, names[i]);
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

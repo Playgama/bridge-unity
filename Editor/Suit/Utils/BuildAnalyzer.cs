@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
@@ -127,11 +128,14 @@ namespace Playgama.Suit
                         scenes = scenes,
                         locationPathName = buildFolder,
                         target = BuildTarget.WebGL,
-                        options = BuildOptions.DetailedBuildReport
+                        // CleanBuildCache forces a non-incremental build, which is required for packedAssets data
+                        options = BuildOptions.DetailedBuildReport | BuildOptions.CleanBuildCache
                     };
 
                     if (EditorUserBuildSettings.development)
                         opts.options |= BuildOptions.Development;
+
+                    Debug.Log($"[Suit] Starting clean WebGL build with options: {opts.options}");
 
                     var start = DateTime.UtcNow;
 
@@ -149,6 +153,12 @@ namespace Playgama.Suit
                     var elapsed = DateTime.UtcNow - start;
 
                     AnalyzeReport(report, elapsed);
+
+                    // Create ZIP archive if build succeeded
+                    if (report != null && report.summary.result == BuildResult.Succeeded)
+                    {
+                        CreateBuildArchive(buildFolder);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -160,6 +170,57 @@ namespace Playgama.Suit
                     EditorUtility.ClearProgressBar();
                 }
             };
+        }
+
+        /// <summary>
+        /// Creates a ZIP archive of the build folder for easy uploading.
+        /// The archive is saved next to the build folder with a timestamp.
+        /// </summary>
+        private static void CreateBuildArchive(string buildFolder)
+        {
+            try
+            {
+                if (!Directory.Exists(buildFolder))
+                {
+                    Debug.LogWarning("[Suit] Cannot create archive: build folder does not exist.");
+                    return;
+                }
+
+                EditorUtility.DisplayProgressBar("Playgama Suit", "Creating ZIP archive...", 0.5f);
+
+                // Generate archive name with timestamp
+                string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+                string folderName = Path.GetFileName(buildFolder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                string parentFolder = Path.GetDirectoryName(buildFolder);
+                string archiveName = $"{folderName}_{timestamp}.zip";
+                string archivePath = Path.Combine(parentFolder, archiveName);
+
+                // Delete existing archive if present
+                if (File.Exists(archivePath))
+                {
+                    File.Delete(archivePath);
+                }
+
+                // Create the ZIP archive
+                ZipFile.CreateFromDirectory(buildFolder, archivePath, System.IO.Compression.CompressionLevel.Optimal, false);
+
+                // Get archive size
+                var archiveInfo = new FileInfo(archivePath);
+                string sizeStr = SharedTypes.FormatBytes(archiveInfo.Length);
+
+                Debug.Log($"[Suit] Build archive created: {archivePath} ({sizeStr})");
+
+                // Show in explorer/finder
+                EditorUtility.RevealInFinder(archivePath);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Suit] Failed to create build archive: {ex.Message}");
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
         }
 
         /// <summary>
@@ -237,6 +298,12 @@ namespace Playgama.Suit
                     $"Total: {SharedTypes.FormatBytes(info.TotalBuildSizeBytes)} | " +
                     $"Mode: {info.DataMode} | Tracked: {count}";
 
+                // Auto-save the report
+                if (info.HasData)
+                {
+                    BuildReportStorage.SaveReport(info);
+                }
+
                 Raise(info);
             }
             catch (Exception ex)
@@ -266,115 +333,118 @@ namespace Playgama.Suit
 
             try
             {
-                var repType = report.GetType();
-                var packedProp = repType.GetProperty("packedAssets", BindingFlags.Instance | BindingFlags.Public);
-                if (packedProp == null)
+                // Log build report info for diagnostics
+                Debug.Log($"[Suit] BuildReport summary: result={report.summary.result}, totalSize={report.summary.totalSize}, totalTime={report.summary.totalTime}");
+
+                // Try packedAssets first (preferred, gives per-asset sizes)
+                var packedAssetsArray = report.packedAssets;
+
+                if (packedAssetsArray != null && packedAssetsArray.Length > 0)
                 {
-                    diagnostics = "BuildReport.packedAssets property not found.";
-                    return false;
-                }
+                    Debug.Log($"[Suit] Found {packedAssetsArray.Length} packed asset groups");
 
-                var packedObj = packedProp.GetValue(report, null);
-                if (packedObj == null)
-                {
-                    diagnostics = "BuildReport.packedAssets is null.";
-                    return false;
-                }
+                    var map = new Dictionary<string, long>(4096);
+                    int groups = 0;
+                    int empty = 0;
+                    int zeroSize = 0;
+                    int totalContents = 0;
 
-                if (!(packedObj is IEnumerable packedEnumerable))
-                {
-                    diagnostics = "BuildReport.packedAssets is not IEnumerable.";
-                    return false;
-                }
-
-                var map = new Dictionary<string, long>(4096);
-                int groups = 0;
-                int empty = 0;
-
-                foreach (var group in packedEnumerable)
-                {
-                    if (group == null) continue;
-                    groups++;
-
-                    var contentsProp = group.GetType().GetProperty("contents", BindingFlags.Instance | BindingFlags.Public);
-                    if (contentsProp == null)
+                    foreach (var group in packedAssetsArray)
                     {
-                        diagnostics = "PackedAssetInfo.contents not found -> cannot map assets.";
-                        return false;
+                        if (group.contents == null) continue;
+                        groups++;
+
+                        foreach (var c in group.contents)
+                        {
+                            totalContents++;
+
+                            string path = c.sourceAssetPath;
+                            if (string.IsNullOrEmpty(path))
+                            {
+                                var guid = c.sourceAssetGUID;
+                                if (guid != default)
+                                    path = AssetDatabase.GUIDToAssetPath(guid.ToString());
+                            }
+
+                            if (string.IsNullOrEmpty(path))
+                            {
+                                empty++;
+                                continue;
+                            }
+
+                            if (path.StartsWith("Resources/") || path.StartsWith("Library/"))
+                                continue;
+
+                            long sz = (long)c.packedSize;
+                            if (sz <= 0)
+                            {
+                                zeroSize++;
+                                continue;
+                            }
+
+                            if (map.TryGetValue(path, out long cur))
+                                map[path] = cur + sz;
+                            else
+                                map[path] = sz;
+                        }
                     }
 
-                    var contentsObj = contentsProp.GetValue(group, null);
-                    if (contentsObj == null) continue;
+                    Debug.Log($"[Suit] PackedAssets analysis: Groups={groups}, TotalContents={totalContents}, EmptyPaths={empty}, ZeroSize={zeroSize}, Mapped={map.Count}");
 
-                    if (!(contentsObj is IEnumerable contentsEnumerable))
+                    if (map.Count > 0)
                     {
-                        diagnostics = "PackedAssetInfo.contents is not IEnumerable.";
-                        return false;
-                    }
+                        packedGroupsCount = groups;
+                        emptyPathsCount = empty;
 
-                    foreach (var c in contentsEnumerable)
-                    {
-                        if (c == null) continue;
-
-                        string path = ReadString(c, "sourceAssetPath");
-                        if (string.IsNullOrEmpty(path))
+                        foreach (var kv in map)
                         {
-                            string guid = ReadString(c, "sourceAssetGUID");
-                            if (!string.IsNullOrEmpty(guid))
-                                path = AssetDatabase.GUIDToAssetPath(guid);
+                            var t = AssetDatabase.GetMainAssetTypeAtPath(kv.Key);
+                            assets.Add(new AssetInfo
+                            {
+                                Path = kv.Key,
+                                SizeBytes = kv.Value,
+                                TypeName = (t != null) ? t.Name : "Unknown",
+                                Category = CategorizeAsset(kv.Key, t),
+                                IsSizeEstimated = false
+                            });
                         }
 
-                        if (string.IsNullOrEmpty(path))
-                        {
-                            empty++;
-                            continue;
-                        }
-
-                        long sz = ReadUlongAsLong(c, "packedSize");
-                        if (sz <= 0)
-                        {
-                            diagnostics = "Packed content has no packedSize -> cannot do per-asset sizing.";
-                            return false;
-                        }
-
-                        if (map.TryGetValue(path, out long cur))
-                            map[path] = cur + sz;
-                        else
-                            map[path] = sz;
+                        assets.Sort((a, b) => b.SizeBytes.CompareTo(a.SizeBytes));
+                        diagnostics = $"PackedAssets OK | Groups={groups} | Contents={totalContents} | Mapped={assets.Count}";
+                        Debug.Log("[Suit] " + diagnostics);
+                        return true;
                     }
                 }
 
-                if (groups == 0 || map.Count == 0)
+                // Fallback: Try to use GetFiles() to get build output file information
+                Debug.Log("[Suit] packedAssets empty, trying GetFiles() fallback...");
+
+#if UNITY_2020_1_OR_NEWER
+                var files = report.GetFiles();
+                if (files != null && files.Length > 0)
                 {
-                    diagnostics = $"Packed assets empty. Groups={groups}, MappedAssets={map.Count}.";
-                    return false;
-                }
+                    Debug.Log($"[Suit] Found {files.Length} files in build report");
 
-                packedGroupsCount = groups;
-                emptyPathsCount = empty;
-
-                foreach (var kv in map)
-                {
-                    var t = AssetDatabase.GetMainAssetTypeAtPath(kv.Key);
-
-                    assets.Add(new AssetInfo
+                    // Log first few files for diagnostics
+                    for (int i = 0; i < Mathf.Min(5, files.Length); i++)
                     {
-                        Path = kv.Key,
-                        SizeBytes = kv.Value,
-                        TypeName = (t != null) ? t.Name : "Unknown",
-                        Category = CategorizeAsset(kv.Key, t),
-                        IsSizeEstimated = false
-                    });
+                        Debug.Log($"[Suit] File[{i}]: path={files[i].path}, role={files[i].role}, size={files[i].size}");
+                    }
                 }
+                else
+                {
+                    Debug.Log("[Suit] GetFiles() returned null or empty");
+                }
+#endif
 
-                assets.Sort((a, b) => b.SizeBytes.CompareTo(a.SizeBytes));
-
-                diagnostics = $"PackedAssets OK | Groups={groups} | EmptyPaths={empty} | Mapped={assets.Count}";
-                return true;
+                diagnostics = $"BuildReport.packedAssets is null or empty (Length={packedAssetsArray?.Length ?? 0}). WebGL builds may not provide per-asset packed sizes.";
+                Debug.Log("[Suit] " + diagnostics);
+                return false;
             }
             catch (Exception ex)
             {
                 diagnostics = "PackedAssets exception: " + ex.Message;
+                Debug.LogError("[Suit] " + diagnostics + "\n" + ex.StackTrace);
                 return false;
             }
         }
@@ -520,6 +590,18 @@ namespace Playgama.Suit
 
             if (t != null && t.Name == "Mesh")
                 return AssetCategory.Meshes;
+
+            // Shaders
+            if (t != null && (t.Name == "Shader" || t.Name == "ComputeShader"))
+                return AssetCategory.Shaders;
+            if (ext == ".shader" || ext == ".cginc" || ext == ".hlsl" || ext == ".compute")
+                return AssetCategory.Shaders;
+
+            // Fonts
+            if (t != null && (t.Name == "Font" || t.Name == "TMP_FontAsset" || t.Name == "FontAsset"))
+                return AssetCategory.Fonts;
+            if (ext == ".ttf" || ext == ".otf" || ext == ".fnt" || ext == ".fontsettings")
+                return AssetCategory.Fonts;
 
             return AssetCategory.Other;
         }

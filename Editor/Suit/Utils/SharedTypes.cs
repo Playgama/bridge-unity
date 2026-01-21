@@ -26,6 +26,8 @@ namespace Playgama.Suit
         Audio,
         Meshes,
         Models,
+        Shaders,
+        Fonts,
         Other
     }
 

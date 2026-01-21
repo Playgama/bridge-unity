@@ -438,6 +438,9 @@ namespace Playgama.Suit.Tabs
 
                         var imp = AssetImporter.GetAtPath(a.Path) as AudioImporter;
 
+                        // Always use build report size (a.SizeBytes) as primary source
+                        // In PackedAssets mode: this is the actual packed size from build report
+                        // In DependenciesFallback mode: this is the file size (estimated)
                         var row = new Row
                         {
                             Path = a.Path,
@@ -464,6 +467,9 @@ namespace Playgama.Suit.Tabs
 
                     _rows.Sort((x, y) => y.SizeBytes.CompareTo(x.SizeBytes));
                     _status = $"Tracked audio assets: {_rows.Count}";
+
+                    // Force repaint to show updated values
+                    try { EditorWindow.focusedWindow?.Repaint(); } catch { }
                 }
                 catch (Exception ex)
                 {
@@ -473,6 +479,8 @@ namespace Playgama.Suit.Tabs
                 finally
                 {
                     _isRebuilding = false;
+                    // Force another repaint after rebuild completes
+                    try { EditorWindow.focusedWindow?.Repaint(); } catch { }
                 }
             };
         }

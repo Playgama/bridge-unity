@@ -28,7 +28,14 @@ namespace Playgama.Suit.Tabs
 
         // Foldout states for collapsible sections.
         private bool _foldHeader = false;
+        private bool _foldBridge = true;
         private bool _foldTinify = true;
+
+        // Bridge settings
+        private bool _showEditorDebugWindows = true;
+
+        /// <summary>EditorPrefs key for the debug windows setting.</summary>
+        public const string Pref_ShowEditorDebugWindows = "PlaygamaBridge_ShowEditorDebugWindows";
 
         /// <summary>
         /// Result of the last validation attempt:
@@ -54,6 +61,15 @@ namespace Playgama.Suit.Tabs
             public static readonly GUIContent HeaderHelp = new GUIContent(
                 "Tinify is optional. If no key is set, the plugin continues to work without Tinify.",
                 "Tinify is used only when you explicitly run Tinify optimization from other tabs.");
+
+            public static readonly GUIContent BridgeBlockTitle = new GUIContent(
+                "Bridge Settings",
+                "Settings for Playgama Bridge SDK behavior in the editor.");
+
+            public static readonly GUIContent ShowEditorDebugWindows = new GUIContent(
+                "Show Editor Debug Windows",
+                "When enabled, Bridge will show debug windows for advertisements and other features in the Unity Editor.\n" +
+                "Disable this to hide the debug popups during editor testing.");
 
             public static readonly GUIContent TinifyBlockTitle = new GUIContent(
                 "Tinify (TinyPNG) API Key",
@@ -93,12 +109,13 @@ namespace Playgama.Suit.Tabs
         }
 
         /// <summary>
-        /// Receives analysis data (not used directly here) and loads the current stored Tinify key into the UI.
+        /// Receives analysis data (not used directly here) and loads the current stored settings into the UI.
         /// </summary>
         public void Init(BuildInfo buildInfo)
         {
             _buildInfo = buildInfo;
             _keyInput = TinifyUtility.GetKey();
+            _showEditorDebugWindows = EditorPrefs.GetBool(Pref_ShowEditorDebugWindows, true);
         }
 
         /// <summary>
@@ -114,15 +131,41 @@ namespace Playgama.Suit.Tabs
                 if (_foldHeader)
                 {
                     SuitStyles.BeginCard();
-                    EditorGUILayout.LabelField("Tinify is optional. The plugin works without it.", SuitStyles.SubtitleStyle);
+                    EditorGUILayout.LabelField("Configure Playgama Bridge and optimization settings.", SuitStyles.SubtitleStyle);
                     SuitStyles.EndCard();
                 }
 
+                DrawBridgeSettingsBlock();
                 DrawTinifyKeyBlock();
 
                 if (!string.IsNullOrEmpty(_status))
                     EditorGUILayout.HelpBox(_status, MessageType.None);
             }
+        }
+
+        /// <summary>
+        /// Renders the Bridge Settings UI with debug window toggle.
+        /// </summary>
+        private void DrawBridgeSettingsBlock()
+        {
+            _foldBridge = SuitStyles.DrawSectionHeader("Bridge Settings", _foldBridge, "\u2699");
+            if (!_foldBridge) return;
+
+            SuitStyles.BeginCard();
+
+            bool newShowDebug = EditorGUILayout.ToggleLeft(UI.ShowEditorDebugWindows, _showEditorDebugWindows);
+            if (newShowDebug != _showEditorDebugWindows)
+            {
+                _showEditorDebugWindows = newShowDebug;
+                EditorPrefs.SetBool(Pref_ShowEditorDebugWindows, _showEditorDebugWindows);
+                _status = _showEditorDebugWindows
+                    ? "Editor debug windows enabled."
+                    : "Editor debug windows disabled.";
+            }
+
+            GUILayout.Space(4);
+            EditorGUILayout.LabelField("Controls whether Bridge shows ad debug popups in the Editor.", SuitStyles.SubtitleStyle);
+            SuitStyles.EndCard();
         }
 
         /// <summary>

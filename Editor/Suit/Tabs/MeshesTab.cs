@@ -462,12 +462,13 @@ namespace Playgama.Suit.Tabs
         {
             using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
             {
-                GUILayout.Label(new GUIContent("Sel", "Row selection for batch operations."), GUILayout.Width(30));
-                GUILayout.Label(new GUIContent("Size", "Tracked size (bytes), '~' means estimated."), GUILayout.Width(90));
-                GUILayout.Label(new GUIContent("Compression", "ModelImporter mesh compression snapshot."), GUILayout.Width(120));
-                GUILayout.Label(new GUIContent("Read/Write", "ModelImporter isReadable snapshot."), GUILayout.Width(90));
-                GUILayout.Label(new GUIContent("Static Flags", "Static flags snapshot from the model root GameObject."), GUILayout.Width(120));
-                GUILayout.Label(new GUIContent("Path", "AssetDatabase path of the model asset."), GUILayout.ExpandWidth(true));
+                GUILayout.Label(new GUIContent("Sel", "Row selection for batch operations."), GUILayout.Width(26));
+                GUILayout.Label(new GUIContent("Name", "File name of the model asset."), GUILayout.Width(155));
+                GUILayout.Label(new GUIContent("Size", "Tracked size (bytes), '~' means estimated."), GUILayout.Width(95));
+                GUILayout.Label(new GUIContent("Compression", "ModelImporter mesh compression snapshot."), GUILayout.Width(125));
+                GUILayout.Label(new GUIContent("Read/Write", "ModelImporter isReadable snapshot."), GUILayout.Width(95));
+                GUILayout.Label(new GUIContent("Static Flags", "Static flags snapshot from the model root GameObject."), GUILayout.Width(125));
+                GUILayout.FlexibleSpace();
             }
         }
 
@@ -596,6 +597,9 @@ namespace Playgama.Suit.Tabs
 
                         var imp = AssetImporter.GetAtPath(a.Path) as ModelImporter;
 
+                        // Always use build report size (a.SizeBytes) as primary source
+                        // In PackedAssets mode: this is the actual packed size from build report
+                        // In DependenciesFallback mode: this is the file size (estimated)
                         var row = new Row
                         {
                             Path = a.Path,
@@ -630,6 +634,9 @@ namespace Playgama.Suit.Tabs
 
                     _rows.Sort((x, y) => y.SizeBytes.CompareTo(x.SizeBytes));
                     _status = $"Tracked model assets: {_rows.Count}";
+
+                    // Force repaint to show updated values
+                    try { EditorWindow.focusedWindow?.Repaint(); } catch { }
                 }
                 catch (Exception ex)
                 {
@@ -639,6 +646,8 @@ namespace Playgama.Suit.Tabs
                 finally
                 {
                     _isRebuilding = false;
+                    // Force another repaint after rebuild completes
+                    try { EditorWindow.focusedWindow?.Repaint(); } catch { }
                 }
             };
         }
