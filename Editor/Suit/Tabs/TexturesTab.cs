@@ -347,52 +347,61 @@ namespace Playgama.Suit.Tabs
             if (_foldBatch)
             {
                 SuitStyles.BeginCard();
-                    using (new EditorGUILayout.HorizontalScope())
+
+                // First row: Preset and Apply button
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.Label(UI.Preset, GUILayout.Width(50));
+                    var newPreset = (Preset)EditorGUILayout.EnumPopup(_preset, GUILayout.MinWidth(150), GUILayout.MaxWidth(210));
+                    if (newPreset != _preset)
                     {
-                        GUILayout.Label(UI.Preset, GUILayout.Width(50));
-                        var newPreset = (Preset)EditorGUILayout.EnumPopup(_preset, GUILayout.Width(210));
-                        if (newPreset != _preset)
-                        {
-                            _preset = newPreset;
-                            ApplyPreset(_preset);
-                        }
-
-                        GUILayout.FlexibleSpace();
-
-                        GUI.enabled = GetSelectedCount() > 0;
-                        if (GUILayout.Button(UI.ApplyToSelected, GUILayout.Height(26), GUILayout.Width(140)))
-                            ApplyBatchToSelected();
-                        GUI.enabled = true;
+                        _preset = newPreset;
+                        ApplyPreset(_preset);
                     }
 
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        GUILayout.Label(UI.WebGLMaxSize, GUILayout.Width(110));
-                        _batchMaxSize = EditorGUILayout.IntPopup(
-                            _batchMaxSize,
-                            new[] { "256", "512", "1024", "2048", "4096" },
-                            new[] { 256, 512, 1024, 2048, 4096 },
-                            GUILayout.Width(120));
+                    GUILayout.FlexibleSpace();
 
-                        GUILayout.Space(12);
+                    GUI.enabled = GetSelectedCount() > 0;
+                    if (GUILayout.Button(UI.ApplyToSelected, GUILayout.Height(26), GUILayout.MinWidth(100), GUILayout.MaxWidth(140)))
+                        ApplyBatchToSelected();
+                    GUI.enabled = true;
+                }
 
-                        GUILayout.Label(UI.Compression, GUILayout.Width(85));
-                        _batchCompression = (TextureImporterCompression)EditorGUILayout.EnumPopup(_batchCompression, GUILayout.Width(140));
+                GUILayout.Space(4);
 
-                        GUILayout.Space(12);
+                // Second row: Max Size and Compression
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.Label(UI.WebGLMaxSize, GUILayout.Width(90));
+                    _batchMaxSize = EditorGUILayout.IntPopup(
+                        _batchMaxSize,
+                        new[] { "256", "512", "1024", "2048", "4096" },
+                        new[] { 256, 512, 1024, 2048, 4096 },
+                        GUILayout.MinWidth(70), GUILayout.MaxWidth(100));
 
-                        _batchCrunch = EditorGUILayout.ToggleLeft(UI.Crunch, _batchCrunch, GUILayout.Width(80));
+                    GUILayout.FlexibleSpace();
 
-                        GUILayout.Label(UI.CrunchQuality, GUILayout.Width(50));
-                        _batchCrunchQuality = EditorGUILayout.IntSlider(_batchCrunchQuality, 0, 100, GUILayout.Width(220));
+                    GUILayout.Label(UI.Compression, GUILayout.Width(80));
+                    _batchCompression = (TextureImporterCompression)EditorGUILayout.EnumPopup(_batchCompression, GUILayout.MinWidth(100), GUILayout.MaxWidth(140));
+                }
 
-                        GUILayout.Space(12);
+                GUILayout.Space(2);
 
-                        _batchDisableReadWrite = EditorGUILayout.ToggleLeft(UI.DisableReadWrite, _batchDisableReadWrite, GUILayout.Width(180));
-                    }
+                // Third row: Crunch and Quality
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    _batchCrunch = EditorGUILayout.ToggleLeft(UI.Crunch, _batchCrunch, GUILayout.Width(70));
 
-                    GUILayout.Space(4);
-                    EditorGUILayout.LabelField("Presets: Balanced (1024) | Aggressive (512) | High Quality (2048)", SuitStyles.SubtitleStyle);
+                    GUILayout.Label(UI.CrunchQuality, GUILayout.Width(50));
+                    _batchCrunchQuality = EditorGUILayout.IntSlider(_batchCrunchQuality, 0, 100, GUILayout.MinWidth(100), GUILayout.MaxWidth(200));
+
+                    GUILayout.FlexibleSpace();
+
+                    _batchDisableReadWrite = EditorGUILayout.ToggleLeft(UI.DisableReadWrite, _batchDisableReadWrite, GUILayout.MinWidth(120), GUILayout.MaxWidth(160));
+                }
+
+                GUILayout.Space(4);
+                EditorGUILayout.LabelField("Presets: Balanced (1024) | Aggressive (512) | High Quality (2048)", SuitStyles.SubtitleStyle);
                 SuitStyles.EndCard();
             }
         }
@@ -541,33 +550,93 @@ namespace Playgama.Suit.Tabs
             Color bg = StatusToColor(r.Status);
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), bg);
 
-            Rect cb = new Rect(rect.x + 4, rect.y + 2, 18, rect.height);
-            r.Selected = EditorGUI.Toggle(cb, r.Selected);
+            // Calculate available width for content (excluding margins and buttons)
+            float availableWidth = rect.width - 12; // margins
+            float buttonWidth = 108; // Ping + Select buttons
+            float checkboxWidth = 22;
+            float contentWidth = availableWidth - buttonWidth - checkboxWidth;
 
-            // Texture file name (extracted from path)
-            string fileName = string.IsNullOrEmpty(r.Path) ? "—" : System.IO.Path.GetFileName(r.Path);
-            if (string.IsNullOrEmpty(fileName)) fileName = "—";
-            Rect nameR = new Rect(rect.x + 26, rect.y + 2, 150, rect.height);
-            EditorGUI.LabelField(nameR, new GUIContent(fileName, r.Path), EditorStyles.miniLabel);
+            // Determine layout mode based on available width
+            bool compactMode = contentWidth < 450;
+            bool veryCompactMode = contentWidth < 300;
 
-            Rect sizeR = new Rect(rect.x + 180, rect.y + 2, 95, rect.height);
-            string size = SharedTypes.FormatBytes(r.SizeBytes);
-            if (r.IsSizeEstimated) size += " ~";
-            EditorGUI.LabelField(sizeR, size, EditorStyles.miniLabel);
+            float x = rect.x + 4;
 
-            Rect maxR = new Rect(rect.x + 280, rect.y + 2, 70, rect.height);
-            EditorGUI.LabelField(maxR, "Max " + r.WebGLMaxSize, EditorStyles.miniLabel);
+            // Checkbox
+            r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 2, 18, rect.height), r.Selected);
+            x += checkboxWidth;
 
-            Rect rwR = new Rect(rect.x + 355, rect.y + 2, 70, rect.height);
-            EditorGUI.LabelField(rwR, r.ReadWrite ? "R/W ON" : "R/W OFF", EditorStyles.miniLabel);
+            if (veryCompactMode)
+            {
+                // Very compact: only name and size
+                float nameWidth = contentWidth * 0.65f;
+                float sizeWidth = contentWidth * 0.35f;
 
-            Rect compR = new Rect(rect.x + 430, rect.y + 2, 95, rect.height);
-            EditorGUI.LabelField(compR, r.Compression.ToString(), EditorStyles.miniLabel);
+                string fileName = string.IsNullOrEmpty(r.Path) ? "—" : System.IO.Path.GetFileName(r.Path);
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 20), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
 
-            Rect crR = new Rect(rect.x + 527, rect.y + 2, 90, rect.height);
-            if (r.Crunch) EditorGUI.LabelField(crR, "Crunch " + r.CrunchQuality, EditorStyles.miniLabel);
-            else EditorGUI.LabelField(crR, "Crunch OFF", EditorStyles.miniLabel);
+                string size = SharedTypes.FormatBytes(r.SizeBytes);
+                if (r.IsSizeEstimated) size += " ~";
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+            }
+            else if (compactMode)
+            {
+                // Compact: name, size, max, compression
+                float nameWidth = contentWidth * 0.35f;
+                float sizeWidth = contentWidth * 0.2f;
+                float maxWidth = contentWidth * 0.2f;
+                float compWidth = contentWidth * 0.25f;
 
+                string fileName = string.IsNullOrEmpty(r.Path) ? "—" : System.IO.Path.GetFileName(r.Path);
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 25), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
+
+                string size = SharedTypes.FormatBytes(r.SizeBytes);
+                if (r.IsSizeEstimated) size += " ~";
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                x += sizeWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, maxWidth, rect.height), "Max " + r.WebGLMaxSize, EditorStyles.miniLabel);
+                x += maxWidth;
+
+                string compText = r.Compression.ToString();
+                if (r.Crunch) compText += " Cr";
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, compWidth, rect.height), compText, EditorStyles.miniLabel);
+            }
+            else
+            {
+                // Full layout: all columns
+                float nameWidth = Mathf.Max(100, contentWidth * 0.22f);
+                float sizeWidth = Mathf.Max(70, contentWidth * 0.13f);
+                float maxWidth = Mathf.Max(55, contentWidth * 0.1f);
+                float rwWidth = Mathf.Max(55, contentWidth * 0.1f);
+                float compWidth = Mathf.Max(80, contentWidth * 0.18f);
+                float crunchWidth = Mathf.Max(70, contentWidth * 0.15f);
+
+                string fileName = string.IsNullOrEmpty(r.Path) ? "—" : System.IO.Path.GetFileName(r.Path);
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 30), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
+
+                string size = SharedTypes.FormatBytes(r.SizeBytes);
+                if (r.IsSizeEstimated) size += " ~";
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                x += sizeWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, maxWidth, rect.height), "Max " + r.WebGLMaxSize, EditorStyles.miniLabel);
+                x += maxWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, rwWidth, rect.height), r.ReadWrite ? "R/W ON" : "R/W OFF", EditorStyles.miniLabel);
+                x += rwWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, compWidth, rect.height), r.Compression.ToString(), EditorStyles.miniLabel);
+                x += compWidth;
+
+                string crunchText = r.Crunch ? "Crunch " + r.CrunchQuality : "Crunch OFF";
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, crunchWidth, rect.height), crunchText, EditorStyles.miniLabel);
+            }
+
+            // Buttons always at the right edge
             Rect pingR = new Rect(rect.x + rect.width - 112, rect.y + 2, 50, rect.height);
             if (GUI.Button(pingR, UI.Ping))
             {
@@ -581,6 +650,16 @@ namespace Playgama.Suit.Tabs
                 var obj = AssetDatabase.LoadMainAssetAtPath(r.Path);
                 if (obj != null) Selection.activeObject = obj;
             }
+        }
+
+        /// <summary>
+        /// Truncates a string and adds ellipsis if it exceeds the max length.
+        /// </summary>
+        private static string TruncateWithEllipsis(string s, int maxLen)
+        {
+            if (string.IsNullOrEmpty(s)) return "—";
+            if (s.Length <= maxLen) return s;
+            return s.Substring(0, maxLen - 1) + "…";
         }
 
         /// <summary>

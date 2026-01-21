@@ -289,37 +289,47 @@ namespace Playgama.Suit.Tabs
             if (!_foldBatch) return;
 
             SuitStyles.BeginCard();
+
+            // First row: Load Type and Format
             using (new EditorGUILayout.HorizontalScope())
             {
-                GUILayout.Label(UI.LoadType, GUILayout.Width(70));
-                _loadType = (AudioClipLoadType)EditorGUILayout.EnumPopup(_loadType, GUILayout.Width(170));
+                GUILayout.Label(UI.LoadType, GUILayout.Width(65));
+                _loadType = (AudioClipLoadType)EditorGUILayout.EnumPopup(_loadType, GUILayout.MinWidth(120), GUILayout.MaxWidth(170));
 
-                GUILayout.Space(12);
+                GUILayout.FlexibleSpace();
 
                 GUILayout.Label(UI.Format, GUILayout.Width(50));
-                _format = (AudioCompressionFormat)EditorGUILayout.EnumPopup(_format, GUILayout.Width(170));
-
-                GUILayout.Space(12);
-
-                GUILayout.Label(UI.Quality, GUILayout.Width(55));
-                _quality = EditorGUILayout.Slider(_quality, 0.0f, 1.0f, GUILayout.Width(260));
+                _format = (AudioCompressionFormat)EditorGUILayout.EnumPopup(_format, GUILayout.MinWidth(80), GUILayout.MaxWidth(130));
             }
 
+            GUILayout.Space(2);
+
+            // Second row: Quality slider
             using (new EditorGUILayout.HorizontalScope())
             {
-                _forceToMono = EditorGUILayout.ToggleLeft(UI.ForceToMono, _forceToMono, GUILayout.Width(140));
-                _preload = EditorGUILayout.ToggleLeft(UI.Preload, _preload, GUILayout.Width(160));
+                GUILayout.Label(UI.Quality, GUILayout.Width(50));
+                _quality = EditorGUILayout.Slider(_quality, 0.0f, 1.0f, GUILayout.MinWidth(120), GUILayout.MaxWidth(250));
+                GUILayout.FlexibleSpace();
+            }
+
+            GUILayout.Space(2);
+
+            // Third row: Toggles and Apply button
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                _forceToMono = EditorGUILayout.ToggleLeft(UI.ForceToMono, _forceToMono, GUILayout.MinWidth(100), GUILayout.MaxWidth(130));
+                _preload = EditorGUILayout.ToggleLeft(UI.Preload, _preload, GUILayout.MinWidth(120), GUILayout.MaxWidth(160));
 
                 GUILayout.FlexibleSpace();
 
                 GUI.enabled = GetSelectedCount() > 0;
-                if (GUILayout.Button(UI.ApplyToSelected, GUILayout.Height(26), GUILayout.Width(140)))
+                if (GUILayout.Button(UI.ApplyToSelected, GUILayout.Height(26), GUILayout.MinWidth(100), GUILayout.MaxWidth(140)))
                     ApplyBatchToSelected();
                 GUI.enabled = true;
             }
 
             GUILayout.Space(4);
-            EditorGUILayout.LabelField("Recommended: Vorbis, Compressed In Memory, Force To Mono ON, Quality ~0.5–0.7", SuitStyles.SubtitleStyle);
+            EditorGUILayout.LabelField("Recommended: Vorbis, Compressed In Memory, Mono, Quality ~0.5–0.7", SuitStyles.SubtitleStyle);
             SuitStyles.EndCard();
         }
 
@@ -371,32 +381,87 @@ namespace Playgama.Suit.Tabs
             Color bg = r.ImporterFound ? SuitStyles.StatusGray : SuitStyles.StatusRed;
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), bg);
 
-            Rect cb = new Rect(rect.x + 4, rect.y + 2, 18, rect.height);
-            r.Selected = EditorGUI.Toggle(cb, r.Selected);
+            // Calculate available width for content (excluding margins and buttons)
+            float availableWidth = rect.width - 12;
+            float buttonWidth = 108;
+            float checkboxWidth = 22;
+            float contentWidth = availableWidth - buttonWidth - checkboxWidth;
 
-            // Audio file name (extracted from path)
+            // Determine layout mode based on available width
+            bool compactMode = contentWidth < 450;
+            bool veryCompactMode = contentWidth < 300;
+
+            float x = rect.x + 4;
+
+            // Checkbox
+            r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 2, 18, rect.height), r.Selected);
+            x += checkboxWidth;
+
             string fileName = string.IsNullOrEmpty(r.Path) ? "—" : System.IO.Path.GetFileName(r.Path);
             if (string.IsNullOrEmpty(fileName)) fileName = "—";
-            Rect nameR = new Rect(rect.x + 26, rect.y + 2, 150, rect.height);
-            EditorGUI.LabelField(nameR, new GUIContent(fileName, r.Path), EditorStyles.miniLabel);
 
-            Rect sizeR = new Rect(rect.x + 180, rect.y + 2, 95, rect.height);
             string size = SharedTypes.FormatBytes(r.SizeBytes);
             if (r.IsSizeEstimated) size += " ~";
-            EditorGUI.LabelField(sizeR, size, EditorStyles.miniLabel);
 
-            Rect ltR = new Rect(rect.x + 280, rect.y + 2, 160, rect.height);
-            EditorGUI.LabelField(ltR, r.LoadType.ToString(), EditorStyles.miniLabel);
+            if (veryCompactMode)
+            {
+                // Very compact: only name and size
+                float nameWidth = contentWidth * 0.65f;
+                float sizeWidth = contentWidth * 0.35f;
 
-            Rect fmtR = new Rect(rect.x + 443, rect.y + 2, 120, rect.height);
-            EditorGUI.LabelField(fmtR, r.Format.ToString(), EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 20), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
 
-            Rect qR = new Rect(rect.x + 565, rect.y + 2, 70, rect.height);
-            EditorGUI.LabelField(qR, "Q " + r.Quality.ToString("0.00"), EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+            }
+            else if (compactMode)
+            {
+                // Compact: name, size, load type, format
+                float nameWidth = contentWidth * 0.28f;
+                float sizeWidth = contentWidth * 0.18f;
+                float ltWidth = contentWidth * 0.3f;
+                float fmtWidth = contentWidth * 0.24f;
 
-            Rect monoR = new Rect(rect.x + 637, rect.y + 2, 90, rect.height);
-            EditorGUI.LabelField(monoR, r.ForceToMono ? "Mono ON" : "Mono OFF", EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 22), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
 
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                x += sizeWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, ltWidth, rect.height), TruncateLoadType(r.LoadType), EditorStyles.miniLabel);
+                x += ltWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, fmtWidth, rect.height), r.Format.ToString(), EditorStyles.miniLabel);
+            }
+            else
+            {
+                // Full layout: all columns
+                float nameWidth = Mathf.Max(100, contentWidth * 0.2f);
+                float sizeWidth = Mathf.Max(70, contentWidth * 0.12f);
+                float ltWidth = Mathf.Max(100, contentWidth * 0.22f);
+                float fmtWidth = Mathf.Max(80, contentWidth * 0.16f);
+                float qWidth = Mathf.Max(50, contentWidth * 0.1f);
+                float monoWidth = Mathf.Max(60, contentWidth * 0.12f);
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 25), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                x += sizeWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, ltWidth, rect.height), r.LoadType.ToString(), EditorStyles.miniLabel);
+                x += ltWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, fmtWidth, rect.height), r.Format.ToString(), EditorStyles.miniLabel);
+                x += fmtWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, qWidth, rect.height), "Q " + r.Quality.ToString("0.00"), EditorStyles.miniLabel);
+                x += qWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, monoWidth, rect.height), r.ForceToMono ? "Mono" : "Stereo", EditorStyles.miniLabel);
+            }
+
+            // Buttons always at the right edge
             Rect pingR = new Rect(rect.x + rect.width - 112, rect.y + 2, 50, rect.height);
             if (GUI.Button(pingR, UI.Ping))
             {
@@ -409,6 +474,26 @@ namespace Playgama.Suit.Tabs
             {
                 var obj = AssetDatabase.LoadMainAssetAtPath(r.Path);
                 if (obj != null) Selection.activeObject = obj;
+            }
+        }
+
+        /// <summary>Truncates a string and adds ellipsis if it exceeds the max length.</summary>
+        private static string TruncateWithEllipsis(string s, int maxLen)
+        {
+            if (string.IsNullOrEmpty(s)) return "—";
+            if (s.Length <= maxLen) return s;
+            return s.Substring(0, maxLen - 1) + "…";
+        }
+
+        /// <summary>Shortens AudioClipLoadType names for compact display.</summary>
+        private static string TruncateLoadType(AudioClipLoadType lt)
+        {
+            switch (lt)
+            {
+                case AudioClipLoadType.DecompressOnLoad: return "Decompress";
+                case AudioClipLoadType.CompressedInMemory: return "Compressed";
+                case AudioClipLoadType.Streaming: return "Stream";
+                default: return lt.ToString();
             }
         }
 

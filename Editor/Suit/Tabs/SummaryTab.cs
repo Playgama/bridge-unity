@@ -293,30 +293,77 @@ namespace Playgama.Suit.Tabs
 
                 SuitStyles.DrawListRowBackground(rect, i, SuitStyles.CardBackground);
 
+                // Calculate available width for content (excluding margins and button)
+                float availableWidth = rect.width - 8;
+                float buttonWidth = 65;
+                float rankWidth = 28;
+                float contentWidth = availableWidth - buttonWidth - rankWidth;
+
+                // Determine layout mode based on available width
+                bool compactMode = contentWidth < 280;
+                bool veryCompactMode = contentWidth < 180;
+
                 float x = rect.x + 4;
 
+                // Rank number
                 EditorGUI.LabelField(new Rect(x, rect.y + 2, 24, rect.height),
                     new GUIContent((i + 1).ToString(), "Rank in the Top 10 list."), EditorStyles.miniBoldLabel);
-                x += 28;
+                x += rankWidth;
 
                 // File name (extracted from path)
                 string fileName = string.IsNullOrEmpty(a.Path) ? "—" : System.IO.Path.GetFileName(a.Path);
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, 150, rect.height),
-                    new GUIContent(fileName, a.Path), EditorStyles.miniLabel);
-                x += 155;
 
                 string size = SharedTypes.FormatBytes(a.SizeBytes);
                 if (a.IsSizeEstimated) size += " ~";
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, 90, rect.height),
-                    new GUIContent(size, a.IsSizeEstimated
-                        ? "Estimated asset size (disk file size)."
-                        : "Tracked asset size from packed mapping (when available)."), EditorStyles.miniLabel);
-                x += 95;
+                if (veryCompactMode)
+                {
+                    // Very compact: only name and size
+                    float nameWidth = contentWidth * 0.6f;
+                    float sizeWidth = contentWidth * 0.4f;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, 90, rect.height),
-                    new GUIContent(a.Category.ToString(), "Asset category."), EditorStyles.miniLabel);
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height),
+                        new GUIContent(Truncate(fileName, 15), a.Path), EditorStyles.miniLabel);
+                    x += nameWidth;
 
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height),
+                        new GUIContent(size, a.IsSizeEstimated ? "Estimated" : "Tracked"), EditorStyles.miniLabel);
+                }
+                else if (compactMode)
+                {
+                    // Compact: name, size (no category)
+                    float nameWidth = contentWidth * 0.6f;
+                    float sizeWidth = contentWidth * 0.4f;
+
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height),
+                        new GUIContent(Truncate(fileName, 22), a.Path), EditorStyles.miniLabel);
+                    x += nameWidth;
+
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height),
+                        new GUIContent(size, a.IsSizeEstimated ? "Estimated" : "Tracked"), EditorStyles.miniLabel);
+                }
+                else
+                {
+                    // Full layout: name, size, category
+                    float nameWidth = Mathf.Max(100, contentWidth * 0.45f);
+                    float sizeWidth = Mathf.Max(70, contentWidth * 0.25f);
+                    float catWidth = Mathf.Max(60, contentWidth * 0.25f);
+
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height),
+                        new GUIContent(Truncate(fileName, 28), a.Path), EditorStyles.miniLabel);
+                    x += nameWidth;
+
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height),
+                        new GUIContent(size, a.IsSizeEstimated
+                            ? "Estimated asset size (disk file size)."
+                            : "Tracked asset size from packed mapping (when available)."), EditorStyles.miniLabel);
+                    x += sizeWidth;
+
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, catWidth, rect.height),
+                        new GUIContent(a.Category.ToString(), "Asset category."), EditorStyles.miniLabel);
+                }
+
+                // Ping button always at right edge
                 Rect pingR = new Rect(rect.x + rect.width - 65, rect.y + 2, 60, rect.height);
                 if (GUI.Button(pingR, GC_Ping))
                 {

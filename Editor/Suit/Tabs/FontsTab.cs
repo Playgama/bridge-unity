@@ -197,33 +197,80 @@ namespace Playgama.Suit.Tabs
             Color bg = r.IsTMP ? SuitStyles.StatusYellow : SuitStyles.StatusGray;
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), bg);
 
-            Rect cb = new Rect(rect.x + 4, rect.y + 2, 18, rect.height);
-            r.Selected = EditorGUI.Toggle(cb, r.Selected);
+            // Calculate available width for content (excluding margins and buttons)
+            float availableWidth = rect.width - 12;
+            float buttonWidth = 108;
+            float checkboxWidth = 22;
+            float contentWidth = availableWidth - buttonWidth - checkboxWidth;
+
+            // Determine layout mode based on available width
+            bool compactMode = contentWidth < 320;
+            bool veryCompactMode = contentWidth < 200;
+
+            float x = rect.x + 4;
+
+            // Checkbox
+            r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 2, 18, rect.height), r.Selected);
+            x += checkboxWidth;
 
             // Font name
             string displayName = !string.IsNullOrEmpty(r.FontName) ? r.FontName : System.IO.Path.GetFileName(r.Path);
             if (string.IsNullOrEmpty(displayName)) displayName = "—";
-            Rect nameR = new Rect(rect.x + 26, rect.y + 2, 200, rect.height);
-            EditorGUI.LabelField(nameR, new GUIContent(displayName, r.Path), EditorStyles.miniLabel);
 
-            // Size
-            Rect sizeR = new Rect(rect.x + 230, rect.y + 2, 95, rect.height);
             string size = SharedTypes.FormatBytes(r.SizeBytes);
             if (r.IsSizeEstimated) size += " ~";
-            EditorGUI.LabelField(sizeR, size, EditorStyles.miniLabel);
 
-            // Font type
-            Rect typeR = new Rect(rect.x + 330, rect.y + 2, 120, rect.height);
-            EditorGUI.LabelField(typeR, r.FontType, EditorStyles.miniLabel);
-
-            // TMP indicator
-            if (r.IsTMP)
+            if (veryCompactMode)
             {
-                Rect tmpR = new Rect(rect.x + 455, rect.y + 2, 60, rect.height);
-                EditorGUI.LabelField(tmpR, "TMP", EditorStyles.miniBoldLabel);
+                // Very compact: only name and size
+                float nameWidth = contentWidth * 0.6f;
+                float sizeWidth = contentWidth * 0.4f;
+
+                string name = displayName;
+                if (r.IsTMP) name = "[TMP] " + name;
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(name, 16), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+            }
+            else if (compactMode)
+            {
+                // Compact: name, size, TMP indicator
+                float nameWidth = contentWidth * 0.5f;
+                float sizeWidth = contentWidth * 0.3f;
+                float tmpWidth = contentWidth * 0.2f;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 22), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                x += sizeWidth;
+
+                if (r.IsTMP)
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, tmpWidth, rect.height), "TMP", EditorStyles.miniBoldLabel);
+            }
+            else
+            {
+                // Full layout: all columns
+                float nameWidth = Mathf.Max(100, contentWidth * 0.35f);
+                float sizeWidth = Mathf.Max(70, contentWidth * 0.18f);
+                float typeWidth = Mathf.Max(80, contentWidth * 0.28f);
+                float tmpWidth = Mathf.Max(40, contentWidth * 0.12f);
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 28), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                x += sizeWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, typeWidth, rect.height), TruncateWithEllipsis(r.FontType, 15), EditorStyles.miniLabel);
+                x += typeWidth;
+
+                if (r.IsTMP)
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, tmpWidth, rect.height), "TMP", EditorStyles.miniBoldLabel);
             }
 
-            // Ping button
+            // Buttons always at the right edge
             Rect pingR = new Rect(rect.x + rect.width - 112, rect.y + 2, 50, rect.height);
             if (GUI.Button(pingR, UI.Ping))
             {
@@ -231,13 +278,20 @@ namespace Playgama.Suit.Tabs
                 if (obj != null) EditorGUIUtility.PingObject(obj);
             }
 
-            // Select button
             Rect selR = new Rect(rect.x + rect.width - 58, rect.y + 2, 55, rect.height);
             if (GUI.Button(selR, UI.Select))
             {
                 var obj = AssetDatabase.LoadMainAssetAtPath(r.Path);
                 if (obj != null) Selection.activeObject = obj;
             }
+        }
+
+        /// <summary>Truncates a string and adds ellipsis if it exceeds the max length.</summary>
+        private static string TruncateWithEllipsis(string s, int maxLen)
+        {
+            if (string.IsNullOrEmpty(s)) return "—";
+            if (s.Length <= maxLen) return s;
+            return s.Substring(0, maxLen - 1) + "…";
         }
 
         private void EnsureRebuilt()

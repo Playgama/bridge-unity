@@ -321,19 +321,27 @@ namespace Playgama.Suit.Tabs
             if (!_foldBatch) return;
 
             SuitStyles.BeginCard();
+
+            // First row: Mesh Compression
             using (new EditorGUILayout.HorizontalScope())
             {
-                _applyCompression = EditorGUILayout.ToggleLeft(UI.ApplyMeshCompression, _applyCompression, GUILayout.Width(170));
+                _applyCompression = EditorGUILayout.ToggleLeft(UI.ApplyMeshCompression, _applyCompression, GUILayout.MinWidth(130), GUILayout.MaxWidth(170));
                 GUI.enabled = _applyCompression;
-                _compression = (ModelImporterMeshCompression)EditorGUILayout.EnumPopup(UI.MeshCompression, _compression, GUILayout.Width(220));
+                _compression = (ModelImporterMeshCompression)EditorGUILayout.EnumPopup(_compression, GUILayout.MinWidth(80), GUILayout.MaxWidth(120));
                 GUI.enabled = true;
+                GUILayout.FlexibleSpace();
+            }
 
-                GUILayout.Space(12);
+            GUILayout.Space(2);
 
-                _applyReadable = EditorGUILayout.ToggleLeft(UI.ApplyReadWrite, _applyReadable, GUILayout.Width(140));
+            // Second row: Read/Write
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                _applyReadable = EditorGUILayout.ToggleLeft(UI.ApplyReadWrite, _applyReadable, GUILayout.MinWidth(100), GUILayout.MaxWidth(140));
                 GUI.enabled = _applyReadable;
-                _setReadable = EditorGUILayout.ToggleLeft(UI.ReadWriteEnabled, _setReadable, GUILayout.Width(160));
+                _setReadable = EditorGUILayout.ToggleLeft(UI.ReadWriteEnabled, _setReadable, GUILayout.MinWidth(80), GUILayout.MaxWidth(120));
                 GUI.enabled = true;
+                GUILayout.FlexibleSpace();
             }
 
             GUILayout.Space(8);
@@ -347,25 +355,25 @@ namespace Playgama.Suit.Tabs
 
                 GUI.enabled = true;
 
-                EditorGUILayout.LabelField("Static flags are applied to the imported model root GameObject.", SuitStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("Static flags are applied to the imported model root.", SuitStyles.SubtitleStyle);
             }
 
             GUILayout.Space(8);
 
             using (new EditorGUILayout.HorizontalScope())
             {
+                int selected = GetSelectedCount();
+                GUILayout.Label(UI.SelectedCount, EditorStyles.miniLabel);
+                GUILayout.Label(selected.ToString(), EditorStyles.miniLabel);
+
                 GUILayout.FlexibleSpace();
 
-                int selected = GetSelectedCount();
                 GUI.enabled = selected > 0 && (_applyCompression || _applyReadable || _applyStaticFlags);
 
-                if (GUILayout.Button(UI.ApplyToSelected, GUILayout.Height(28), GUILayout.Width(160)))
+                if (GUILayout.Button(UI.ApplyToSelected, GUILayout.Height(28), GUILayout.MinWidth(100), GUILayout.MaxWidth(160)))
                     ApplyBatchToSelected();
 
                 GUI.enabled = true;
-
-                GUILayout.Label(UI.SelectedCount, EditorStyles.miniLabel);
-                GUILayout.Label(selected.ToString(), EditorStyles.miniLabel);
             }
             SuitStyles.EndCard();
         }
@@ -491,38 +499,85 @@ namespace Playgama.Suit.Tabs
             Color bg = r.ImporterFound ? SuitStyles.StatusGray : SuitStyles.StatusRed;
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), bg);
 
+            // Calculate available width for content (excluding margins and buttons)
+            float availableWidth = rect.width - 12;
+            float buttonWidth = 108;
+            float checkboxWidth = 22;
+            float contentWidth = availableWidth - buttonWidth - checkboxWidth;
+
+            // Determine layout mode based on available width
+            bool compactMode = contentWidth < 400;
+            bool veryCompactMode = contentWidth < 280;
+
             float x = rect.x + 4;
 
+            // Checkbox
             r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 2, 18, rect.height), r.Selected);
-            x += 26;
+            x += checkboxWidth;
 
-            // Mesh file name (extracted from path)
             string fileName = string.IsNullOrEmpty(r.Path) ? "—" : System.IO.Path.GetFileName(r.Path);
             if (string.IsNullOrEmpty(fileName)) fileName = "—";
-            EditorGUI.LabelField(new Rect(x, rect.y + 2, 150, rect.height), new GUIContent(fileName, r.Path), EditorStyles.miniLabel);
-            x += 155;
 
             string size = SharedTypes.FormatBytes(r.SizeBytes);
             if (r.IsSizeEstimated) size += " ~";
-            EditorGUI.LabelField(new Rect(x, rect.y + 2, 85, rect.height), size, EditorStyles.miniLabel);
-            x += 95;
 
-            EditorGUI.LabelField(
-                new Rect(x, rect.y + 2, 115, rect.height),
-                r.ImporterFound ? r.MeshCompression.ToString() : "N/A",
-                EditorStyles.miniLabel);
-            x += 125;
-
-            EditorGUI.LabelField(
-                new Rect(x, rect.y + 2, 85, rect.height),
-                r.ImporterFound ? (r.IsReadable ? "ON" : "OFF") : "N/A",
-                EditorStyles.miniLabel);
-            x += 95;
-
+            string compression = r.ImporterFound ? ShortCompression(r.MeshCompression) : "N/A";
+            string readable = r.ImporterFound ? (r.IsReadable ? "R/W" : "—") : "N/A";
             string sf = r.RootFound ? ShortStaticFlags(r.RootStaticFlags) : "N/A";
-            EditorGUI.LabelField(new Rect(x, rect.y + 2, 115, rect.height), sf, EditorStyles.miniLabel);
-            x += 125;
 
+            if (veryCompactMode)
+            {
+                // Very compact: only name and size
+                float nameWidth = contentWidth * 0.65f;
+                float sizeWidth = contentWidth * 0.35f;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 18), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+            }
+            else if (compactMode)
+            {
+                // Compact: name, size, compression
+                float nameWidth = contentWidth * 0.4f;
+                float sizeWidth = contentWidth * 0.25f;
+                float compWidth = contentWidth * 0.35f;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 22), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                x += sizeWidth;
+
+                string compInfo = compression;
+                if (readable == "R/W") compInfo += " R/W";
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, compWidth, rect.height), compInfo, EditorStyles.miniLabel);
+            }
+            else
+            {
+                // Full layout: all columns
+                float nameWidth = Mathf.Max(100, contentWidth * 0.25f);
+                float sizeWidth = Mathf.Max(70, contentWidth * 0.14f);
+                float compWidth = Mathf.Max(80, contentWidth * 0.18f);
+                float rwWidth = Mathf.Max(40, contentWidth * 0.1f);
+                float flagsWidth = Mathf.Max(80, contentWidth * 0.2f);
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 28), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                x += sizeWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, compWidth, rect.height), compression, EditorStyles.miniLabel);
+                x += compWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, rwWidth, rect.height), readable, EditorStyles.miniLabel);
+                x += rwWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, flagsWidth, rect.height), TruncateWithEllipsis(sf, 15), EditorStyles.miniLabel);
+            }
+
+            // Buttons always at the right edge
             Rect pingR = new Rect(rect.x + rect.width - 112, rect.y + 2, 50, rect.height);
             if (GUI.Button(pingR, UI.Ping))
             {
@@ -535,6 +590,27 @@ namespace Playgama.Suit.Tabs
             {
                 var obj = AssetDatabase.LoadMainAssetAtPath(r.Path);
                 if (obj != null) Selection.activeObject = obj;
+            }
+        }
+
+        /// <summary>Truncates a string and adds ellipsis if it exceeds the max length.</summary>
+        private static string TruncateWithEllipsis(string s, int maxLen)
+        {
+            if (string.IsNullOrEmpty(s)) return "—";
+            if (s.Length <= maxLen) return s;
+            return s.Substring(0, maxLen - 1) + "…";
+        }
+
+        /// <summary>Shortens compression level names for compact display.</summary>
+        private static string ShortCompression(ModelImporterMeshCompression c)
+        {
+            switch (c)
+            {
+                case ModelImporterMeshCompression.Off: return "Off";
+                case ModelImporterMeshCompression.Low: return "Low";
+                case ModelImporterMeshCompression.Medium: return "Med";
+                case ModelImporterMeshCompression.High: return "High";
+                default: return c.ToString();
             }
         }
 

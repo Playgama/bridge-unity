@@ -1,74 +1,44 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
 namespace Playgama.Suit
 {
     /// <summary>
-    /// Popup window for selecting and installing Playgama Bridge files.
+    /// Popup window for selecting and installing Playgama Bridge WebGL template files.
+    /// Copies files from the package to Assets/WebGLTemplates/Bridge.
     /// </summary>
     public class InstallFilesWindow : EditorWindow
     {
+        private const string SOURCE_TEMPLATE_PATH = "Packages/com.playgama.bridge/Runtime/WebGLTemplates/Bridge";
+        private const string DESTINATION_TEMPLATE_PATH = "Assets/WebGLTemplates/Bridge";
+        private const string PREFS_PREFIX = "PlaygamaBridge_InstallFile_";
+
         private static InstallFilesWindow _instance;
         private Vector2 _scroll;
+        private List<TemplateFile> _templateFiles = new List<TemplateFile>();
+        private bool _filesLoaded = false;
 
-        // File descriptions
-        private static readonly FileOption[] FileOptions = new FileOption[]
+        private class TemplateFile
         {
-            new FileOption
-            {
-                Id = "index_html",
-                Name = "index.html",
-                Description = "HTML template with Playgama SDK loader and game container",
-                Required = false,
-                DefaultEnabled = true
-            },
-            new FileOption
-            {
-                Id = "bridge_config",
-                Name = "playgama-bridge-config.json",
-                Description = "Configuration file for Playgama Bridge SDK settings",
-                Required = false,
-                DefaultEnabled = true
-            },
-            new FileOption
-            {
-                Id = "bridge_unity_js",
-                Name = "playgama-bridge-unity.js",
-                Description = "Unity-specific bridge integration script",
-                Required = false,
-                DefaultEnabled = true
-            },
-            new FileOption
-            {
-                Id = "bridge_js",
-                Name = "playgama-bridge.js",
-                Description = "Core Playgama Bridge SDK script",
-                Required = false,
-                DefaultEnabled = true
-            },
-            new FileOption
-            {
-                Id = "thumbnail",
-                Name = "thumbnail.png",
-                Description = "Template thumbnail preview image",
-                Required = false,
-                DefaultEnabled = true
-            }
-        };
-
-        private Dictionary<string, bool> _selections = new Dictionary<string, bool>();
-
-        private struct FileOption
-        {
-            public string Id;
-            public string Name;
+            public string RelativePath;
+            public string FullPath;
             public string Description;
-            public bool Required;
-            public bool DefaultEnabled;
+            public bool Enabled;
         }
+
+        // Descriptions for known files
+        private static readonly Dictionary<string, string> FileDescriptions = new Dictionary<string, string>
+        {
+            { "index.html", "HTML template with Playgama SDK loader and game container" },
+            { "playgama-bridge-config.json", "Configuration file for Playgama Bridge SDK settings" },
+            { "playgama-bridge-unity.js", "Unity-specific bridge integration script" },
+            { "playgama-bridge.js", "Core Playgama Bridge SDK script" },
+            { "thumbnail.png", "Template thumbnail preview image" }
+        };
 
         public static void Show()
         {
@@ -79,25 +49,90 @@ namespace Playgama.Suit
             }
 
             _instance = CreateInstance<InstallFilesWindow>();
-            _instance.titleContent = new GUIContent("Install Files");
-            _instance.minSize = new Vector2(420, 380);
-            _instance.maxSize = new Vector2(420, 500);
-            _instance.InitSelections();
+            _instance.titleContent = new GUIContent("Install Bridge Files");
+            _instance.minSize = new Vector2(450, 400);
+            _instance.maxSize = new Vector2(500, 550);
+            _instance.LoadTemplateFiles();
             _instance.ShowUtility();
-        }
-
-        private void InitSelections()
-        {
-            _selections.Clear();
-            foreach (var opt in FileOptions)
-            {
-                _selections[opt.Id] = opt.DefaultEnabled;
-            }
         }
 
         private void OnDestroy()
         {
             _instance = null;
+        }
+
+        private void LoadTemplateFiles()
+        {
+            _templateFiles.Clear();
+            _filesLoaded = false;
+
+            var sourcePath = GetSourcePath();
+            if (string.IsNullOrEmpty(sourcePath) || !Directory.Exists(sourcePath))
+            {
+                Debug.LogWarning($"[Playgama Bridge] Template source path not found: {sourcePath}");
+                return;
+            }
+
+            LoadFilesRecursive(sourcePath, sourcePath);
+            _filesLoaded = true;
+        }
+
+        private void LoadFilesRecursive(string currentPath, string rootPath)
+        {
+            // Load files in current directory
+            foreach (string file in Directory.GetFiles(currentPath))
+            {
+                var fileName = Path.GetFileName(file);
+                if (fileName.EndsWith(".meta") || fileName == ".DS_Store")
+                    continue;
+
+                var relativePath = file.Substring(rootPath.Length + 1).Replace("\\", "/");
+                var prefKey = PREFS_PREFIX + relativePath;
+                var enabled = EditorPrefs.GetBool(prefKey, true);
+
+                // Get description if available
+                string description = "";
+                if (FileDescriptions.TryGetValue(fileName, out string desc))
+                    description = desc;
+                else
+                    description = $"Template file: {fileName}";
+
+                _templateFiles.Add(new TemplateFile
+                {
+                    RelativePath = relativePath,
+                    FullPath = file,
+                    Description = description,
+                    Enabled = enabled
+                });
+            }
+
+            // Recurse into subdirectories
+            foreach (string directory in Directory.GetDirectories(currentPath))
+            {
+                LoadFilesRecursive(directory, rootPath);
+            }
+        }
+
+        private string GetSourcePath()
+        {
+            // Try package path first
+            var sourcePath = Path.GetFullPath(SOURCE_TEMPLATE_PATH);
+            if (Directory.Exists(sourcePath))
+                return sourcePath;
+
+            // Fallback for local development
+            sourcePath = Path.Combine(Application.dataPath, "../Packages/com.playgama.bridge/Runtime/WebGLTemplates/Bridge");
+            sourcePath = Path.GetFullPath(sourcePath);
+            if (Directory.Exists(sourcePath))
+                return sourcePath;
+
+            // Another fallback
+            sourcePath = Path.Combine(Application.dataPath, "../../bridge-unity/Runtime/WebGLTemplates/Bridge");
+            sourcePath = Path.GetFullPath(sourcePath);
+            if (Directory.Exists(sourcePath))
+                return sourcePath;
+
+            return null;
         }
 
         private void OnGUI()
@@ -118,15 +153,41 @@ namespace Playgama.Suit
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.FlexibleSpace();
-                GUILayout.Label("Select files to install in your project", EditorStyles.miniLabel);
+                GUILayout.Label("Select WebGL template files to install", EditorStyles.miniLabel);
                 GUILayout.FlexibleSpace();
             }
 
-            EditorGUILayout.Space(15);
+            EditorGUILayout.Space(10);
 
             // Purple accent line
             Rect lineRect = EditorGUILayout.GetControlRect(false, 2);
             EditorGUI.DrawRect(lineRect, SuitStyles.BrandPurple);
+
+            EditorGUILayout.Space(10);
+
+            // Check if files are loaded
+            if (!_filesLoaded || _templateFiles.Count == 0)
+            {
+                EditorGUILayout.HelpBox(
+                    "Template files not found. Make sure the Playgama Bridge package is installed correctly.",
+                    MessageType.Warning);
+
+                EditorGUILayout.Space(10);
+
+                if (GUILayout.Button("Refresh", GUILayout.Height(30)))
+                {
+                    LoadTemplateFiles();
+                }
+
+                return;
+            }
+
+            // Destination path info
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Label("Destination:", EditorStyles.miniLabel, GUILayout.Width(70));
+                GUILayout.Label(DESTINATION_TEMPLATE_PATH, EditorStyles.miniLabel);
+            }
 
             EditorGUILayout.Space(10);
 
@@ -135,45 +196,62 @@ namespace Playgama.Suit
             {
                 _scroll = scroll.scrollPosition;
 
-                foreach (var opt in FileOptions)
+                foreach (var file in _templateFiles)
                 {
-                    DrawFileOption(opt);
-                    EditorGUILayout.Space(4);
+                    DrawFileOption(file);
+                    EditorGUILayout.Space(2);
                 }
             }
 
             EditorGUILayout.Space(10);
 
-            // Select All / Deselect All buttons
+            // Select All / Deselect All / Refresh buttons
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.Space(10);
 
-                if (GUILayout.Button("Select All", GUILayout.Width(100)))
+                if (GUILayout.Button("Select All", GUILayout.Width(90)))
                 {
-                    foreach (var opt in FileOptions)
+                    foreach (var file in _templateFiles)
                     {
-                        _selections[opt.Id] = true;
+                        file.Enabled = true;
+                        EditorPrefs.SetBool(PREFS_PREFIX + file.RelativePath, true);
                     }
                 }
 
-                if (GUILayout.Button("Deselect All", GUILayout.Width(100)))
+                if (GUILayout.Button("Deselect All", GUILayout.Width(90)))
                 {
-                    foreach (var opt in FileOptions)
+                    foreach (var file in _templateFiles)
                     {
-                        if (!opt.Required)
-                            _selections[opt.Id] = false;
+                        file.Enabled = false;
+                        EditorPrefs.SetBool(PREFS_PREFIX + file.RelativePath, false);
                     }
                 }
 
                 GUILayout.FlexibleSpace();
+
+                if (GUILayout.Button("Refresh", GUILayout.Width(70)))
+                {
+                    LoadTemplateFiles();
+                }
+
+                GUILayout.Space(10);
             }
 
             GUILayout.FlexibleSpace();
 
-            // Bottom buttons
+            // Status: how many files selected
+            int selectedCount = _templateFiles.Count(f => f.Enabled);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.FlexibleSpace();
+                GUILayout.Label($"{selectedCount} of {_templateFiles.Count} files selected", EditorStyles.miniLabel);
+                GUILayout.FlexibleSpace();
+            }
+
             EditorGUILayout.Space(10);
 
+            // Bottom buttons
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.FlexibleSpace();
@@ -186,6 +264,7 @@ namespace Playgama.Suit
                 GUILayout.Space(10);
 
                 // Install button with accent color
+                GUI.enabled = selectedCount > 0;
                 Color oldBg = GUI.backgroundColor;
                 GUI.backgroundColor = SuitStyles.BrandPurple;
 
@@ -195,6 +274,7 @@ namespace Playgama.Suit
                 }
 
                 GUI.backgroundColor = oldBg;
+                GUI.enabled = true;
 
                 GUILayout.Space(10);
             }
@@ -202,66 +282,48 @@ namespace Playgama.Suit
             EditorGUILayout.Space(15);
         }
 
-        private void DrawFileOption(FileOption opt)
+        private void DrawFileOption(TemplateFile file)
         {
-            Rect boxRect = EditorGUILayout.GetControlRect(false, 50);
+            Rect boxRect = EditorGUILayout.GetControlRect(false, 44);
 
             // Background
-            Color bgColor = new Color(0.22f, 0.22f, 0.25f);
-            if (_selections.ContainsKey(opt.Id) && _selections[opt.Id])
-            {
-                bgColor = new Color(0.25f, 0.22f, 0.30f); // Slight purple tint when selected
-            }
+            Color bgColor = file.Enabled
+                ? new Color(0.25f, 0.22f, 0.30f)  // Slight purple tint when selected
+                : new Color(0.22f, 0.22f, 0.25f);
             EditorGUI.DrawRect(boxRect, bgColor);
 
-            // Left accent for required items
-            if (opt.Required)
+            // Left accent when enabled
+            if (file.Enabled)
             {
                 Rect accentRect = new Rect(boxRect.x, boxRect.y, 3, boxRect.height);
                 EditorGUI.DrawRect(accentRect, SuitStyles.BrandPurple);
             }
 
             // Checkbox
-            Rect toggleRect = new Rect(boxRect.x + 10, boxRect.y + 15, 20, 20);
-
-            bool currentValue = _selections.ContainsKey(opt.Id) && _selections[opt.Id];
-
-            EditorGUI.BeginDisabledGroup(opt.Required);
-            bool newValue = EditorGUI.Toggle(toggleRect, currentValue);
-            EditorGUI.EndDisabledGroup();
-
-            if (newValue != currentValue)
+            Rect toggleRect = new Rect(boxRect.x + 10, boxRect.y + 12, 20, 20);
+            EditorGUI.BeginChangeCheck();
+            bool newEnabled = EditorGUI.Toggle(toggleRect, file.Enabled);
+            if (EditorGUI.EndChangeCheck())
             {
-                _selections[opt.Id] = newValue;
+                file.Enabled = newEnabled;
+                EditorPrefs.SetBool(PREFS_PREFIX + file.RelativePath, newEnabled);
             }
 
-            // Name
-            Rect nameRect = new Rect(boxRect.x + 35, boxRect.y + 8, boxRect.width - 45, 18);
-            GUIStyle nameStyle = new GUIStyle(EditorStyles.boldLabel);
-            if (opt.Required)
-            {
-                nameStyle.normal.textColor = SuitStyles.BrandPurple;
-            }
-            EditorGUI.LabelField(nameRect, opt.Name + (opt.Required ? " (Required)" : ""), nameStyle);
+            // File name
+            string fileName = Path.GetFileName(file.RelativePath);
+            Rect nameRect = new Rect(boxRect.x + 35, boxRect.y + 6, boxRect.width - 45, 18);
+            EditorGUI.LabelField(nameRect, fileName, EditorStyles.boldLabel);
 
             // Description
-            Rect descRect = new Rect(boxRect.x + 35, boxRect.y + 26, boxRect.width - 45, 20);
-            EditorGUI.LabelField(descRect, opt.Description, EditorStyles.miniLabel);
+            Rect descRect = new Rect(boxRect.x + 35, boxRect.y + 24, boxRect.width - 45, 16);
+            EditorGUI.LabelField(descRect, file.Description, EditorStyles.miniLabel);
         }
 
         private void PerformInstallation()
         {
-            List<string> selectedFiles = new List<string>();
+            var enabledFiles = _templateFiles.Where(f => f.Enabled).ToList();
 
-            foreach (var opt in FileOptions)
-            {
-                if (_selections.ContainsKey(opt.Id) && _selections[opt.Id])
-                {
-                    selectedFiles.Add(opt.Name);
-                }
-            }
-
-            if (selectedFiles.Count == 0)
+            if (enabledFiles.Count == 0)
             {
                 EditorUtility.DisplayDialog(
                     "No Files Selected",
@@ -270,98 +332,104 @@ namespace Playgama.Suit
                 return;
             }
 
-            // Show progress
+            var destinationPath = Path.GetFullPath(DESTINATION_TEMPLATE_PATH);
+
             EditorUtility.DisplayProgressBar("Installing Files", "Preparing installation...", 0f);
 
             try
             {
-                int total = selectedFiles.Count;
-                int current = 0;
-
-                foreach (var opt in FileOptions)
+                // Create destination directory if needed
+                if (!Directory.Exists(destinationPath))
                 {
-                    if (!_selections.ContainsKey(opt.Id) || !_selections[opt.Id])
-                        continue;
+                    Directory.CreateDirectory(destinationPath);
+                }
 
+                int total = enabledFiles.Count;
+                int current = 0;
+                int successCount = 0;
+
+                foreach (var file in enabledFiles)
+                {
                     current++;
                     float progress = (float)current / total;
-                    EditorUtility.DisplayProgressBar("Installing Files", $"Installing {opt.Name}...", progress);
+                    string fileName = Path.GetFileName(file.RelativePath);
+                    EditorUtility.DisplayProgressBar("Installing Files", $"Installing {fileName}...", progress);
 
-                    InstallFile(opt.Id);
+                    try
+                    {
+                        var destFile = Path.Combine(destinationPath, file.RelativePath);
+                        var destDir = Path.GetDirectoryName(destFile);
+
+                        // Create subdirectory if needed
+                        if (!Directory.Exists(destDir))
+                        {
+                            Directory.CreateDirectory(destDir);
+                        }
+
+                        // Special handling for config file - create backup if exists
+                        if (fileName == "playgama-bridge-config.json" && File.Exists(destFile))
+                        {
+                            var backupFile = Path.Combine(destDir, "playgama-bridge-config_backup.json");
+
+                            // Delete old backup if exists
+                            if (File.Exists(backupFile))
+                            {
+                                File.Delete(backupFile);
+                            }
+
+                            // Rename current config to backup
+                            File.Move(destFile, backupFile);
+                            Debug.Log($"[Playgama Bridge] Backed up existing config to: playgama-bridge-config_backup.json");
+                        }
+                        else if (File.Exists(destFile))
+                        {
+                            // Delete existing file for non-config files
+                            File.Delete(destFile);
+                        }
+
+                        // Copy file
+                        File.Copy(file.FullPath, destFile);
+                        successCount++;
+
+                        Debug.Log($"[Playgama Bridge] Installed: {file.RelativePath}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError($"[Playgama Bridge] Failed to install {file.RelativePath}: {ex.Message}");
+                    }
                 }
 
                 EditorUtility.ClearProgressBar();
+                AssetDatabase.Refresh();
 
-                EditorUtility.DisplayDialog(
-                    "Installation Complete",
-                    $"Successfully installed {selectedFiles.Count} file(s).\n\n" +
-                    "You can now select the Playgama template in:\n" +
-                    "Player Settings > WebGL > Resolution and Presentation",
-                    "OK");
+                if (successCount == total)
+                {
+                    EditorUtility.DisplayDialog(
+                        "Installation Complete",
+                        $"Successfully installed {successCount} file(s) to:\n{DESTINATION_TEMPLATE_PATH}\n\n" +
+                        "You can now select the Bridge template in:\n" +
+                        "Player Settings → WebGL → Resolution and Presentation",
+                        "OK");
+                }
+                else
+                {
+                    EditorUtility.DisplayDialog(
+                        "Installation Partially Complete",
+                        $"Installed {successCount} of {total} file(s).\n" +
+                        "Check the Console for error details.",
+                        "OK");
+                }
 
                 Close();
             }
             catch (Exception ex)
             {
                 EditorUtility.ClearProgressBar();
+                Debug.LogError($"[Playgama Bridge] Installation failed: {ex.Message}");
                 EditorUtility.DisplayDialog(
                     "Installation Error",
                     $"An error occurred during installation:\n\n{ex.Message}",
                     "OK");
-            }
-        }
-
-        private void InstallFile(string fileId)
-        {
-            // TODO: Implement actual file installation logic
-            // This would copy files from the package to the project
-
-            string templatePath = "Assets/WebGLTemplates/Playgama";
-            EnsureDirectory(templatePath);
-
-            string targetPath = "";
-
-            switch (fileId)
-            {
-                case "index_html":
-                    targetPath = Path.Combine(templatePath, "index.html");
-                    // Copy index.html from package
-                    Debug.Log($"[Playgama Suit] Installed index.html to {targetPath}");
-                    break;
-
-                case "bridge_config":
-                    targetPath = Path.Combine(templatePath, "playgama-bridge-config.json");
-                    // Copy config file from package
-                    Debug.Log($"[Playgama Suit] Installed playgama-bridge-config.json to {targetPath}");
-                    break;
-
-                case "bridge_unity_js":
-                    targetPath = Path.Combine(templatePath, "playgama-bridge-unity.js");
-                    // Copy JS file from package
-                    Debug.Log($"[Playgama Suit] Installed playgama-bridge-unity.js to {targetPath}");
-                    break;
-
-                case "bridge_js":
-                    targetPath = Path.Combine(templatePath, "playgama-bridge.js");
-                    // Copy JS file from package
-                    Debug.Log($"[Playgama Suit] Installed playgama-bridge.js to {targetPath}");
-                    break;
-
-                case "thumbnail":
-                    targetPath = Path.Combine(templatePath, "thumbnail.png");
-                    // Copy thumbnail from package
-                    Debug.Log($"[Playgama Suit] Installed thumbnail.png to {targetPath}");
-                    break;
-            }
-
-            AssetDatabase.Refresh();
-        }
-
-        private void EnsureDirectory(string path)
-        {
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
             }
         }
     }

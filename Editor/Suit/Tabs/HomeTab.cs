@@ -24,7 +24,7 @@ namespace Playgama.Suit.Tabs
 
         private const string Version = "1.0.0";
         private const string DocsUrl = "https://wiki.playgama.com/playgama/sdk/engines/unity/intro";
-        private const string SupportUrl = "https://discord.gg/zMb3TmuvvG";
+        private const string SupportUrl = "https://discord.gg/TZg3rF3sdT";
 
         public void Init(BuildInfo buildInfo)
         {

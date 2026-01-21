@@ -20,14 +20,14 @@ namespace Playgama.Suit
     /// </summary>
     public sealed class SuitWindow : EditorWindow
     {
-        /// <summary>Opens the window via the Unity menu.</summary>
-        [MenuItem("Playgama/Suit", priority = 100)]
-        public static void ShowWindow()
+        /// <summary>Opens the window and returns the instance.</summary>
+        public static SuitWindow ShowWindow()
         {
             var w = GetWindow<SuitWindow>();
             w.titleContent = new GUIContent("Playgama Suit");
             w.minSize = new Vector2(820, 480);
             w.Show();
+            return w;
         }
 
         /// <summary>Registered tabs shown in the left navigation.</summary>

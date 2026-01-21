@@ -195,32 +195,79 @@ namespace Playgama.Suit.Tabs
 
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), SuitStyles.StatusGray);
 
-            Rect cb = new Rect(rect.x + 4, rect.y + 2, 18, rect.height);
-            r.Selected = EditorGUI.Toggle(cb, r.Selected);
+            // Calculate available width for content (excluding margins and buttons)
+            float availableWidth = rect.width - 12;
+            float buttonWidth = 108;
+            float checkboxWidth = 22;
+            float contentWidth = availableWidth - buttonWidth - checkboxWidth;
+
+            // Determine layout mode based on available width
+            bool compactMode = contentWidth < 350;
+            bool veryCompactMode = contentWidth < 220;
+
+            float x = rect.x + 4;
+
+            // Checkbox
+            r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 2, 18, rect.height), r.Selected);
+            x += checkboxWidth;
 
             // Shader name
             string displayName = !string.IsNullOrEmpty(r.ShaderName) ? r.ShaderName : System.IO.Path.GetFileName(r.Path);
             if (string.IsNullOrEmpty(displayName)) displayName = "—";
-            Rect nameR = new Rect(rect.x + 26, rect.y + 2, 250, rect.height);
-            EditorGUI.LabelField(nameR, new GUIContent(displayName, r.Path), EditorStyles.miniLabel);
 
-            // Size
-            Rect sizeR = new Rect(rect.x + 280, rect.y + 2, 95, rect.height);
             string size = SharedTypes.FormatBytes(r.SizeBytes);
             if (r.IsSizeEstimated) size += " ~";
-            EditorGUI.LabelField(sizeR, size, EditorStyles.miniLabel);
 
-            // Pass count
-            Rect passR = new Rect(rect.x + 380, rect.y + 2, 80, rect.height);
-            if (r.PassCount > 0)
-                EditorGUI.LabelField(passR, $"{r.PassCount} passes", EditorStyles.miniLabel);
+            if (veryCompactMode)
+            {
+                // Very compact: only name and size
+                float nameWidth = contentWidth * 0.65f;
+                float sizeWidth = contentWidth * 0.35f;
 
-            // Property count
-            Rect propR = new Rect(rect.x + 465, rect.y + 2, 80, rect.height);
-            if (r.PropertyCount > 0)
-                EditorGUI.LabelField(propR, $"{r.PropertyCount} props", EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 18), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
 
-            // Ping button
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+            }
+            else if (compactMode)
+            {
+                // Compact: name, size, passes
+                float nameWidth = contentWidth * 0.5f;
+                float sizeWidth = contentWidth * 0.25f;
+                float passWidth = contentWidth * 0.25f;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 25), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                x += sizeWidth;
+
+                if (r.PassCount > 0)
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, passWidth, rect.height), $"{r.PassCount}p", EditorStyles.miniLabel);
+            }
+            else
+            {
+                // Full layout: all columns
+                float nameWidth = Mathf.Max(120, contentWidth * 0.4f);
+                float sizeWidth = Mathf.Max(70, contentWidth * 0.18f);
+                float passWidth = Mathf.Max(60, contentWidth * 0.18f);
+                float propWidth = Mathf.Max(60, contentWidth * 0.18f);
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 35), r.Path), EditorStyles.miniLabel);
+                x += nameWidth;
+
+                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                x += sizeWidth;
+
+                if (r.PassCount > 0)
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, passWidth, rect.height), $"{r.PassCount} passes", EditorStyles.miniLabel);
+                x += passWidth;
+
+                if (r.PropertyCount > 0)
+                    EditorGUI.LabelField(new Rect(x, rect.y + 2, propWidth, rect.height), $"{r.PropertyCount} props", EditorStyles.miniLabel);
+            }
+
+            // Buttons always at the right edge
             Rect pingR = new Rect(rect.x + rect.width - 112, rect.y + 2, 50, rect.height);
             if (GUI.Button(pingR, UI.Ping))
             {
@@ -228,13 +275,20 @@ namespace Playgama.Suit.Tabs
                 if (obj != null) EditorGUIUtility.PingObject(obj);
             }
 
-            // Select button
             Rect selR = new Rect(rect.x + rect.width - 58, rect.y + 2, 55, rect.height);
             if (GUI.Button(selR, UI.Select))
             {
                 var obj = AssetDatabase.LoadMainAssetAtPath(r.Path);
                 if (obj != null) Selection.activeObject = obj;
             }
+        }
+
+        /// <summary>Truncates a string and adds ellipsis if it exceeds the max length.</summary>
+        private static string TruncateWithEllipsis(string s, int maxLen)
+        {
+            if (string.IsNullOrEmpty(s)) return "—";
+            if (s.Length <= maxLen) return s;
+            return s.Substring(0, maxLen - 1) + "…";
         }
 
         private void EnsureRebuilt()
