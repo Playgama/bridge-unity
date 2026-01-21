@@ -37,6 +37,7 @@ namespace Playgama.Suit.Tabs
         // Cached UI state.
         private string _outputPath;
         private bool _devBuild;
+        private bool _nameFilesAsHashes;
         private WebGLCompressionState _compressionState;
         private CodeOptimizationState _codeOptimizationState;
 
@@ -149,6 +150,11 @@ namespace Playgama.Suit.Tabs
                 "If enabled: creates a development build (bigger, slower, includes extra debug info).\n" +
                 "For smallest release size, keep this OFF.");
 
+            public static readonly GUIContent NameFilesAsHashes = new GUIContent(
+                "Name Files As Hashes",
+                "If enabled: output files use content hashes as filenames instead of human-readable names.\n" +
+                "This improves browser caching when content changes, as only modified files get new names.");
+
             public static readonly GUIContent CompressionLabel = new GUIContent(
                 "Compression",
                 "WebGL build compression format (best-effort).\n" +
@@ -225,6 +231,7 @@ namespace Playgama.Suit.Tabs
             }
 
             _devBuild = EditorUserBuildSettings.development;
+            _nameFilesAsHashes = PlayerSettings.WebGL.nameFilesAsHashes;
 
             ReadWebGLCompression(out _compressionState);
             ReadCodeOptimization(out _codeOptimizationState);
@@ -377,7 +384,7 @@ namespace Playgama.Suit.Tabs
 
             SuitStyles.BeginCard();
 
-            // First row: Development Build toggle
+            // First row: Development Build and Name Files As Hashes toggles
             using (new EditorGUILayout.HorizontalScope())
             {
                 bool newDev = EditorGUILayout.ToggleLeft(UI.DevelopmentBuild, _devBuild, GUILayout.Width(160));
@@ -386,6 +393,16 @@ namespace Playgama.Suit.Tabs
                     _devBuild = newDev;
                     EditorUserBuildSettings.development = _devBuild;
                     _status = "Development Build updated.";
+                }
+
+                GUILayout.Space(20);
+
+                bool newNameFilesAsHashes = EditorGUILayout.ToggleLeft(UI.NameFilesAsHashes, _nameFilesAsHashes, GUILayout.Width(160));
+                if (newNameFilesAsHashes != _nameFilesAsHashes)
+                {
+                    _nameFilesAsHashes = newNameFilesAsHashes;
+                    PlayerSettings.WebGL.nameFilesAsHashes = _nameFilesAsHashes;
+                    _status = "Name Files As Hashes updated.";
                 }
 
                 GUILayout.FlexibleSpace();
@@ -408,7 +425,7 @@ namespace Playgama.Suit.Tabs
             }
 
             GUILayout.Space(4);
-            EditorGUILayout.LabelField("Development Build OFF + Compression ON + 'Disk Size with LTO' for smallest build.", SuitStyles.SubtitleStyle);
+            EditorGUILayout.LabelField("Development Build OFF + Compression ON + 'Disk Size with LTO' for smallest build. Name Files As Hashes improves caching.", SuitStyles.SubtitleStyle);
             SuitStyles.EndCard();
         }
 
