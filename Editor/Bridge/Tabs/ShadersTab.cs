@@ -5,10 +5,6 @@ using UnityEngine;
 
 namespace Playgama.Bridge.Tabs
 {
-    /// <summary>
-    /// Editor tab that displays tracked shader assets from the latest build analysis.
-    /// Shows shader sizes from the build report with search and selection helpers.
-    /// </summary>
     public sealed class ShadersTab : ITab
     {
         public string TabName => "Shaders";
@@ -42,37 +38,14 @@ namespace Playgama.Bridge.Tabs
 
         private static class UI
         {
-            public static readonly GUIContent Refresh = new GUIContent(
-                "Refresh",
-                "Rebuild the shader list from the latest analysis data.");
-
-            public static readonly GUIContent SearchLabel = new GUIContent(
-                "Search",
-                "Filter shaders by path (case-insensitive substring match).");
-
-            public static readonly GUIContent OnlySelected = new GUIContent(
-                "Only Selected",
-                "Show only currently selected rows.");
-
-            public static readonly GUIContent SelectAll = new GUIContent(
-                "Select All",
-                "Select every visible row.");
-
-            public static readonly GUIContent Deselect = new GUIContent(
-                "Deselect",
-                "Clear selection for every row.");
-
-            public static readonly GUIContent Invert = new GUIContent(
-                "Invert",
-                "Invert selection state for every row.");
-
-            public static readonly GUIContent Ping = new GUIContent(
-                "Ping",
-                "Ping the asset in the Project window.");
-
-            public static readonly GUIContent Select = new GUIContent(
-                "Select",
-                "Select the asset in the Project window.");
+            public static readonly GUIContent Refresh = new GUIContent("Refresh", "Rebuild the shader list from the latest analysis data.");
+            public static readonly GUIContent SearchLabel = new GUIContent("Search", "Filter shaders by path.");
+            public static readonly GUIContent OnlySelected = new GUIContent("Only Selected", "Show only currently selected rows.");
+            public static readonly GUIContent SelectAll = new GUIContent("Select All", "Select every visible row.");
+            public static readonly GUIContent Deselect = new GUIContent("Deselect", "Clear selection for every row.");
+            public static readonly GUIContent Invert = new GUIContent("Invert", "Invert selection state for every row.");
+            public static readonly GUIContent Ping = new GUIContent("Ping", "Ping the asset in the Project window.");
+            public static readonly GUIContent Select = new GUIContent("Select", "Select the asset in the Project window.");
         }
 
         public void Init(BuildInfo buildInfo)
@@ -195,23 +168,19 @@ namespace Playgama.Bridge.Tabs
 
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), BridgeStyles.StatusGray);
 
-            // Calculate available width for content (excluding margins and buttons)
             float availableWidth = rect.width - 12;
             float buttonWidth = 108;
             float checkboxWidth = 22;
             float contentWidth = availableWidth - buttonWidth - checkboxWidth;
 
-            // Determine layout mode based on available width
             bool compactMode = contentWidth < 350;
             bool veryCompactMode = contentWidth < 220;
 
             float x = rect.x + 4;
 
-            // Checkbox
             r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 2, 18, rect.height), r.Selected);
             x += checkboxWidth;
 
-            // Shader name
             string displayName = !string.IsNullOrEmpty(r.ShaderName) ? r.ShaderName : System.IO.Path.GetFileName(r.Path);
             if (string.IsNullOrEmpty(displayName)) displayName = "—";
 
@@ -220,7 +189,6 @@ namespace Playgama.Bridge.Tabs
 
             if (veryCompactMode)
             {
-                // Very compact: only name and size
                 float nameWidth = contentWidth * 0.65f;
                 float sizeWidth = contentWidth * 0.35f;
 
@@ -231,7 +199,6 @@ namespace Playgama.Bridge.Tabs
             }
             else if (compactMode)
             {
-                // Compact: name, size, passes
                 float nameWidth = contentWidth * 0.5f;
                 float sizeWidth = contentWidth * 0.25f;
                 float passWidth = contentWidth * 0.25f;
@@ -247,7 +214,6 @@ namespace Playgama.Bridge.Tabs
             }
             else
             {
-                // Full layout: all columns
                 float nameWidth = Mathf.Max(120, contentWidth * 0.4f);
                 float sizeWidth = Mathf.Max(70, contentWidth * 0.18f);
                 float passWidth = Mathf.Max(60, contentWidth * 0.18f);
@@ -267,7 +233,6 @@ namespace Playgama.Bridge.Tabs
                     EditorGUI.LabelField(new Rect(x, rect.y + 2, propWidth, rect.height), $"{r.PropertyCount} props", EditorStyles.miniLabel);
             }
 
-            // Buttons always at the right edge
             Rect pingR = new Rect(rect.x + rect.width - 112, rect.y + 2, 50, rect.height);
             if (GUI.Button(pingR, UI.Ping))
             {
@@ -283,7 +248,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>Truncates a string and adds ellipsis if it exceeds the max length.</summary>
         private static string TruncateWithEllipsis(string s, int maxLen)
         {
             if (string.IsNullOrEmpty(s)) return "—";
@@ -324,7 +288,6 @@ namespace Playgama.Bridge.Tabs
                             PropertyCount = 0
                         };
 
-                        // Try to get shader info
                         if (shader != null)
                         {
                             try

@@ -5,10 +5,6 @@ using UnityEngine;
 
 namespace Playgama.Bridge.Tabs
 {
-    /// <summary>
-    /// Editor tab that displays tracked font assets from the latest build analysis.
-    /// Shows font sizes from the build report with search and selection helpers.
-    /// </summary>
     public sealed class FontsTab : ITab
     {
         public string TabName => "Fonts";
@@ -42,37 +38,14 @@ namespace Playgama.Bridge.Tabs
 
         private static class UI
         {
-            public static readonly GUIContent Refresh = new GUIContent(
-                "Refresh",
-                "Rebuild the font list from the latest analysis data.");
-
-            public static readonly GUIContent SearchLabel = new GUIContent(
-                "Search",
-                "Filter fonts by path (case-insensitive substring match).");
-
-            public static readonly GUIContent OnlySelected = new GUIContent(
-                "Only Selected",
-                "Show only currently selected rows.");
-
-            public static readonly GUIContent SelectAll = new GUIContent(
-                "Select All",
-                "Select every visible row.");
-
-            public static readonly GUIContent Deselect = new GUIContent(
-                "Deselect",
-                "Clear selection for every row.");
-
-            public static readonly GUIContent Invert = new GUIContent(
-                "Invert",
-                "Invert selection state for every row.");
-
-            public static readonly GUIContent Ping = new GUIContent(
-                "Ping",
-                "Ping the asset in the Project window.");
-
-            public static readonly GUIContent Select = new GUIContent(
-                "Select",
-                "Select the asset in the Project window.");
+            public static readonly GUIContent Refresh = new GUIContent("Refresh", "Rebuild the font list from the latest analysis data.");
+            public static readonly GUIContent SearchLabel = new GUIContent("Search", "Filter fonts by path (case-insensitive substring match).");
+            public static readonly GUIContent OnlySelected = new GUIContent("Only Selected", "Show only currently selected rows.");
+            public static readonly GUIContent SelectAll = new GUIContent("Select All", "Select every visible row.");
+            public static readonly GUIContent Deselect = new GUIContent("Deselect", "Clear selection for every row.");
+            public static readonly GUIContent Invert = new GUIContent("Invert", "Invert selection state for every row.");
+            public static readonly GUIContent Ping = new GUIContent("Ping", "Ping the asset in the Project window.");
+            public static readonly GUIContent Select = new GUIContent("Select", "Select the asset in the Project window.");
         }
 
         public void Init(BuildInfo buildInfo)
@@ -193,36 +166,30 @@ namespace Playgama.Bridge.Tabs
             rect.y += 2;
             rect.height -= 4;
 
-            // TMP fonts often larger, highlight them
             Color bg = r.IsTMP ? BridgeStyles.StatusYellow : BridgeStyles.StatusGray;
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), bg);
 
-            // Calculate available width for content (excluding margins and buttons)
             float availableWidth = rect.width - 12;
             float buttonWidth = 108;
             float checkboxWidth = 22;
             float contentWidth = availableWidth - buttonWidth - checkboxWidth;
 
-            // Determine layout mode based on available width
             bool compactMode = contentWidth < 320;
             bool veryCompactMode = contentWidth < 200;
 
             float x = rect.x + 4;
 
-            // Checkbox
             r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 2, 18, rect.height), r.Selected);
             x += checkboxWidth;
 
-            // Font name
             string displayName = !string.IsNullOrEmpty(r.FontName) ? r.FontName : System.IO.Path.GetFileName(r.Path);
-            if (string.IsNullOrEmpty(displayName)) displayName = "—";
+            if (string.IsNullOrEmpty(displayName)) displayName = "-";
 
             string size = SharedTypes.FormatBytes(r.SizeBytes);
             if (r.IsSizeEstimated) size += " ~";
 
             if (veryCompactMode)
             {
-                // Very compact: only name and size
                 float nameWidth = contentWidth * 0.6f;
                 float sizeWidth = contentWidth * 0.4f;
 
@@ -235,7 +202,6 @@ namespace Playgama.Bridge.Tabs
             }
             else if (compactMode)
             {
-                // Compact: name, size, TMP indicator
                 float nameWidth = contentWidth * 0.5f;
                 float sizeWidth = contentWidth * 0.3f;
                 float tmpWidth = contentWidth * 0.2f;
@@ -251,7 +217,6 @@ namespace Playgama.Bridge.Tabs
             }
             else
             {
-                // Full layout: all columns
                 float nameWidth = Mathf.Max(100, contentWidth * 0.35f);
                 float sizeWidth = Mathf.Max(70, contentWidth * 0.18f);
                 float typeWidth = Mathf.Max(80, contentWidth * 0.28f);
@@ -270,7 +235,6 @@ namespace Playgama.Bridge.Tabs
                     EditorGUI.LabelField(new Rect(x, rect.y + 2, tmpWidth, rect.height), "TMP", EditorStyles.miniBoldLabel);
             }
 
-            // Buttons always at the right edge
             Rect pingR = new Rect(rect.x + rect.width - 112, rect.y + 2, 50, rect.height);
             if (GUI.Button(pingR, UI.Ping))
             {
@@ -286,12 +250,11 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>Truncates a string and adds ellipsis if it exceeds the max length.</summary>
         private static string TruncateWithEllipsis(string s, int maxLen)
         {
-            if (string.IsNullOrEmpty(s)) return "—";
+            if (string.IsNullOrEmpty(s)) return "-";
             if (s.Length <= maxLen) return s;
-            return s.Substring(0, maxLen - 1) + "…";
+            return s.Substring(0, maxLen - 1) + "...";
         }
 
         private void EnsureRebuilt()
@@ -328,7 +291,6 @@ namespace Playgama.Bridge.Tabs
                             IsTMP = false
                         };
 
-                        // Determine font type and name
                         if (mainAsset != null)
                         {
                             string typeName = mainAsset.GetType().Name;
@@ -350,7 +312,6 @@ namespace Playgama.Bridge.Tabs
                         }
                         else
                         {
-                            // Determine by extension
                             if (ext == ".ttf" || ext == ".otf")
                                 row.FontType = "TrueType/OpenType";
                             else if (ext == ".fnt")

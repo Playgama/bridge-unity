@@ -6,18 +6,11 @@ using UnityEngine;
 
 namespace Playgama.Bridge
 {
-    /// <summary>
-    /// Handles saving and loading build reports to/from disk.
-    /// Reports are stored as JSON files in the BuildReports folder.
-    /// </summary>
     public static class BuildReportStorage
     {
         private const string ReportsFolderName = "BuildReports";
         private const string ReportFileExtension = ".buildreport";
 
-        /// <summary>
-        /// Gets the path to the BuildReports folder (creates if doesn't exist).
-        /// </summary>
         public static string GetReportsFolderPath()
         {
             string projectRoot = Directory.GetCurrentDirectory();
@@ -31,9 +24,6 @@ namespace Playgama.Bridge
             return folderPath;
         }
 
-        /// <summary>
-        /// Saves a BuildInfo to a JSON file with timestamp.
-        /// </summary>
         public static string SaveReport(BuildInfo info)
         {
             if (info == null) return null;
@@ -60,9 +50,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Loads a BuildInfo from a JSON file.
-        /// </summary>
         public static BuildInfo LoadReport(string filePath)
         {
             if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
@@ -81,9 +68,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Gets a list of all saved report files, sorted by date (newest first).
-        /// </summary>
         public static List<ReportFileInfo> GetSavedReports()
         {
             var reports = new List<ReportFileInfo>();
@@ -105,7 +89,6 @@ namespace Playgama.Bridge
                     });
                 }
 
-                // Sort by creation time, newest first
                 reports.Sort((a, b) => b.CreatedTime.CompareTo(a.CreatedTime));
             }
             catch (Exception ex)
@@ -116,9 +99,6 @@ namespace Playgama.Bridge
             return reports;
         }
 
-        /// <summary>
-        /// Deletes a saved report file.
-        /// </summary>
         public static bool DeleteReport(string filePath)
         {
             try
@@ -137,9 +117,6 @@ namespace Playgama.Bridge
             return false;
         }
 
-        /// <summary>
-        /// Loads the most recent report if available.
-        /// </summary>
         public static BuildInfo LoadMostRecentReport()
         {
             var reports = GetSavedReports();
@@ -151,9 +128,6 @@ namespace Playgama.Bridge
         }
     }
 
-    /// <summary>
-    /// Info about a saved report file.
-    /// </summary>
     public class ReportFileInfo
     {
         public string FilePath;
@@ -167,9 +141,6 @@ namespace Playgama.Bridge
         }
     }
 
-    /// <summary>
-    /// Serializable data structure for BuildInfo.
-    /// </summary>
     [Serializable]
     public class BuildReportData
     {
@@ -249,9 +220,6 @@ namespace Playgama.Bridge
         }
     }
 
-    /// <summary>
-    /// Serializable data structure for AssetInfo.
-    /// </summary>
     [Serializable]
     public class AssetInfoData
     {

@@ -3,54 +3,26 @@ using UnityEngine;
 
 namespace Playgama.Bridge.Tabs
 {
-    /// <summary>
-    /// Plugin settings tab.
-    /// Currently focuses on Tinify (TinyPNG) API key management:
-    /// - Set / clear the stored API key
-    /// - Validate the key via a minimal API request (no project assets uploaded)
-    /// </summary>
     public sealed class SettingsTab : ITab
     {
-        /// <summary>Displayed name of the tab in the parent UI.</summary>
         public string TabName { get { return "Settings"; } }
 
-        /// <summary>Reference to the latest analysis data (kept for consistency with other tabs).</summary>
         private BuildInfo _buildInfo;
-
-        /// <summary>Key input field state (shown as password field).</summary>
         private string _keyInput = "";
-
-        /// <summary>Short UI status message (shown as a HelpBox).</summary>
         private string _status = "";
-
-        /// <summary>Scroll position for the tab content.</summary>
         private Vector2 _scroll;
 
-        // Foldout states for collapsible sections.
         private bool _foldHeader = false;
         private bool _foldBridge = true;
         private bool _foldTinify = true;
 
-        // Bridge settings
         private bool _showEditorDebugWindows = true;
 
-        /// <summary>EditorPrefs key for the debug windows setting.</summary>
         public const string Pref_ShowEditorDebugWindows = "PlaygamaBridge_ShowEditorDebugWindows";
 
-        /// <summary>
-        /// Result of the last validation attempt:
-        /// - null: unknown / not validated yet
-        /// - true: key validated successfully
-        /// - false: key validation failed
-        /// </summary>
         private bool? _keyValid = null;
-
-        /// <summary>True while an async validation request is in progress.</summary>
         private bool _validating = false;
 
-        /// <summary>
-        /// Centralized UI labels + tooltips to keep IMGUI readable and consistent.
-        /// </summary>
         private static class UI
         {
             public static readonly GUIContent Header = new GUIContent(
@@ -108,9 +80,6 @@ namespace Playgama.Bridge.Tabs
                 "This is a safe connectivity/auth check only.");
         }
 
-        /// <summary>
-        /// Receives analysis data (not used directly here) and loads the current stored settings into the UI.
-        /// </summary>
         public void Init(BuildInfo buildInfo)
         {
             _buildInfo = buildInfo;
@@ -118,9 +87,6 @@ namespace Playgama.Bridge.Tabs
             _showEditorDebugWindows = EditorPrefs.GetBool(Pref_ShowEditorDebugWindows, true);
         }
 
-        /// <summary>
-        /// Main Unity IMGUI entry point for this tab.
-        /// </summary>
         public void OnGUI()
         {
             using (var sv = new EditorGUILayout.ScrollViewScope(_scroll))
@@ -143,9 +109,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Renders the Bridge Settings UI with debug window toggle.
-        /// </summary>
         private void DrawBridgeSettingsBlock()
         {
             _foldBridge = BridgeStyles.DrawSectionHeader("Bridge Settings", _foldBridge, "\u2699");
@@ -168,12 +131,6 @@ namespace Playgama.Bridge.Tabs
             BridgeStyles.EndCard();
         }
 
-        /// <summary>
-        /// Renders the Tinify key management UI:
-        /// - Password field for key entry
-        /// - Save/Clear actions
-        /// - Validate action + status readout
-        /// </summary>
         private void DrawTinifyKeyBlock()
         {
             _foldTinify = BridgeStyles.DrawSectionHeader("Tinify (TinyPNG) API Key", _foldTinify, "\u26A1");
@@ -227,13 +184,6 @@ namespace Playgama.Bridge.Tabs
             BridgeStyles.EndCard();
         }
 
-        /// <summary>
-        /// Starts an asynchronous validation request for the current key.
-        /// Behavior:
-        /// - Ensures the key is saved before validating
-        /// - Updates UI state while the request is running
-        /// - Stores the result in _keyValid and displays the message returned by TinifyUtility
-        /// </summary>
         private void ValidateKey()
         {
             _validating = true;

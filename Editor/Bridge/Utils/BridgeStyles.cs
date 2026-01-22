@@ -3,42 +3,22 @@ using UnityEditor;
 
 namespace Playgama.Bridge
 {
-    /// <summary>
-    /// Shared UI styles, colors, and helper methods for Playgama Bridge tabs.
-    /// Provides Material Design-inspired visuals with Playgama branding.
-    /// </summary>
     public static class BridgeStyles
     {
         // Brand Colors
-        /// <summary>Playgama brand purple (#9748ff)</summary>
         public static readonly Color BrandPurple = new Color(0.592f, 0.282f, 1f);
-
-        /// <summary>Lighter variant of brand purple for backgrounds</summary>
         public static readonly Color BrandPurpleLight = new Color(0.592f, 0.282f, 1f, 0.15f);
-
-        /// <summary>Darker variant of brand purple for hover/active states</summary>
         public static readonly Color BrandPurpleDark = new Color(0.45f, 0.2f, 0.8f);
 
-        // Status Colors (Dark theme friendly)
-        /// <summary>Success/Pass green</summary>
+        // Status Colors
         public static readonly Color StatusGreen = new Color(0.2f, 0.5f, 0.3f);
-
-        /// <summary>Warning yellow/amber</summary>
         public static readonly Color StatusYellow = new Color(0.55f, 0.45f, 0.2f);
-
-        /// <summary>Error/Critical red</summary>
         public static readonly Color StatusRed = new Color(0.55f, 0.25f, 0.25f);
-
-        /// <summary>Neutral/Default gray</summary>
         public static readonly Color StatusGray = new Color(0.28f, 0.28f, 0.28f);
 
-        /// <summary>Card/Panel background</summary>
+        // Background Colors
         public static readonly Color CardBackground = new Color(0.22f, 0.22f, 0.22f);
-
-        /// <summary>Darker background for contrast</summary>
         public static readonly Color DarkBackground = new Color(0.18f, 0.18f, 0.18f);
-
-        /// <summary>Subtle divider/border color</summary>
         public static readonly Color Divider = new Color(0.35f, 0.35f, 0.35f);
 
         // Cached Styles
@@ -50,9 +30,6 @@ namespace Playgama.Bridge
         private static GUIStyle _tabButton;
         private static GUIStyle _tabButtonSelected;
 
-        /// <summary>
-        /// Style for section headers with brand color accent.
-        /// </summary>
         public static GUIStyle SectionHeader
         {
             get
@@ -67,9 +44,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Style for section header labels (non-foldout).
-        /// </summary>
         public static GUIStyle SectionHeaderLabel
         {
             get
@@ -84,9 +58,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Style for card/panel backgrounds.
-        /// </summary>
         public static GUIStyle CardStyle
         {
             get
@@ -101,9 +72,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Style for subtitle text.
-        /// </summary>
         public static GUIStyle SubtitleStyle
         {
             get
@@ -118,9 +86,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Style for small tag/badge labels.
-        /// </summary>
         public static GUIStyle TagStyle
         {
             get
@@ -137,9 +102,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Style for unselected tab buttons in the left navigation.
-        /// </summary>
         public static GUIStyle TabButton
         {
             get
@@ -155,9 +117,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Style for the selected tab button in the left navigation.
-        /// </summary>
         public static GUIStyle TabButtonSelected
         {
             get
@@ -172,66 +131,44 @@ namespace Playgama.Bridge
             }
         }
 
-        // Drawing Helpers
 
-        /// <summary>
-        /// Draws a styled section header with brand color accent bar.
-        /// </summary>
         public static bool DrawSectionHeader(string title, bool foldout, string icon = null)
         {
             Rect headerRect = EditorGUILayout.GetControlRect(false, 28);
 
-            // Draw accent bar on the left
             Rect accentRect = new Rect(headerRect.x, headerRect.y + 2, 4, headerRect.height - 4);
             EditorGUI.DrawRect(accentRect, BrandPurple);
 
-            // Draw header background
             Rect bgRect = new Rect(headerRect.x + 4, headerRect.y, headerRect.width - 4, headerRect.height);
             EditorGUI.DrawRect(bgRect, CardBackground);
 
-            // Draw foldout with custom positioning
             Rect foldoutRect = new Rect(headerRect.x + 8, headerRect.y + 4, headerRect.width - 12, headerRect.height - 8);
-
             string displayTitle = string.IsNullOrEmpty(icon) ? title : $"{icon}  {title}";
 
-            bool newFoldout = EditorGUI.Foldout(foldoutRect, foldout, displayTitle, true, SectionHeader);
-
-            return newFoldout;
+            return EditorGUI.Foldout(foldoutRect, foldout, displayTitle, true, SectionHeader);
         }
 
-        /// <summary>
-        /// Draws a non-foldable section header with brand color accent bar.
-        /// </summary>
         public static void DrawSectionTitle(string title, string icon = null)
         {
             Rect headerRect = EditorGUILayout.GetControlRect(false, 28);
 
-            // Draw accent bar on the left
             Rect accentRect = new Rect(headerRect.x, headerRect.y + 2, 4, headerRect.height - 4);
             EditorGUI.DrawRect(accentRect, BrandPurple);
 
-            // Draw header background
             Rect bgRect = new Rect(headerRect.x + 4, headerRect.y, headerRect.width - 4, headerRect.height);
             EditorGUI.DrawRect(bgRect, CardBackground);
 
-            // Draw title
             Rect labelRect = new Rect(headerRect.x + 14, headerRect.y + 4, headerRect.width - 18, headerRect.height - 8);
             string displayTitle = string.IsNullOrEmpty(icon) ? title : $"{icon}  {title}";
             EditorGUI.LabelField(labelRect, displayTitle, SectionHeaderLabel);
         }
 
-        /// <summary>
-        /// Draws a small colored tag/badge.
-        /// </summary>
         public static void DrawTag(Rect rect, string text, Color bgColor)
         {
             EditorGUI.DrawRect(rect, bgColor);
             EditorGUI.LabelField(rect, text, TagStyle);
         }
 
-        /// <summary>
-        /// Draws a horizontal divider line.
-        /// </summary>
         public static void DrawDivider()
         {
             GUILayout.Space(4);
@@ -240,42 +177,27 @@ namespace Playgama.Bridge
             GUILayout.Space(4);
         }
 
-        /// <summary>
-        /// Draws a subtle horizontal separator.
-        /// </summary>
         public static void DrawSeparator()
         {
             GUILayout.Space(8);
         }
 
-        /// <summary>
-        /// Begins a card/panel scope with Material-style background.
-        /// </summary>
         public static void BeginCard()
         {
             GUILayout.BeginVertical(CardStyle);
         }
 
-        /// <summary>
-        /// Ends a card/panel scope.
-        /// </summary>
         public static void EndCard()
         {
             GUILayout.EndVertical();
         }
 
-        /// <summary>
-        /// Draws a row with alternating background for lists.
-        /// </summary>
         public static void DrawListRowBackground(Rect rect, int index, Color baseColor)
         {
             Color rowColor = index % 2 == 0 ? baseColor : new Color(baseColor.r + 0.03f, baseColor.g + 0.03f, baseColor.b + 0.03f);
             EditorGUI.DrawRect(rect, rowColor);
         }
 
-        /// <summary>
-        /// Gets the appropriate status color based on severity/status.
-        /// </summary>
         public static Color GetStatusColor(StatusLevel level)
         {
             switch (level)
@@ -287,9 +209,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Draws a styled button with brand color.
-        /// </summary>
         public static bool DrawAccentButton(string text, params GUILayoutOption[] options)
         {
             Color originalBg = GUI.backgroundColor;
@@ -299,9 +218,6 @@ namespace Playgama.Bridge
             return clicked;
         }
 
-        /// <summary>
-        /// Draws a styled button with brand color.
-        /// </summary>
         public static bool DrawAccentButton(GUIContent content, params GUILayoutOption[] options)
         {
             Color originalBg = GUI.backgroundColor;

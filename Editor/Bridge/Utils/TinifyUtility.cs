@@ -8,13 +8,11 @@ using UnityEngine.Networking;
 
 namespace Playgama.Bridge
 {
-    /// <summary>
-    /// Tinify (TinyPNG) helper for editor-side PNG/JPG optimization.
-    /// </summary>
     public static class TinifyUtility
     {
-        private const string PrefKey = "SUIT_TINIFY_API_KEY";
+        private const string PrefKey = "BRIDGE_TINIFY_API_KEY";
         private const string ShrinkUrl = "https://api.tinify.com/shrink";
+        private const float ValidateTimeoutSeconds = 30f;
 
         public sealed class BatchResult
         {
@@ -93,10 +91,27 @@ namespace Playgama.Bridge
             ApplyAuth(req, key);
 
             var op = req.SendWebRequest();
+            float startTime = Time.realtimeSinceStartup;
+            bool completed = false;
 
             void Tick()
             {
-                if (!op.isDone) return;
+                if (!completed && !op.isDone)
+                {
+                    float elapsed = Time.realtimeSinceStartup - startTime;
+                    if (elapsed > ValidateTimeoutSeconds)
+                    {
+                        completed = true;
+                        EditorApplication.update -= Tick;
+                        try { req.Abort(); req.Dispose(); } catch { }
+                        onComplete?.Invoke(false, "Request timed out after 30 seconds.");
+                        return;
+                    }
+                    return;
+                }
+
+                if (completed) return;
+                completed = true;
                 EditorApplication.update -= Tick;
 
                 try
@@ -349,7 +364,7 @@ namespace Playgama.Bridge
 
                 try
                 {
-                    string temp = j.AbsolutePath + ".suit_tmp";
+                    string temp = j.AbsolutePath + ".bridge_tmp";
                     File.WriteAllBytes(temp, outBytes);
                     File.Copy(temp, j.AbsolutePath, true);
                     File.Delete(temp);

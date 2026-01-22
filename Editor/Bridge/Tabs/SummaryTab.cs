@@ -12,9 +12,6 @@ namespace Playgama.Bridge.Tabs
         private BuildInfo _buildInfo;
         private Vector2 _scroll;
 
-        // Cached aggregates to keep OnGUI fast:
-        // - No re-sorting / re-aggregation every repaint
-        // - Cache invalidates when BuildInfo snapshot changes (mode, counts, tracked bytes, total build size)
         private string _cacheKey = "";
         private readonly Dictionary<AssetCategory, long> _bytesByCat = new Dictionary<AssetCategory, long>();
         private readonly Dictionary<AssetCategory, int> _countByCat = new Dictionary<AssetCategory, int>();
@@ -23,7 +20,6 @@ namespace Playgama.Bridge.Tabs
         private bool _anyEstimated;
         private int _nullAssetCount;
 
-        // Foldout states for collapsible sections.
         private bool _foldStatus = true;
         private bool _foldTotals = true;
         private bool _foldBreakdown = true;
@@ -31,11 +27,9 @@ namespace Playgama.Bridge.Tabs
         private bool _foldDiagnostics = false;
         private bool _foldSavedReports = false;
 
-        // Saved reports cache
         private List<ReportFileInfo> _savedReports = new List<ReportFileInfo>();
         private bool _savedReportsNeedRefresh = true;
 
-        // --- UI content (labels + tooltips) ---
         private static readonly GUIContent GC_Title = new GUIContent(
             "Summary",
             "High-level overview of the last Build & Analyze run: real build size, analysis mode, tracked assets, category breakdown, and top offenders.");
@@ -101,10 +95,7 @@ namespace Playgama.Bridge.Tabs
                         "No analysis data. Click 'Build & Analyze' or load a saved report below.",
                         MessageType.Warning);
 
-                    // Show saved reports so user can load a previous one
                     DrawSavedReportsBlock();
-
-                    // Diagnostics are still shown to explain what is missing.
                     DrawDiagnosticsBlock();
                     return;
                 }
@@ -168,12 +159,10 @@ namespace Playgama.Bridge.Tabs
             {
                 BridgeStyles.BeginCard();
 
-                // Check if we have actual build data (not just a status message from "Analyzing...")
                 bool hasBuildData = _buildInfo.TotalBuildSizeBytes > 0 || _buildInfo.HasData;
 
                 if (!hasBuildData)
                 {
-                    // Check if build is in progress
                     if (!string.IsNullOrEmpty(_buildInfo.StatusMessage) &&
                         _buildInfo.StatusMessage.Contains("Analyzing"))
                     {
@@ -189,7 +178,6 @@ namespace Playgama.Bridge.Tabs
                 }
                 else
                 {
-                    // Show build result with color
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         GUILayout.Label(new GUIContent("Build Result", "Whether the last build step reported success."), GUILayout.Width(170));
@@ -293,24 +281,20 @@ namespace Playgama.Bridge.Tabs
 
                 BridgeStyles.DrawListRowBackground(rect, i, BridgeStyles.CardBackground);
 
-                // Calculate available width for content (excluding margins and button)
                 float availableWidth = rect.width - 8;
                 float buttonWidth = 65;
                 float rankWidth = 28;
                 float contentWidth = availableWidth - buttonWidth - rankWidth;
 
-                // Determine layout mode based on available width
                 bool compactMode = contentWidth < 280;
                 bool veryCompactMode = contentWidth < 180;
 
                 float x = rect.x + 4;
 
-                // Rank number
                 EditorGUI.LabelField(new Rect(x, rect.y + 2, 24, rect.height),
                     new GUIContent((i + 1).ToString(), "Rank in the Top 10 list."), EditorStyles.miniBoldLabel);
                 x += rankWidth;
 
-                // File name (extracted from path)
                 string fileName = string.IsNullOrEmpty(a.Path) ? "—" : System.IO.Path.GetFileName(a.Path);
 
                 string size = SharedTypes.FormatBytes(a.SizeBytes);
@@ -318,7 +302,6 @@ namespace Playgama.Bridge.Tabs
 
                 if (veryCompactMode)
                 {
-                    // Very compact: only name and size
                     float nameWidth = contentWidth * 0.6f;
                     float sizeWidth = contentWidth * 0.4f;
 
@@ -331,7 +314,6 @@ namespace Playgama.Bridge.Tabs
                 }
                 else if (compactMode)
                 {
-                    // Compact: name, size (no category)
                     float nameWidth = contentWidth * 0.6f;
                     float sizeWidth = contentWidth * 0.4f;
 
@@ -344,7 +326,6 @@ namespace Playgama.Bridge.Tabs
                 }
                 else
                 {
-                    // Full layout: name, size, category
                     float nameWidth = Mathf.Max(100, contentWidth * 0.45f);
                     float sizeWidth = Mathf.Max(70, contentWidth * 0.25f);
                     float catWidth = Mathf.Max(60, contentWidth * 0.25f);
@@ -363,7 +344,6 @@ namespace Playgama.Bridge.Tabs
                         new GUIContent(a.Category.ToString(), "Asset category."), EditorStyles.miniLabel);
                 }
 
-                // Ping button always at right edge
                 Rect pingR = new Rect(rect.x + rect.width - 65, rect.y + 2, 60, rect.height);
                 if (GUI.Button(pingR, GC_Ping))
                 {
@@ -381,7 +361,6 @@ namespace Playgama.Bridge.Tabs
 
             BridgeStyles.BeginCard();
 
-            // Refresh button
             using (new EditorGUILayout.HorizontalScope())
             {
                 if (GUILayout.Button("Refresh List", GUILayout.Width(100)))
@@ -400,7 +379,6 @@ namespace Playgama.Bridge.Tabs
 
             GUILayout.Space(8);
 
-            // Load saved reports list
             if (_savedReportsNeedRefresh)
             {
                 _savedReports = BuildReportStorage.GetSavedReports();
@@ -417,7 +395,6 @@ namespace Playgama.Bridge.Tabs
                 EditorGUILayout.LabelField($"{_savedReports.Count} saved report(s)", EditorStyles.miniBoldLabel);
                 GUILayout.Space(4);
 
-                // Show up to 10 most recent reports
                 int maxToShow = Mathf.Min(_savedReports.Count, 10);
                 for (int i = 0; i < maxToShow; i++)
                 {
@@ -442,14 +419,12 @@ namespace Playgama.Bridge.Tabs
 
             float x = rowRect.x + 4;
 
-            // Date/time
             EditorGUI.LabelField(
                 new Rect(x, rowRect.y + 5, 140, 18),
                 new GUIContent(report.GetDisplayName(), report.FilePath),
                 EditorStyles.miniLabel);
             x += 145;
 
-            // File size
             string sizeStr = SharedTypes.FormatBytes(report.FileSize);
             EditorGUI.LabelField(
                 new Rect(x, rowRect.y + 5, 70, 18),
@@ -457,7 +432,6 @@ namespace Playgama.Bridge.Tabs
                 EditorStyles.miniLabel);
             x += 75;
 
-            // Load button
             Rect loadRect = new Rect(rowRect.x + rowRect.width - 120, rowRect.y + 4, 55, 20);
             if (GUI.Button(loadRect, new GUIContent("Load", "Load this report")))
             {
@@ -472,7 +446,6 @@ namespace Playgama.Bridge.Tabs
                 }
             }
 
-            // Delete button
             Rect deleteRect = new Rect(rowRect.x + rowRect.width - 60, rowRect.y + 4, 55, 20);
             if (GUI.Button(deleteRect, new GUIContent("Delete", "Delete this report")))
             {
@@ -546,8 +519,6 @@ namespace Playgama.Bridge.Tabs
 
         private void EnsureCache()
         {
-            // Cache key is derived from snapshot state that affects summary presentation.
-            // If the key matches, cached aggregates remain valid.
             string key =
                 (_buildInfo.DataMode.ToString()) + "|" +
                 (_buildInfo.Assets != null ? _buildInfo.Assets.Count : 0) + "|" +
@@ -573,8 +544,6 @@ namespace Playgama.Bridge.Tabs
             InitBucket(AssetCategory.Fonts);
             InitBucket(AssetCategory.Other);
 
-            // Single-pass aggregation + incremental Top-10 insertion.
-            // Avoids allocations and LINQ overhead in IMGUI repaint loops.
             for (int i = 0; i < _buildInfo.Assets.Count; i++)
             {
                 var a = _buildInfo.Assets[i];
@@ -602,8 +571,6 @@ namespace Playgama.Bridge.Tabs
 
         private void InsertTop10(AssetInfo a)
         {
-            // Insert into a descending list by SizeBytes.
-            // Maintains up to 10 items without sorting the full asset list.
             int insert = -1;
             for (int i = 0; i < _top10.Count; i++)
             {

@@ -5,71 +5,19 @@ using UnityEngine;
 
 namespace Playgama.Bridge
 {
-    /// <summary>
-    /// Utility that applies a consistent set of AudioImporter settings to reduce WebGL build size.
-    ///
-    /// Design goals:
-    /// - Best-effort compatibility across Unity versions (2019 LTS → Unity 6)
-    /// - No direct references to APIs that became obsolete or moved (reflection is used where needed)
-    /// - Minimal, predictable changes: only fields explicitly covered by ApplyOptions
-    /// </summary>
+    // Applies AudioImporter settings to reduce WebGL build size using reflection for cross-version compatibility
     public static class AudioOptimizationUtility
     {
-        /// <summary>
-        /// Batch options for applying audio import settings.
-        /// These options are applied to:
-        /// - AudioImporter.forceToMono (importer-level, stable)
-        /// - importer.defaultSampleSettings (if exposed)
-        /// - WebGL override sample settings (if exposed)
-        /// - preloadAudioData (via reflection only, because API placement differs by Unity version)
-        /// </summary>
         public sealed class ApplyOptions
         {
-            /// <summary>
-            /// How the audio clip is loaded at runtime.
-            /// Typical WebGL baseline: CompressedInMemory.
-            /// </summary>
             public AudioClipLoadType LoadType = AudioClipLoadType.CompressedInMemory;
-
-            /// <summary>
-            /// If true: converts stereo to mono on import.
-            /// Can reduce size; may change the feel for clips that rely on stereo.
-            /// </summary>
             public bool ForceToMono = true;
-
-            /// <summary>
-            /// Compression codec used for the clip.
-            /// Typical WebGL baseline: Vorbis.
-            /// </summary>
             public AudioCompressionFormat CompressionFormat = AudioCompressionFormat.Vorbis;
-
-            /// <summary>
-            /// Compression quality in the Unity API range 0..1.
-            /// Higher = better quality, usually larger size.
-            /// </summary>
             public float Quality = 0.6f;
-
-            /// <summary>
-            /// Whether to preload audio data.
-            /// This setting moved between Unity versions (importer-level vs sample settings),
-            /// so it is applied via reflection only.
-            /// </summary>
             public bool PreloadAudioData = true;
-
-            /// <summary>
-            /// If true: do not force sample rate changes.
-            /// Currently informational: this utility does not resample.
-            /// </summary>
             public bool KeepSampleRate = true;
         }
 
-        /// <summary>
-        /// Applies importer settings and platform sample settings (WebGL) best-effort.
-        /// Returns true if any change was made.
-        /// </summary>
-        /// <param name="importer">Target audio importer to modify.</param>
-        /// <param name="opt">Options to apply.</param>
-        /// <param name="appliedDetails">Human-readable summary of what was requested.</param>
         public static bool ApplyToImporter(AudioImporter importer, ApplyOptions opt, out string appliedDetails)
         {
             appliedDetails = "";
@@ -93,10 +41,6 @@ namespace Playgama.Bridge
             return changed;
         }
 
-        /// <summary>
-        /// Attempts to update importer.defaultSampleSettings (struct) if the property exists.
-        /// Unity exposes this on many versions; reflection is used to keep compatibility.
-        /// </summary>
         private static bool TryApplySampleSettings_Default(AudioImporter importer, ApplyOptions opt)
         {
             try
@@ -117,17 +61,6 @@ namespace Playgama.Bridge
             return false;
         }
 
-        /// <summary>
-        /// Attempts to update platform override sample settings for a given platform (e.g. "WebGL").
-        ///
-        /// Newer Unity versions provide:
-        /// - GetOverrideSampleSettings(string)
-        /// - SetOverrideSampleSettings(string, AudioImporterSampleSettings)
-        /// and sometimes:
-        /// - SetSampleSettingsOverride(string, bool)
-        ///
-        /// All calls are made via reflection to avoid compile errors on older versions.
-        /// </summary>
         private static bool TryApplySampleSettings_Platform(AudioImporter importer, string platform, ApplyOptions opt)
         {
             try
@@ -180,14 +113,7 @@ namespace Playgama.Bridge
             return false;
         }
 
-        /// <summary>
-        /// Writes the requested options into a boxed AudioImporterSampleSettings object (struct).
-        ///
-        /// Notes:
-        /// - sampleSettingsBoxed is boxed (object) because reflection returns structs boxed.
-        /// - We set fields/properties by name so we can support multiple Unity versions.
-        /// - If a particular member doesn't exist, it is skipped silently.
-        /// </summary>
+        // Applies options to a boxed AudioImporterSampleSettings struct
         private static bool ApplyToSampleSettingsObject(object sampleSettingsBoxed, ApplyOptions opt)
         {
             if (sampleSettingsBoxed == null) return false;
@@ -205,13 +131,7 @@ namespace Playgama.Bridge
             return changed;
         }
 
-        /// <summary>
-        /// Applies preloadAudioData using reflection only:
-        /// - Older Unity may expose AudioImporter.preloadAudioData directly
-        /// - Newer Unity may store preloadAudioData on per-platform sample settings
-        ///
-        /// This method tries both paths and returns true if anything changed.
-        /// </summary>
+        // Tries both importer-level and per-platform sample settings for preloadAudioData
         private static bool TrySetPreloadAudioData_Reflection(AudioImporter importer, bool value, string platform)
         {
             if (importer == null) return false;
@@ -279,10 +199,6 @@ namespace Playgama.Bridge
             return asm.GetType("UnityEditor.AudioImporterSampleSettings");
         }
 
-        /// <summary>
-        /// Gets an instance property by name using reflection.
-        /// Returns null if the property does not exist or throws.
-        /// </summary>
         private static object GetProp(object obj, string name)
         {
             var p = obj.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -290,10 +206,6 @@ namespace Playgama.Bridge
             return p.GetValue(obj, null);
         }
 
-        /// <summary>
-        /// Sets an instance property by name using reflection.
-        /// No-op if the property does not exist.
-        /// </summary>
         private static void SetProp(object obj, string name, object value)
         {
             var p = obj.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -301,9 +213,6 @@ namespace Playgama.Bridge
             p.SetValue(obj, value, null);
         }
 
-        /// <summary>
-        /// Returns true if a type has a field or property with the given name (any visibility).
-        /// </summary>
         private static bool HasFieldOrProp(Type t, string name)
         {
             if (t.GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) != null) return true;
@@ -311,13 +220,7 @@ namespace Playgama.Bridge
             return false;
         }
 
-        /// <summary>
-        /// Sets a struct field or property by name on a boxed struct instance.
-        /// Returns true if the value changed.
-        ///
-        /// Important: sample settings are structs, so they are boxed.
-        /// Reflection writes into the boxed copy; the caller must assign it back to the importer.
-        /// </summary>
+        // Sets a field or property on a boxed struct, returns true if value changed
         private static bool SetFieldOrProp<T>(ref object boxedStruct, Type structType, string name, T value)
         {
             try

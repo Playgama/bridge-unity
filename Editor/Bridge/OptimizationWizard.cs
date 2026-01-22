@@ -7,19 +7,15 @@ using UnityEngine;
 
 namespace Playgama.Bridge
 {
-    /// <summary>
-    /// Step-by-step optimization wizard that guides users through the WebGL build optimization process.
-    /// </summary>
     public class OptimizationWizard : EditorWindow
     {
         private static OptimizationWizard _instance;
 
         private int _currentStep = 0;
-        private int _highestStepReached = 0; // Track the furthest step user has reached
+        private int _highestStepReached = 0;
         private Vector2 _scroll;
         private BuildInfo _buildInfo;
 
-        // Step definitions
         private readonly string[] _stepNames = new[]
         {
             "Welcome",
@@ -42,19 +38,16 @@ namespace Playgama.Bridge
             "✅"
         };
 
-        // Texture optimization state
         private List<TextureAssetInfo> _textures = new List<TextureAssetInfo>();
         private int _batchMaxSize = 1024;
         private bool _batchCrunch = true;
         private int _batchCrunchQuality = 50;
 
-        // Audio optimization state
         private List<AudioAssetInfo> _audioClips = new List<AudioAssetInfo>();
         private AudioClipLoadType _audioLoadType = AudioClipLoadType.CompressedInMemory;
         private float _audioQuality = 0.5f;
         private bool _audioForceToMono = true;
 
-        // Mesh optimization state
         private List<MeshAssetInfo> _meshes = new List<MeshAssetInfo>();
         private ModelImporterMeshCompression _meshCompression = ModelImporterMeshCompression.Medium;
 
@@ -100,12 +93,9 @@ namespace Playgama.Bridge
 
         private void OnEnable()
         {
-            // Enable mouse move events for responsive hover effects
             wantsMouseMove = true;
-
             _buildInfo = new BuildInfo();
 
-            // Try to load most recent report
             var savedReport = BuildReportStorage.LoadMostRecentReport();
             if (savedReport != null)
             {
@@ -116,28 +106,25 @@ namespace Playgama.Bridge
 
         private void OnDestroy()
         {
+            BuildAnalyzer.OnBuildInfoChanged -= OnBuildInfoChanged;
             _instance = null;
         }
 
         private void OnGUI()
         {
-            // Repaint on mouse move for responsive hover effects
             if (Event.current.type == EventType.MouseMove)
             {
                 Repaint();
             }
 
-            // Header with step indicator
             DrawHeader();
 
-            // Scrollable content area
             using (var scroll = new EditorGUILayout.ScrollViewScope(_scroll))
             {
                 _scroll = scroll.scrollPosition;
 
                 EditorGUILayout.Space(10);
 
-                // Draw current step content
                 switch (_currentStep)
                 {
                     case 0: DrawWelcomeStep(); break;
@@ -150,21 +137,17 @@ namespace Playgama.Bridge
                 }
             }
 
-            // Navigation buttons
             DrawNavigation();
         }
 
         private void DrawHeader()
         {
-            // Purple header bar
             Rect headerRect = EditorGUILayout.GetControlRect(false, 60);
             EditorGUI.DrawRect(headerRect, new Color(0.15f, 0.12f, 0.2f));
 
-            // Title
             Rect titleRect = new Rect(headerRect.x + 20, headerRect.y + 8, headerRect.width - 40, 24);
             GUI.Label(titleRect, "WebGL Optimization Wizard", EditorStyles.whiteLargeLabel);
 
-            // Step indicator
             float stepWidth = (headerRect.width - 40) / _stepNames.Length;
             float stepY = headerRect.y + 35;
 
@@ -173,44 +156,38 @@ namespace Playgama.Bridge
                 float stepX = headerRect.x + 20 + (i * stepWidth);
                 Rect stepRect = new Rect(stepX, stepY, stepWidth - 4, 20);
 
-                // Determine if this step is clickable (already visited)
                 bool isClickable = i <= _highestStepReached && i != _currentStep;
                 bool isHovered = isClickable && stepRect.Contains(Event.current.mousePosition);
 
-                // Step background
                 Color bgColor;
                 if (i < _currentStep)
                 {
-                    // Completed - green (brighter on hover)
                     bgColor = isHovered
                         ? new Color(0.3f, 0.75f, 0.4f, 0.95f)
                         : new Color(0.2f, 0.6f, 0.3f, 0.8f);
                 }
                 else if (i == _currentStep)
                 {
-                    bgColor = BridgeStyles.BrandPurple; // Current - purple
+                    bgColor = BridgeStyles.BrandPurple;
                 }
                 else if (i <= _highestStepReached)
                 {
-                    // Previously visited but ahead of current - lighter purple (brighter on hover)
                     bgColor = isHovered
                         ? new Color(0.5f, 0.35f, 0.6f, 0.95f)
                         : new Color(0.4f, 0.28f, 0.5f, 0.8f);
                 }
                 else
                 {
-                    bgColor = new Color(0.3f, 0.3f, 0.35f, 0.8f); // Pending - gray
+                    bgColor = new Color(0.3f, 0.3f, 0.35f, 0.8f);
                 }
 
                 EditorGUI.DrawRect(stepRect, bgColor);
 
-                // Show hand cursor for clickable steps
                 if (isClickable)
                 {
                     EditorGUIUtility.AddCursorRect(stepRect, MouseCursor.Link);
                 }
 
-                // Handle click on completed/visited steps
                 if (isClickable && Event.current.type == EventType.MouseDown && stepRect.Contains(Event.current.mousePosition))
                 {
                     _currentStep = i;
@@ -218,7 +195,6 @@ namespace Playgama.Bridge
                     Repaint();
                 }
 
-                // Step label with step name tooltip
                 string label = $"{i + 1}";
                 string tooltip = isClickable ? $"Go to: {_stepNames[i]}" : _stepNames[i];
                 GUI.Label(stepRect, new GUIContent(label, tooltip), GetStepLabelStyle(i == _currentStep));
@@ -246,7 +222,6 @@ namespace Playgama.Bridge
             float buttonHeight = 30;
             float buttonY = navRect.y + 10;
 
-            // Back button
             if (_currentStep > 0)
             {
                 Rect backRect = new Rect(navRect.x + 20, buttonY, buttonWidth, buttonHeight);
@@ -256,11 +231,9 @@ namespace Playgama.Bridge
                 }
             }
 
-            // Step name in center
             Rect centerRect = new Rect(navRect.x + navRect.width / 2 - 100, buttonY, 200, buttonHeight);
             GUI.Label(centerRect, $"{_stepIcons[_currentStep]} {_stepNames[_currentStep]}", GetCenterLabelStyle());
 
-            // Next/Finish button
             Rect nextRect = new Rect(navRect.x + navRect.width - buttonWidth - 20, buttonY, buttonWidth, buttonHeight);
 
             Color oldBg = GUI.backgroundColor;
@@ -272,7 +245,6 @@ namespace Playgama.Bridge
                 if (_currentStep < _stepNames.Length - 1)
                 {
                     _currentStep++;
-                    // Track the highest step reached
                     if (_currentStep > _highestStepReached)
                         _highestStepReached = _currentStep;
                 }
@@ -346,7 +318,6 @@ namespace Playgama.Bridge
 
             if (_buildInfo != null && _buildInfo.HasData)
             {
-                // Show existing build info
                 EditorGUILayout.LabelField("✓ Build Analysis Available", EditorStyles.boldLabel);
                 EditorGUILayout.Space(10);
 
@@ -365,7 +336,6 @@ namespace Playgama.Bridge
             }
             else
             {
-                // No build info
                 EditorGUILayout.LabelField("No build analysis found.", EditorStyles.boldLabel);
                 EditorGUILayout.Space(10);
                 EditorGUILayout.HelpBox(
@@ -414,7 +384,6 @@ namespace Playgama.Bridge
             if (_buildInfo == null || !_buildInfo.HasData)
                 return;
 
-            // Refresh texture list
             _textures.Clear();
             foreach (var asset in _buildInfo.Assets.Where(a => a.Category == AssetCategory.Textures))
             {
@@ -429,7 +398,6 @@ namespace Playgama.Bridge
             }
             _textures = _textures.OrderByDescending(t => t.SizeBytes).ToList();
 
-            // Refresh audio list
             _audioClips.Clear();
             foreach (var asset in _buildInfo.Assets.Where(a => a.Category == AssetCategory.Audio))
             {
@@ -444,7 +412,6 @@ namespace Playgama.Bridge
             }
             _audioClips = _audioClips.OrderByDescending(a => a.SizeBytes).ToList();
 
-            // Refresh mesh list
             _meshes.Clear();
             foreach (var asset in _buildInfo.Assets.Where(a => a.Category == AssetCategory.Meshes || a.Category == AssetCategory.Models))
             {
@@ -473,7 +440,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(10);
 
-            // Quick stats
             BridgeStyles.BeginCard();
             int textureCount = _textures.Count;
             long totalSize = _textures.Sum(t => t.SizeBytes);
@@ -489,7 +455,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(10);
 
-            // Batch settings
             BridgeStyles.BeginCard();
             EditorGUILayout.LabelField("Optimization Settings", EditorStyles.boldLabel);
             EditorGUILayout.Space(5);
@@ -543,7 +508,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(10);
 
-            // Texture list
             if (_textures.Count == 0)
             {
                 EditorGUILayout.HelpBox("No textures found. Run Build & Analyze first.", MessageType.Info);
@@ -613,7 +577,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(10);
 
-            // Quick stats
             BridgeStyles.BeginCard();
             int audioCount = _audioClips.Count;
             long totalSize = _audioClips.Sum(a => a.SizeBytes);
@@ -629,7 +592,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(10);
 
-            // Batch settings
             BridgeStyles.BeginCard();
             EditorGUILayout.LabelField("Optimization Settings", EditorStyles.boldLabel);
             EditorGUILayout.Space(5);
@@ -672,7 +634,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(10);
 
-            // Audio list
             if (_audioClips.Count == 0)
             {
                 EditorGUILayout.HelpBox("No audio clips found. Run Build & Analyze first, or skip this step.", MessageType.Info);
@@ -753,7 +714,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(10);
 
-            // Quick stats
             BridgeStyles.BeginCard();
             int meshCount = _meshes.Count;
             long totalSize = _meshes.Sum(m => m.SizeBytes);
@@ -769,7 +729,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(10);
 
-            // Batch settings
             BridgeStyles.BeginCard();
             EditorGUILayout.LabelField("Optimization Settings", EditorStyles.boldLabel);
             EditorGUILayout.Space(5);
@@ -809,7 +768,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(10);
 
-            // Mesh list
             if (_meshes.Count == 0)
             {
                 EditorGUILayout.HelpBox("No models found. Run Build & Analyze first, or skip this step.", MessageType.Info);
@@ -885,7 +843,6 @@ namespace Playgama.Bridge
             EditorGUILayout.LabelField("Recommended Settings", EditorStyles.boldLabel);
             EditorGUILayout.Space(10);
 
-            // Development Build
             bool devBuild = EditorUserBuildSettings.development;
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Development Build:", GUILayout.Width(150));
@@ -897,7 +854,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(5);
 
-            // Compression
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Compression:", GUILayout.Width(150));
             string compression = PlayerSettings.WebGL.compressionFormat.ToString();
@@ -908,7 +864,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(5);
 
-            // Name Files As Hashes
             bool nameAsHashes = PlayerSettings.WebGL.nameFilesAsHashes;
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Name Files As Hashes:", GUILayout.Width(150));
@@ -958,7 +913,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(20);
 
-            // Summary card
             BridgeStyles.BeginCard();
             EditorGUILayout.LabelField("Summary", EditorStyles.boldLabel);
             EditorGUILayout.Space(10);
@@ -974,7 +928,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(20);
 
-            // Build for Release section - MOVED UP
             BridgeStyles.BeginCard();
             EditorGUILayout.LabelField("Ready for Release?", EditorStyles.boldLabel);
             EditorGUILayout.Space(10);
@@ -993,7 +946,7 @@ namespace Playgama.Bridge
             EditorGUILayout.Space(10);
 
             Color oldBg = GUI.backgroundColor;
-            GUI.backgroundColor = new Color(0.2f, 0.7f, 0.3f); // Green for release
+            GUI.backgroundColor = new Color(0.2f, 0.7f, 0.3f);
             if (GUILayout.Button(new GUIContent("  Build for Release  ", "Creates smallest possible WebGL build using Disk Size with LTO optimization"), GUILayout.Height(40)))
             {
                 EditorApplication.delayCall += () => BuildAnalyzer.BuildForRelease();
@@ -1004,7 +957,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(20);
 
-            // Other actions - MOVED DOWN
             BridgeStyles.BeginCard();
             EditorGUILayout.LabelField("Other Actions", EditorStyles.boldLabel);
             EditorGUILayout.Space(10);
@@ -1045,21 +997,18 @@ namespace Playgama.Bridge
         {
             Rect rect = EditorGUILayout.GetControlRect(false, 24);
 
-            // Background with hover effect
             bool isHovered = rect.Contains(Event.current.mousePosition);
             Color bgColor = isHovered
-                ? new Color(0.28f, 0.28f, 0.32f)  // Lighter on hover
-                : new Color(0.22f, 0.22f, 0.25f); // Default grey
+                ? new Color(0.28f, 0.28f, 0.32f)
+                : new Color(0.22f, 0.22f, 0.25f);
             EditorGUI.DrawRect(rect, bgColor);
 
-            // Calculate layout - reserve space for buttons at the end
-            float buttonWidth = 90; // Ping + Select buttons
+            float buttonWidth = 90;
             float checkboxWidth = 22;
             float availableWidth = rect.width - buttonWidth - checkboxWidth - 16;
 
             float x = rect.x + 8;
 
-            // Clickable area for toggling (excluding buttons area)
             Rect clickableRect = new Rect(rect.x, rect.y, rect.width - buttonWidth - 8, rect.height);
             if (Event.current.type == EventType.MouseDown && clickableRect.Contains(Event.current.mousePosition))
             {
@@ -1067,31 +1016,26 @@ namespace Playgama.Bridge
                 Event.current.Use();
             }
 
-            // Checkbox (visual only, clicking handled above)
             EditorGUI.Toggle(new Rect(x, rect.y + 3, 18, 18), selected);
             x += checkboxWidth;
 
-            // File name (45% of available)
             string fileName = Path.GetFileName(path);
             float nameWidth = availableWidth * 0.45f;
             EditorGUI.LabelField(new Rect(x, rect.y + 3, nameWidth, 18),
                 new GUIContent(fileName, path), EditorStyles.miniLabel);
             x += nameWidth;
 
-            // Size (fixed width)
             float sizeWidth = 70;
             EditorGUI.LabelField(new Rect(x, rect.y + 3, sizeWidth, 18),
                 SharedTypes.FormatBytes(sizeBytes), EditorStyles.miniLabel);
             x += sizeWidth;
 
-            // Info (remaining space before buttons)
             float infoWidth = availableWidth - nameWidth - sizeWidth;
             if (infoWidth > 20)
             {
                 EditorGUI.LabelField(new Rect(x, rect.y + 3, infoWidth, 18), info, EditorStyles.miniLabel);
             }
 
-            // Ping button
             Rect pingRect = new Rect(rect.x + rect.width - buttonWidth - 4, rect.y + 2, 42, rect.height - 4);
             if (GUI.Button(pingRect, new GUIContent("Ping", "Highlight asset in Project window")))
             {
@@ -1099,7 +1043,6 @@ namespace Playgama.Bridge
                 if (obj != null) EditorGUIUtility.PingObject(obj);
             }
 
-            // Select button
             Rect selectRect = new Rect(rect.x + rect.width - 46, rect.y + 2, 44, rect.height - 4);
             if (GUI.Button(selectRect, new GUIContent("Select", "Select asset in Project window")))
             {

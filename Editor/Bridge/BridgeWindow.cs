@@ -5,22 +5,16 @@ using UnityEngine;
 
 namespace Playgama.Bridge
 {
-    /// <summary>
-    /// Main editor window for Playgama Bridge.
-    ///
-    /// Responsibilities:
-    /// - Hosts a vertical tab navigation on the left
-    /// - Draws the currently selected tab's OnGUI on the right
-    /// - Subscribes to BuildAnalyzer.OnBuildInfoChanged to keep tabs in sync
-    ///
-    /// Design notes:
-    /// - Tabs implement ITab; they are created once and reused across repaints
-    /// - Heavy work (list builds, calculations) is scheduled via EditorApplication.delayCall inside each tab
-    /// - This window only handles layout, tab selection, and the Build & Analyze entry point
-    /// </summary>
     public sealed class BridgeWindow : EditorWindow
     {
-        /// <summary>Opens the window and returns the instance.</summary>
+        private readonly List<ITab> _tabs = new List<ITab>();
+        private int _selectedTab = 0;
+        private Vector2 _tabScroll;
+        private BuildInfo _buildInfo;
+
+        private const float TabColumnWidth = 150f;
+        private const string Pref_SelectedTab = "BRIDGE_SELECTED_TAB";
+
         public static BridgeWindow ShowWindow()
         {
             var w = GetWindow<BridgeWindow>();
@@ -30,30 +24,8 @@ namespace Playgama.Bridge
             return w;
         }
 
-        /// <summary>Registered tabs shown in the left navigation.</summary>
-        private readonly List<ITab> _tabs = new List<ITab>();
-
-        /// <summary>Currently selected tab index (persisted in EditorPrefs).</summary>
-        private int _selectedTab = 0;
-
-        /// <summary>Scroll position for the tab list (left column).</summary>
-        private Vector2 _tabScroll;
-
-        /// <summary>
-        /// Shared analysis data model populated by BuildAnalyzer.
-        /// Tabs read from this when rendering their UI.
-        /// </summary>
-        private BuildInfo _buildInfo;
-
-        /// <summary>Width of the left tab navigation column (pixels).</summary>
-        private const float TabColumnWidth = 150f;
-
-        /// <summary>EditorPrefs key for persisting the selected tab index.</summary>
-        private const string Pref_SelectedTab = "SUIT_SELECTED_TAB";
-
         private void OnEnable()
         {
-            // Enable mouse move events for responsive hover effects
             wantsMouseMove = true;
 
             _buildInfo = new BuildInfo();
@@ -70,7 +42,6 @@ namespace Playgama.Bridge
             _tabs.Add(new Tabs.PlatformChecksTab());
             _tabs.Add(new Tabs.SettingsTab());
 
-            // Try to load the most recent saved report
             var savedReport = BuildReportStorage.LoadMostRecentReport();
             if (savedReport != null)
             {
@@ -93,10 +64,6 @@ namespace Playgama.Bridge
             BuildAnalyzer.OnBuildInfoChanged -= OnBuildInfoChanged;
         }
 
-        /// <summary>
-        /// Event handler invoked by BuildAnalyzer when analysis data updates.
-        /// Copies new data into _buildInfo and reinitializes tabs.
-        /// </summary>
         private void OnBuildInfoChanged(BuildInfo info)
         {
             if (info == null) return;
@@ -108,16 +75,12 @@ namespace Playgama.Bridge
 
             Repaint();
 
-            // Schedule additional repaint to ensure UI updates after delayed rebuilds
             EditorApplication.delayCall += () =>
             {
                 Repaint();
             };
         }
 
-        /// <summary>
-        /// Copies all fields from source BuildInfo to destination.
-        /// </summary>
         private static void CopyBuildInfo(BuildInfo source, BuildInfo dest)
         {
             dest.TotalBuildSizeBytes = source.TotalBuildSizeBytes;
@@ -136,9 +99,6 @@ namespace Playgama.Bridge
             dest.ModeDiagnostics = source.ModeDiagnostics;
         }
 
-        /// <summary>
-        /// Loads a saved report and updates all tabs.
-        /// </summary>
         public void LoadSavedReport(BuildInfo info)
         {
             if (info == null) return;
@@ -153,7 +113,6 @@ namespace Playgama.Bridge
 
         private void OnGUI()
         {
-            // Repaint on mouse move for responsive hover effects
             if (Event.current.type == EventType.MouseMove)
             {
                 Repaint();
@@ -166,9 +125,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Left column: vertical tab list for navigation.
-        /// </summary>
         private void DrawTabColumn()
         {
             using (new EditorGUILayout.VerticalScope(GUILayout.Width(TabColumnWidth)))
@@ -205,9 +161,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Right column: renders the selected tab's OnGUI.
-        /// </summary>
         private void DrawContentColumn()
         {
             using (new EditorGUILayout.VerticalScope())

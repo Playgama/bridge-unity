@@ -7,45 +7,24 @@ using UnityEngine;
 
 namespace Playgama.Bridge.Tabs
 {
-    /// <summary>
-    /// UI tab that runs build-size-only compliance checks for a selected target platform.
-    ///
-    /// Key points:
-    /// - This tab does NOT modify assets or project settings (no auto-fixes).
-    /// - It evaluates a platform-specific list of rules against the latest analysis data (BuildInfo).
-    /// - It surfaces the most severe failures as "Insights", shows all rules, and can copy a text report.
-    /// </summary>
     public sealed class PlatformChecksTab : ITab
     {
-        /// <summary>Displayed name of the tab in the parent UI.</summary>
         public string TabName { get { return "Platform Checks"; } }
 
-        /// <summary>EditorPrefs key used to persist the selected platform between sessions.</summary>
-        private const string Pref_Platform = "SUIT_PLATFORM_CHECKS_PLATFORM";
+        private const string Pref_Platform = "BRIDGE_PLATFORM_CHECKS_PLATFORM";
 
-        /// <summary>Reference to the latest analysis data provided by the hosting window.</summary>
         private BuildInfo _buildInfo;
-
-        /// <summary>Scroll position for the tab content.</summary>
         private Vector2 _scroll;
-
-        /// <summary>Short UI status message shown at the bottom of the tab.</summary>
         private string _status = "";
-
-        /// <summary>Current platform used to pick the rule set.</summary>
         private TargetPlatform _platform = TargetPlatform.Playgama;
 
-        // Foldout states for collapsible sections.
+        // Foldout states
         private bool _foldHeader = true;
         private bool _foldPlatform = true;
         private bool _foldInsights = true;
         private bool _foldRules = true;
         private bool _foldReport = false;
 
-        /// <summary>
-        /// Centralized GUIContent labels and tooltips.
-        /// Keeping these in one place prevents tooltip drift and keeps OnGUI readable.
-        /// </summary>
         private static class UI
         {
             public static readonly GUIContent HeaderTitle = new GUIContent(
@@ -55,9 +34,9 @@ namespace Playgama.Bridge.Tabs
 
             public static readonly GUIContent HeaderHelp = new GUIContent(
                 "This tab contains ONLY build-size-related guidance.\n" +
-                "• No auto-fixes\n" +
-                "• No non-size rules\n" +
-                "• No platform SDK assumptions beyond what the rules describe",
+                "- No auto-fixes\n" +
+                "- No non-size rules\n" +
+                "- No platform SDK assumptions beyond what the rules describe",
                 "High-level rules of engagement: report only, do not modify project.");
 
             public static readonly GUIContent TargetPlatformTitle = new GUIContent(
@@ -131,9 +110,6 @@ namespace Playgama.Bridge.Tabs
                 "The selected platform was persisted to EditorPrefs.");
         }
 
-        /// <summary>
-        /// Receives analysis data and restores the last-selected platform from EditorPrefs.
-        /// </summary>
         public void Init(BuildInfo buildInfo)
         {
             _buildInfo = buildInfo;
@@ -143,14 +119,6 @@ namespace Playgama.Bridge.Tabs
                 _platform = TargetPlatform.Playgama;
         }
 
-        /// <summary>
-        /// Main Unity IMGUI entry point for this tab.
-        /// Workflow:
-        /// 1) Draw header and platform selector
-        /// 2) Load platform rule set
-        /// 3) Evaluate rules against BuildInfo
-        /// 4) Render insights + full rule list + copyable report
-        /// </summary>
         public void OnGUI()
         {
             using (var sv = new EditorGUILayout.ScrollViewScope(_scroll))
@@ -175,9 +143,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Header explains the scope (build size only) and sets expectations (no auto-fixes).
-        /// </summary>
         private void DrawHeader()
         {
             _foldHeader = BridgeStyles.DrawSectionHeader("About Platform Checks", _foldHeader, "\u2139");
@@ -189,12 +154,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Platform selector:
-        /// - Lets the user pick the target platform
-        /// - Persists selection in EditorPrefs
-        /// - Shows last-known build size and analysis mode if BuildInfo exists
-        /// </summary>
         private void DrawPlatformSelector()
         {
             _foldPlatform = BridgeStyles.DrawSectionHeader("Target Platform", _foldPlatform, "\u2316");
@@ -218,16 +177,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        // --------------------------
-        // Insights
-        // --------------------------
-
-        /// <summary>
-        /// Shows a short prioritized list of failing rules:
-        /// - Only rules that failed
-        /// - Sorted by severity (descending) then by rule id
-        /// - Limited to the top 3 failures for focus
-        /// </summary>
         private void DrawInsights(List<RuleResult> results)
         {
             _foldInsights = BridgeStyles.DrawSectionHeader("Insights", _foldInsights, "\u26A0");
@@ -270,7 +219,7 @@ namespace Playgama.Bridge.Tabs
                 }
 
                 if (!string.IsNullOrEmpty(rr.Message))
-                    EditorGUILayout.LabelField(new GUIContent("→ " + rr.Message, "Rule-specific guidance/details."),
+                    EditorGUILayout.LabelField(new GUIContent("\u2192 " + rr.Message, "Rule-specific guidance/details."),
                         BridgeStyles.SubtitleStyle);
 
                 GUILayout.Space(4);
@@ -278,14 +227,6 @@ namespace Playgama.Bridge.Tabs
             BridgeStyles.EndCard();
         }
 
-        // --------------------------
-        // Rules
-        // --------------------------
-
-        /// <summary>
-        /// Renders the full list of evaluated rules and their pass/fail status.
-        /// Each rule row uses a background color derived from severity or pass status.
-        /// </summary>
         private void DrawRules(List<RuleResult> results)
         {
             int ruleCount = results?.Count ?? 0;
@@ -305,14 +246,6 @@ namespace Playgama.Bridge.Tabs
             BridgeStyles.EndCard();
         }
 
-        /// <summary>
-        /// Draws a single rule result row.
-        /// Layout:
-        /// - PASS/FAIL label
-        /// - Severity
-        /// - Title
-        /// - Optional message under the row (word-wrapped)
-        /// </summary>
         private void DrawRuleRow(RuleResult rr)
         {
             Rect r = EditorGUILayout.GetControlRect(false, 24);
@@ -346,10 +279,6 @@ namespace Playgama.Bridge.Tabs
                     EditorStyles.wordWrappedMiniLabel);
         }
 
-        /// <summary>
-        /// Maps severity to a soft background color for failed rows.
-        /// Pass rows use a green tint regardless of severity.
-        /// </summary>
         private static Color SeverityColor(RuleSeverity s)
         {
             switch (s)
@@ -360,13 +289,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        // --------------------------
-        // Copy report
-        // --------------------------
-
-        /// <summary>
-        /// Provides a single button to copy a text report for external sharing.
-        /// </summary>
         private void DrawCopyReport(List<RuleResult> results)
         {
             _foldReport = BridgeStyles.DrawSectionHeader("Copy Report", _foldReport, "\u2398");
@@ -389,12 +311,6 @@ namespace Playgama.Bridge.Tabs
             BridgeStyles.EndCard();
         }
 
-        /// <summary>
-        /// Builds a plain-text report:
-        /// - Header + selected platform
-        /// - BuildInfo snapshot (if available)
-        /// - List of rule results with messages
-        /// </summary>
         private string BuildReportText(List<RuleResult> results)
         {
             var sb = new StringBuilder(2048);
@@ -435,16 +351,6 @@ namespace Playgama.Bridge.Tabs
             return sb.ToString();
         }
 
-        // --------------------------
-        // Evaluation
-        // --------------------------
-
-        /// <summary>
-        /// Runtime evaluation output for a platform rule:
-        /// - Rule reference (metadata + delegates)
-        /// - Pass/fail result
-        /// - Optional message (guidance/details)
-        /// </summary>
         private sealed class RuleResult
         {
             public PlatformRule Rule;
@@ -452,13 +358,6 @@ namespace Playgama.Bridge.Tabs
             public string Message;
         }
 
-        /// <summary>
-        /// Evaluates every platform rule against the provided BuildInfo.
-        /// Behavior:
-        /// - If rule.Check throws: mark fail and capture exception message (as a fallback)
-        /// - rule.GetMessage is executed separately (if available) to provide guidance text
-        /// - Results preserve rule order from PlatformRules.GetRules (no reordering here)
-        /// </summary>
         private static List<RuleResult> EvaluateRules(List<PlatformRule> rules, BuildInfo bi)
         {
             var list = new List<RuleResult>(rules != null ? rules.Count : 0);

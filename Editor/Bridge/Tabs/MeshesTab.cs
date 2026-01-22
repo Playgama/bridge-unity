@@ -6,118 +6,55 @@ using UnityEngine;
 
 namespace Playgama.Bridge.Tabs
 {
-    /// <summary>
-    /// Editor tab that displays tracked mesh/model assets from the latest build analysis.
-    /// Provides:
-    /// - A size-sorted list of model assets with a best-effort importer snapshot.
-    /// - Search + selection helpers.
-    /// - Batch operations for ModelImporter settings (Mesh Compression, Read/Write).
-    /// - Optional application of Static Flags to the imported model root GameObject
-    ///   (deprecated static flags are intentionally excluded from the selector).
-    /// </summary>
     public sealed class MeshesTab : ITab
     {
-        /// <summary>Displayed name of the tab in the parent UI.</summary>
         public string TabName { get { return "Meshes"; } }
 
-        /// <summary>Latest analysis/build data provided by the hosting window.</summary>
         private BuildInfo _buildInfo;
 
-        /// <summary>
-        /// UI row model for a single tracked model asset.
-        /// Values are extracted from analysis data (size/path) and importer/root GameObject snapshots.
-        /// </summary>
         private sealed class Row
         {
-            /// <summary>AssetDatabase path (e.g., "Assets/Models/Tree.fbx").</summary>
             public string Path;
-
-            /// <summary>Tracked size from analysis (bytes). May be estimated depending on analysis mode.</summary>
             public long SizeBytes;
-
-            /// <summary>True if the size value is an estimate rather than an exact measurement.</summary>
             public bool IsSizeEstimated;
-
-            /// <summary>UI selection flag used by batch operations.</summary>
             public bool Selected;
-
-            /// <summary>True if a ModelImporter was successfully resolved for this path.</summary>
             public bool ImporterFound;
-
-            /// <summary>Snapshot: whether Read/Write is enabled on the importer (imp.isReadable).</summary>
             public bool IsReadable;
-
-            /// <summary>Snapshot: mesh compression setting on the importer.</summary>
             public ModelImporterMeshCompression MeshCompression;
-
-            /// <summary>True if the imported model root GameObject was resolved.</summary>
             public bool RootFound;
-
-            /// <summary>Snapshot: static flags on the imported model root GameObject.</summary>
             public StaticEditorFlags RootStaticFlags;
         }
 
-        /// <summary>Cached UI rows representing tracked model assets.</summary>
         private readonly List<Row> _rows = new List<Row>(1024);
-
-        /// <summary>
-        /// When true, the next repaint will schedule a rebuild of the internal row cache.
-        /// This avoids doing heavy work directly inside OnGUI.
-        /// </summary>
         private bool _needsRebuild = true;
-
-        /// <summary>True while a delayed rebuild is queued/executing.</summary>
         private bool _isRebuilding = false;
-
-        /// <summary>Scroll state for the full page.</summary>
         private Vector2 _scrollPage;
-
-        /// <summary>Scroll state for the list view.</summary>
         private Vector2 _scroll;
-
-        /// <summary>General status messages for the tab (non-error, non-exception).</summary>
         private string _status = "";
 
-        // Foldout states for collapsible sections.
+        // Foldout states
         private bool _foldHeader = true;
         private bool _foldBatch = true;
         private bool _foldList = true;
 
-        /// <summary>Case-insensitive filter applied to asset paths.</summary>
         private string _search = "";
-
-        /// <summary>If true, the list view only renders rows that are currently selected.</summary>
         private bool _onlySelected = false;
 
-        /// <summary>Batch: desired Read/Write value when applying Read/Write changes.</summary>
+        // Batch settings
         private bool _setReadable = false;
-
-        /// <summary>Batch: enable/disable applying Read/Write during batch operations.</summary>
         private bool _applyReadable = true;
-
-        /// <summary>Batch: desired mesh compression value when applying compression changes.</summary>
         private ModelImporterMeshCompression _compression = ModelImporterMeshCompression.Medium;
-
-        /// <summary>Batch: enable/disable applying mesh compression during batch operations.</summary>
         private bool _applyCompression = true;
-
-        /// <summary>Batch: static flags to set on the imported model root (when enabled).</summary>
         private StaticEditorFlags _staticFlagsToSet = 0;
-
-        /// <summary>Batch: enable/disable applying static flags to the imported model root GameObject.</summary>
         private bool _applyStaticFlags = false;
 
-        /// <summary>
-        /// Deprecated static flags are intentionally excluded from the UI selector.
-        /// We filter by name (string) to avoid compile-time references that may trigger obsolete warnings.
-        /// </summary>
+        // Deprecated static flags excluded from UI
         private static readonly HashSet<string> kDeprecatedStaticNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "NavigationStatic",
             "OffMeshLinkGeneration"
         };
 
-        /// <summary>Centralized GUIContent labels with tooltips for consistent IMGUI.</summary>
         private static class UI
         {
             public static readonly GUIContent Refresh = new GUIContent(
@@ -204,19 +141,12 @@ namespace Playgama.Bridge.Tabs
                 "Select the asset in the Project window (Selection.activeObject).");
         }
 
-        /// <summary>
-        /// Called by the hosting window/controller to provide analysis data.
-        /// </summary>
         public void Init(BuildInfo buildInfo)
         {
             _buildInfo = buildInfo;
             RequestRebuild("Init");
         }
 
-        /// <summary>
-        /// Main Unity IMGUI entry point for the tab.
-        /// Heavy work is scheduled via delayCall to keep UI responsive.
-        /// </summary>
         public void OnGUI()
         {
             using (var sv = new EditorGUILayout.ScrollViewScope(_scrollPage))
@@ -255,9 +185,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Displays analysis context and explains what batch operations modify.
-        /// </summary>
         private void DrawHeader()
         {
             _foldHeader = BridgeStyles.DrawSectionHeader("Analysis Info", _foldHeader, "\u2139");
@@ -277,13 +204,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Toolbar with quick actions and filters:
-        /// - Refresh (rebuild list)
-        /// - Search (path filter)
-        /// - Only Selected (view filter)
-        /// - Selection helpers (select all / deselect / invert)
-        /// </summary>
         private void DrawToolbar()
         {
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
@@ -309,12 +229,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Batch settings panel:
-        /// - Enables/disables importer changes (compression, read/write)
-        /// - Optional static flags application to model root GameObject
-        /// - Applies changes to currently selected rows
-        /// </summary>
         private void DrawBatchPanel()
         {
             _foldBatch = BridgeStyles.DrawSectionHeader("Batch Apply", _foldBatch, "\u2699");
@@ -322,7 +236,7 @@ namespace Playgama.Bridge.Tabs
 
             BridgeStyles.BeginCard();
 
-            // First row: Mesh Compression
+            // Mesh Compression
             using (new EditorGUILayout.HorizontalScope())
             {
                 _applyCompression = EditorGUILayout.ToggleLeft(UI.ApplyMeshCompression, _applyCompression, GUILayout.MinWidth(130), GUILayout.MaxWidth(170));
@@ -334,7 +248,7 @@ namespace Playgama.Bridge.Tabs
 
             GUILayout.Space(2);
 
-            // Second row: Read/Write
+            // Read/Write
             using (new EditorGUILayout.HorizontalScope())
             {
                 _applyReadable = EditorGUILayout.ToggleLeft(UI.ApplyReadWrite, _applyReadable, GUILayout.MinWidth(100), GUILayout.MaxWidth(140));
@@ -378,12 +292,6 @@ namespace Playgama.Bridge.Tabs
             BridgeStyles.EndCard();
         }
 
-        /// <summary>
-        /// Custom checklist UI for StaticEditorFlags that:
-        /// - Enumerates flags by name to avoid direct references to deprecated members.
-        /// - Skips "None" and known deprecated flag names.
-        /// - Provides "All" and "None" quick actions.
-        /// </summary>
         private void DrawStaticFlagsSelector(ref StaticEditorFlags flags)
         {
             var names = Enum.GetNames(typeof(StaticEditorFlags));
@@ -432,11 +340,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Renders the list view:
-        /// - Applies "Only Selected" and search filter at draw time
-        /// - Shows a compact summary per row with quick actions (Ping/Select)
-        /// </summary>
         private void DrawList()
         {
             _foldList = BridgeStyles.DrawSectionHeader($"Mesh List ({_rows.Count} items)", _foldList, "\u25B2");
@@ -465,7 +368,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>Draws the list header row.</summary>
         private void DrawListHeader()
         {
             using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
@@ -480,15 +382,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Draws a single row:
-        /// - background highlights missing importers
-        /// - selection checkbox
-        /// - file name
-        /// - size + importer snapshot
-        /// - static flags snapshot (short form)
-        /// - Ping/Select shortcuts
-        /// </summary>
         private void DrawRow(Row r)
         {
             Rect rect = EditorGUILayout.GetControlRect(false, 24);
@@ -499,13 +392,11 @@ namespace Playgama.Bridge.Tabs
             Color bg = r.ImporterFound ? BridgeStyles.StatusGray : BridgeStyles.StatusRed;
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), bg);
 
-            // Calculate available width for content (excluding margins and buttons)
             float availableWidth = rect.width - 12;
             float buttonWidth = 108;
             float checkboxWidth = 22;
             float contentWidth = availableWidth - buttonWidth - checkboxWidth;
 
-            // Determine layout mode based on available width
             bool compactMode = contentWidth < 400;
             bool veryCompactMode = contentWidth < 280;
 
@@ -527,7 +418,6 @@ namespace Playgama.Bridge.Tabs
 
             if (veryCompactMode)
             {
-                // Very compact: only name and size
                 float nameWidth = contentWidth * 0.65f;
                 float sizeWidth = contentWidth * 0.35f;
 
@@ -538,7 +428,6 @@ namespace Playgama.Bridge.Tabs
             }
             else if (compactMode)
             {
-                // Compact: name, size, compression
                 float nameWidth = contentWidth * 0.4f;
                 float sizeWidth = contentWidth * 0.25f;
                 float compWidth = contentWidth * 0.35f;
@@ -555,7 +444,6 @@ namespace Playgama.Bridge.Tabs
             }
             else
             {
-                // Full layout: all columns
                 float nameWidth = Mathf.Max(100, contentWidth * 0.25f);
                 float sizeWidth = Mathf.Max(70, contentWidth * 0.14f);
                 float compWidth = Mathf.Max(80, contentWidth * 0.18f);
@@ -577,7 +465,7 @@ namespace Playgama.Bridge.Tabs
                 EditorGUI.LabelField(new Rect(x, rect.y + 2, flagsWidth, rect.height), TruncateWithEllipsis(sf, 15), EditorStyles.miniLabel);
             }
 
-            // Buttons always at the right edge
+            // Buttons
             Rect pingR = new Rect(rect.x + rect.width - 112, rect.y + 2, 50, rect.height);
             if (GUI.Button(pingR, UI.Ping))
             {
@@ -593,7 +481,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>Truncates a string and adds ellipsis if it exceeds the max length.</summary>
         private static string TruncateWithEllipsis(string s, int maxLen)
         {
             if (string.IsNullOrEmpty(s)) return "—";
@@ -601,7 +488,6 @@ namespace Playgama.Bridge.Tabs
             return s.Substring(0, maxLen - 1) + "…";
         }
 
-        /// <summary>Shortens compression level names for compact display.</summary>
         private static string ShortCompression(ModelImporterMeshCompression c)
         {
             switch (c)
@@ -614,10 +500,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Creates a short, readable summary of static flags without including deprecated names.
-        /// Limits output length for list readability.
-        /// </summary>
         private static string ShortStaticFlags(StaticEditorFlags f)
         {
             if (f == 0) return "None";
@@ -642,10 +524,6 @@ namespace Playgama.Bridge.Tabs
             return string.Join(", ", parts.ToArray());
         }
 
-        /// <summary>
-        /// Ensures the row cache is built.
-        /// The rebuild is scheduled via EditorApplication.delayCall to keep OnGUI fast.
-        /// </summary>
         private void EnsureRebuilt()
         {
             if (!_needsRebuild || _isRebuilding) return;
@@ -665,7 +543,6 @@ namespace Playgama.Bridge.Tabs
                         if (a == null) continue;
                         if (string.IsNullOrEmpty(a.Path)) continue;
 
-                        // Accept both "Meshes" and "Models" categories if present in the analysis model.
                         string cat = a.Category.ToString();
                         bool isModel = cat.Equals("Meshes", StringComparison.OrdinalIgnoreCase) ||
                                        cat.Equals("Models", StringComparison.OrdinalIgnoreCase);
@@ -673,9 +550,6 @@ namespace Playgama.Bridge.Tabs
 
                         var imp = AssetImporter.GetAtPath(a.Path) as ModelImporter;
 
-                        // Always use build report size (a.SizeBytes) as primary source
-                        // In PackedAssets mode: this is the actual packed size from build report
-                        // In DependenciesFallback mode: this is the file size (estimated)
                         var row = new Row
                         {
                             Path = a.Path,
@@ -697,7 +571,6 @@ namespace Playgama.Bridge.Tabs
                             row.MeshCompression = imp.meshCompression;
                         }
 
-                        // Imported model root (asset root) is loaded as a GameObject for static flag snapshot.
                         var go = AssetDatabase.LoadAssetAtPath<GameObject>(a.Path);
                         if (go != null)
                         {
@@ -711,7 +584,6 @@ namespace Playgama.Bridge.Tabs
                     _rows.Sort((x, y) => y.SizeBytes.CompareTo(x.SizeBytes));
                     _status = $"Tracked model assets: {_rows.Count}";
 
-                    // Force repaint to show updated values
                     try { EditorWindow.focusedWindow?.Repaint(); } catch { }
                 }
                 catch (Exception ex)
@@ -722,18 +594,11 @@ namespace Playgama.Bridge.Tabs
                 finally
                 {
                     _isRebuilding = false;
-                    // Force another repaint after rebuild completes
                     try { EditorWindow.focusedWindow?.Repaint(); } catch { }
                 }
             };
         }
 
-        /// <summary>
-        /// Applies enabled batch settings to all selected rows:
-        /// - ModelImporter changes (Read/Write, Mesh Compression)
-        /// - Optional static flags on model root GameObject
-        /// Importer changes trigger reimport so settings take effect.
-        /// </summary>
         private void ApplyBatchToSelected()
         {
             var paths = CollectSelectedPaths();
@@ -844,28 +709,22 @@ namespace Playgama.Bridge.Tabs
             };
         }
 
-        /// <summary>
-        /// Marks the internal row cache as stale and sets a user-facing status message.
-        /// </summary>
         private void RequestRebuild(string reason)
         {
             _needsRebuild = true;
             _status = "Rebuild requested: " + reason;
         }
 
-        /// <summary>Select or deselect every cached row.</summary>
         private void SelectAll(bool v)
         {
             for (int i = 0; i < _rows.Count; i++) _rows[i].Selected = v;
         }
 
-        /// <summary>Invert selection state for every cached row.</summary>
         private void InvertSelection()
         {
             for (int i = 0; i < _rows.Count; i++) _rows[i].Selected = !_rows[i].Selected;
         }
 
-        /// <summary>Returns the number of selected rows.</summary>
         private int GetSelectedCount()
         {
             int c = 0;
@@ -873,7 +732,6 @@ namespace Playgama.Bridge.Tabs
             return c;
         }
 
-        /// <summary>Collects AssetDatabase paths for selected rows.</summary>
         private List<string> CollectSelectedPaths()
         {
             var list = new List<string>(256);
@@ -887,7 +745,6 @@ namespace Playgama.Bridge.Tabs
             return list;
         }
 
-        /// <summary>Case-insensitive substring search against the asset path.</summary>
         private static bool PassSearch(string path, string search)
         {
             if (string.IsNullOrEmpty(search)) return true;

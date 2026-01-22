@@ -7,10 +7,6 @@ using UnityEngine;
 
 namespace Playgama.Bridge
 {
-    /// <summary>
-    /// Popup window for selecting and installing Playgama Bridge WebGL template files.
-    /// Copies files from the package to Assets/WebGLTemplates/Bridge.
-    /// </summary>
     public class InstallFilesWindow : EditorWindow
     {
         private const string SOURCE_TEMPLATE_PATH = "Packages/com.playgama.bridge/Runtime/WebGLTemplates/Bridge";
@@ -30,7 +26,6 @@ namespace Playgama.Bridge
             public bool Enabled;
         }
 
-        // Descriptions for known files
         private static readonly Dictionary<string, string> FileDescriptions = new Dictionary<string, string>
         {
             { "index.html", "HTML template with Playgama SDK loader and game container" },
@@ -79,7 +74,6 @@ namespace Playgama.Bridge
 
         private void LoadFilesRecursive(string currentPath, string rootPath)
         {
-            // Load files in current directory
             foreach (string file in Directory.GetFiles(currentPath))
             {
                 var fileName = Path.GetFileName(file);
@@ -90,7 +84,6 @@ namespace Playgama.Bridge
                 var prefKey = PREFS_PREFIX + relativePath;
                 var enabled = EditorPrefs.GetBool(prefKey, true);
 
-                // Get description if available
                 string description = "";
                 if (FileDescriptions.TryGetValue(fileName, out string desc))
                     description = desc;
@@ -106,7 +99,6 @@ namespace Playgama.Bridge
                 });
             }
 
-            // Recurse into subdirectories
             foreach (string directory in Directory.GetDirectories(currentPath))
             {
                 LoadFilesRecursive(directory, rootPath);
@@ -115,18 +107,15 @@ namespace Playgama.Bridge
 
         private string GetSourcePath()
         {
-            // Try package path first
             var sourcePath = Path.GetFullPath(SOURCE_TEMPLATE_PATH);
             if (Directory.Exists(sourcePath))
                 return sourcePath;
 
-            // Fallback for local development
             sourcePath = Path.Combine(Application.dataPath, "../Packages/com.playgama.bridge/Runtime/WebGLTemplates/Bridge");
             sourcePath = Path.GetFullPath(sourcePath);
             if (Directory.Exists(sourcePath))
                 return sourcePath;
 
-            // Another fallback
             sourcePath = Path.Combine(Application.dataPath, "../../bridge-unity/Runtime/WebGLTemplates/Bridge");
             sourcePath = Path.GetFullPath(sourcePath);
             if (Directory.Exists(sourcePath))
@@ -137,7 +126,6 @@ namespace Playgama.Bridge
 
         private void OnGUI()
         {
-            // Header
             EditorGUILayout.Space(10);
 
             using (new EditorGUILayout.HorizontalScope())
@@ -149,7 +137,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(5);
 
-            // Subtitle
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.FlexibleSpace();
@@ -159,13 +146,11 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(10);
 
-            // Purple accent line
             Rect lineRect = EditorGUILayout.GetControlRect(false, 2);
             EditorGUI.DrawRect(lineRect, BridgeStyles.BrandPurple);
 
             EditorGUILayout.Space(10);
 
-            // Check if files are loaded
             if (!_filesLoaded || _templateFiles.Count == 0)
             {
                 EditorGUILayout.HelpBox(
@@ -182,7 +167,6 @@ namespace Playgama.Bridge
                 return;
             }
 
-            // Destination path info
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.Label("Destination:", EditorStyles.miniLabel, GUILayout.Width(70));
@@ -191,7 +175,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(10);
 
-            // File list with checkboxes
             using (var scroll = new EditorGUILayout.ScrollViewScope(_scroll))
             {
                 _scroll = scroll.scrollPosition;
@@ -205,7 +188,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(10);
 
-            // Select All / Deselect All / Refresh buttons
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.Space(10);
@@ -240,7 +222,6 @@ namespace Playgama.Bridge
 
             GUILayout.FlexibleSpace();
 
-            // Status: how many files selected
             int selectedCount = _templateFiles.Count(f => f.Enabled);
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -251,7 +232,6 @@ namespace Playgama.Bridge
 
             EditorGUILayout.Space(10);
 
-            // Bottom buttons
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.FlexibleSpace();
@@ -263,7 +243,6 @@ namespace Playgama.Bridge
 
                 GUILayout.Space(10);
 
-                // Install button with accent color
                 GUI.enabled = selectedCount > 0;
                 Color oldBg = GUI.backgroundColor;
                 GUI.backgroundColor = BridgeStyles.BrandPurple;
@@ -286,20 +265,17 @@ namespace Playgama.Bridge
         {
             Rect boxRect = EditorGUILayout.GetControlRect(false, 44);
 
-            // Background
             Color bgColor = file.Enabled
-                ? new Color(0.25f, 0.22f, 0.30f)  // Slight purple tint when selected
+                ? new Color(0.25f, 0.22f, 0.30f)
                 : new Color(0.22f, 0.22f, 0.25f);
             EditorGUI.DrawRect(boxRect, bgColor);
 
-            // Left accent when enabled
             if (file.Enabled)
             {
                 Rect accentRect = new Rect(boxRect.x, boxRect.y, 3, boxRect.height);
                 EditorGUI.DrawRect(accentRect, BridgeStyles.BrandPurple);
             }
 
-            // Checkbox
             Rect toggleRect = new Rect(boxRect.x + 10, boxRect.y + 12, 20, 20);
             EditorGUI.BeginChangeCheck();
             bool newEnabled = EditorGUI.Toggle(toggleRect, file.Enabled);
@@ -309,12 +285,10 @@ namespace Playgama.Bridge
                 EditorPrefs.SetBool(PREFS_PREFIX + file.RelativePath, newEnabled);
             }
 
-            // File name
             string fileName = Path.GetFileName(file.RelativePath);
             Rect nameRect = new Rect(boxRect.x + 35, boxRect.y + 6, boxRect.width - 45, 18);
             EditorGUI.LabelField(nameRect, fileName, EditorStyles.boldLabel);
 
-            // Description
             Rect descRect = new Rect(boxRect.x + 35, boxRect.y + 24, boxRect.width - 45, 16);
             EditorGUI.LabelField(descRect, file.Description, EditorStyles.miniLabel);
         }
@@ -338,7 +312,6 @@ namespace Playgama.Bridge
 
             try
             {
-                // Create destination directory if needed
                 if (!Directory.Exists(destinationPath))
                 {
                     Directory.CreateDirectory(destinationPath);
@@ -360,34 +333,29 @@ namespace Playgama.Bridge
                         var destFile = Path.Combine(destinationPath, file.RelativePath);
                         var destDir = Path.GetDirectoryName(destFile);
 
-                        // Create subdirectory if needed
                         if (!Directory.Exists(destDir))
                         {
                             Directory.CreateDirectory(destDir);
                         }
 
-                        // Special handling for config file - create backup if exists
+                        // Backup existing config file before overwriting
                         if (fileName == "playgama-bridge-config.json" && File.Exists(destFile))
                         {
                             var backupFile = Path.Combine(destDir, "playgama-bridge-config_backup.json");
 
-                            // Delete old backup if exists
                             if (File.Exists(backupFile))
                             {
                                 File.Delete(backupFile);
                             }
 
-                            // Rename current config to backup
                             File.Move(destFile, backupFile);
                             Debug.Log($"[Playgama Bridge] Backed up existing config to: playgama-bridge-config_backup.json");
                         }
                         else if (File.Exists(destFile))
                         {
-                            // Delete existing file for non-config files
                             File.Delete(destFile);
                         }
 
-                        // Copy file
                         File.Copy(file.FullPath, destFile);
                         successCount++;
 

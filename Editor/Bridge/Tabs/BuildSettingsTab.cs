@@ -6,27 +6,17 @@ using UnityEngine;
 
 namespace Playgama.Bridge.Tabs
 {
-    /// <summary>
-    /// Build workflow tab focused on build size control:
-    /// - Output folder selection (persisted in EditorPrefs)
-    /// - Scene enable/disable management (Build Settings)
-    /// - WebGL build-size related toggles (Development Build + WebGL compression, best-effort)
-    /// - Single entry point to trigger Build & Analyze (always via delayCall, never inside OnGUI)
-    /// - Displays a snapshot of the last analysis results (if available)
-    /// </summary>
     public sealed class BuildSettingsTab : ITab
     {
-        /// <summary>Displayed name of the tab in the parent UI.</summary>
         public string TabName { get { return "Build Settings"; } }
 
-        private const string Pref_OutputPath = "SUIT_BUILD_OUTPUT_PATH";
+        private const string Pref_OutputPath = "BRIDGE_BUILD_OUTPUT_PATH";
 
         private BuildInfo _buildInfo;
 
         private Vector2 _scroll;
         private string _status = "";
 
-        // Foldout states for collapsible sections.
         private bool _foldHeader = false;
         private bool _foldOutput = true;
         private bool _foldScenes = true;
@@ -34,17 +24,12 @@ namespace Playgama.Bridge.Tabs
         private bool _foldBuild = true;
         private bool _foldLastBuild = true;
 
-        // Cached UI state.
         private string _outputPath;
         private bool _devBuild;
         private bool _nameFilesAsHashes;
         private WebGLCompressionState _compressionState;
         private CodeOptimizationState _codeOptimizationState;
 
-        /// <summary>
-        /// Summary state for WebGL compression setting read via reflection.
-        /// This is intentionally coarse: Unity's API surface differs by version.
-        /// </summary>
         private enum WebGLCompressionState
         {
             Unknown,
@@ -54,30 +39,18 @@ namespace Playgama.Bridge.Tabs
             Enabled_Other
         }
 
-        /// <summary>
-        /// Code optimization setting for IL2CPP code generation.
-        /// Controls the tradeoff between build size, build time, and runtime performance.
-        /// Maps to Unity's WebGLCodeOptimization / Il2CppCodeGeneration enums.
-        /// </summary>
-        /// <summary>
-        /// Code optimization states for WebGL builds.
-        /// Made internal so BuildAnalyzer can use it.
-        /// </summary>
         internal enum CodeOptimizationState
         {
             Unknown,
-            None,               // No optimization - fastest build time
-            Size,               // Optimize for size - smallest build
-            Speed,              // Optimize for runtime speed - fastest execution
-            ShorterBuildTime,   // Faster incremental builds (Unity 2022+)
-            RuntimeSpeedLTO,    // Link Time Optimization for max speed (Unity 2022+)
-            DiskSize,           // Optimize for disk size (Unity 2022+)
-            DiskSizeLTO         // Disk size with Link Time Optimization (Unity 2022+)
+            None,
+            Size,
+            Speed,
+            ShorterBuildTime,
+            RuntimeSpeedLTO,
+            DiskSize,
+            DiskSizeLTO
         }
 
-        /// <summary>
-        /// Centralized GUIContent labels with tooltips to keep IMGUI code readable and consistent.
-        /// </summary>
         private static class UI
         {
             public static readonly GUIContent HeaderInfo = new GUIContent(
@@ -220,9 +193,6 @@ namespace Playgama.Bridge.Tabs
                 "Copy a short build/analysis summary into the system clipboard.");
         }
 
-        /// <summary>
-        /// Receives analysis model references and initializes cached UI state.
-        /// </summary>
         public void Init(BuildInfo buildInfo)
         {
             _buildInfo = buildInfo;
@@ -243,9 +213,6 @@ namespace Playgama.Bridge.Tabs
             _status = "";
         }
 
-        /// <summary>
-        /// IMGUI entry point for this tab.
-        /// </summary>
         public void OnGUI()
         {
             using (var sv = new EditorGUILayout.ScrollViewScope(_scroll))
@@ -264,9 +231,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Draws a brief overview of what this tab controls.
-        /// </summary>
         private void DrawHeader()
         {
             _foldHeader = BridgeStyles.DrawSectionHeader("About Build Settings", _foldHeader, "\u2139");
@@ -278,9 +242,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Output path selection and persistence.
-        /// </summary>
         private void DrawOutputBlock()
         {
             _foldOutput = BridgeStyles.DrawSectionHeader("Output Path", _foldOutput, "\u2301");
@@ -315,9 +276,6 @@ namespace Playgama.Bridge.Tabs
             BridgeStyles.EndCard();
         }
 
-        /// <summary>
-        /// Scene management: enables/disables scenes in Unity Build Settings and provides quick helpers.
-        /// </summary>
         private void DrawScenesBlock()
         {
             int sceneCount = EditorBuildSettings.scenes?.Length ?? 0;
@@ -378,9 +336,6 @@ namespace Playgama.Bridge.Tabs
             BridgeStyles.EndCard();
         }
 
-        /// <summary>
-        /// WebGL-oriented toggles that influence build size (where available).
-        /// </summary>
         private void DrawWebGLBuildSizeBlock()
         {
             _foldWebGL = BridgeStyles.DrawSectionHeader("WebGL Build Size Toggles", _foldWebGL, "\u2699");
@@ -388,7 +343,6 @@ namespace Playgama.Bridge.Tabs
 
             BridgeStyles.BeginCard();
 
-            // First row: Development Build and Name Files As Hashes toggles
             using (new EditorGUILayout.HorizontalScope())
             {
                 bool newDev = EditorGUILayout.ToggleLeft(UI.DevelopmentBuild, _devBuild, GUILayout.Width(160));
@@ -414,7 +368,6 @@ namespace Playgama.Bridge.Tabs
 
             GUILayout.Space(6);
 
-            // Second row: Compression and Code Optimization dropdowns
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.Label(UI.CompressionLabel, GUILayout.Width(90));
@@ -433,9 +386,6 @@ namespace Playgama.Bridge.Tabs
             BridgeStyles.EndCard();
         }
 
-        /// <summary>
-        /// Build & Analyze trigger and convenience actions.
-        /// </summary>
         private void DrawBuildAndAnalyzeBlock()
         {
             _foldBuild = BridgeStyles.DrawSectionHeader("Build & Analyze", _foldBuild, "\u26A1");
@@ -448,7 +398,7 @@ namespace Playgama.Bridge.Tabs
 
                 if (BridgeStyles.DrawAccentButton(UI.BuildAnalyzeButton, GUILayout.Height(32)))
                 {
-                    // Build must never run inside OnGUI; delayCall is safe for long operations.
+                    // Build must never run inside OnGUI; delayCall is safe for long operations
                     EditorApplication.delayCall += () =>
                     {
                         try
@@ -488,7 +438,6 @@ namespace Playgama.Bridge.Tabs
 
             EditorGUILayout.Space(10);
 
-            // Build for Release section
             BridgeStyles.BeginCard();
             EditorGUILayout.LabelField("Build for Release", EditorStyles.boldLabel);
             EditorGUILayout.Space(5);
@@ -504,7 +453,7 @@ namespace Playgama.Bridge.Tabs
                 GUI.enabled = HasEnabledScenes();
 
                 Color oldBg = GUI.backgroundColor;
-                GUI.backgroundColor = new Color(0.2f, 0.7f, 0.3f); // Green for release
+                GUI.backgroundColor = new Color(0.2f, 0.7f, 0.3f);
 
                 if (GUILayout.Button(new GUIContent("  Build for Release  ", "Creates smallest possible WebGL build. Takes longer to compile."), GUILayout.Height(32)))
                 {
@@ -537,9 +486,6 @@ namespace Playgama.Bridge.Tabs
             BridgeStyles.EndCard();
         }
 
-        /// <summary>
-        /// Displays a quick snapshot of the last analysis stored in BuildInfo.
-        /// </summary>
         private void DrawLastBuildBlock()
         {
             _foldLastBuild = BridgeStyles.DrawSectionHeader("Last Build Snapshot", _foldLastBuild, "\u2139");
@@ -547,12 +493,10 @@ namespace Playgama.Bridge.Tabs
 
             BridgeStyles.BeginCard();
 
-            // Check if we have actual build data (not just a status message from "Analyzing...")
             bool hasBuildData = _buildInfo != null && (_buildInfo.TotalBuildSizeBytes > 0 || _buildInfo.HasData);
 
             if (!hasBuildData)
             {
-                // Check if build is in progress
                 if (_buildInfo != null && !string.IsNullOrEmpty(_buildInfo.StatusMessage) &&
                     _buildInfo.StatusMessage.Contains("Analyzing"))
                 {
@@ -569,7 +513,6 @@ namespace Playgama.Bridge.Tabs
                 return;
             }
 
-            // Show build result with color
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.Label(new GUIContent("Build Result", "Whether the last build step reported success."), GUILayout.Width(130));
@@ -618,9 +561,6 @@ namespace Playgama.Bridge.Tabs
             BridgeStyles.EndCard();
         }
 
-        /// <summary>
-        /// Helper to draw a label-value pair consistently.
-        /// </summary>
         private static void DrawLabelValue(string label, string value)
         {
             using (new EditorGUILayout.HorizontalScope())
@@ -631,10 +571,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Checks if at least one scene in Build Settings is enabled.
-        /// Used to disable the Build button when a build would be empty.
-        /// </summary>
         private bool HasEnabledScenes()
         {
             var scenes = EditorBuildSettings.scenes;
@@ -646,9 +582,6 @@ namespace Playgama.Bridge.Tabs
             return false;
         }
 
-        /// <summary>
-        /// Enables/disables all scenes in Build Settings.
-        /// </summary>
         private void SetAllScenesEnabled(bool enabled)
         {
             var scenes = EditorBuildSettings.scenes;
@@ -661,13 +594,6 @@ namespace Playgama.Bridge.Tabs
             _status = enabled ? "All scenes enabled." : "All scenes disabled.";
         }
 
-        /// <summary>
-        /// Adds all currently open Editor scenes to Build Settings if:
-        /// - The scene is valid
-        /// - The scene has a path under Assets/
-        /// - It is not already present in the Build Settings list
-        /// Added scenes are marked enabled.
-        /// </summary>
         private void AddOpenScenesToBuild()
         {
             var list = new System.Collections.Generic.List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
@@ -697,10 +623,6 @@ namespace Playgama.Bridge.Tabs
             _status = "Open scenes added (if not present).";
         }
 
-        /// <summary>
-        /// Returns the project root folder (parent of Assets/).
-        /// Used to create a stable default output folder.
-        /// </summary>
         private static string GetProjectRoot()
         {
             var assets = Application.dataPath.Replace('\\', '/');
@@ -709,19 +631,12 @@ namespace Playgama.Bridge.Tabs
             return Directory.GetParent(Application.dataPath).FullName;
         }
 
-        /// <summary>
-        /// Ensures the output folder exists; throws if the path is empty.
-        /// </summary>
         private static void EnsureDirectory(string path)
         {
             if (string.IsNullOrEmpty(path)) throw new Exception("Output path is empty.");
             if (!Directory.Exists(path)) Directory.CreateDirectory(path);
         }
 
-        /// <summary>
-        /// Draws a dropdown-like button for WebGL compression.
-        /// Reads current state best-effort and offers a context menu to set a desired mode.
-        /// </summary>
         private void DrawCompressionDropdown()
         {
             ReadWebGLCompression(out _compressionState);
@@ -741,10 +656,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Adds an item to the compression menu.
-        /// If the item is not selectable, it only reports a status message.
-        /// </summary>
         private void AddCompressionItem(GenericMenu menu, string title, WebGLCompressionState state, bool selectable)
         {
             bool on = _compressionState == state;
@@ -761,9 +672,6 @@ namespace Playgama.Bridge.Tabs
             });
         }
 
-        /// <summary>
-        /// Converts compression state to a short label for the dropdown button.
-        /// </summary>
         private static string CompressionLabel(WebGLCompressionState s)
         {
             switch (s)
@@ -776,10 +684,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Reads WebGL compression setting via reflection (best-effort).
-        /// If the API surface does not exist, state stays Unknown.
-        /// </summary>
         private static void ReadWebGLCompression(out WebGLCompressionState state)
         {
             state = WebGLCompressionState.Unknown;
@@ -808,10 +712,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Attempts to set WebGL compression via reflection (best-effort).
-        /// Returns false if the API is not available or the enum cannot be mapped.
-        /// </summary>
         private static bool TrySetWebGLCompression(WebGLCompressionState desired)
         {
             try
@@ -853,15 +753,10 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Draws a dropdown-like button for Code Optimization setting.
-        /// Reads current state best-effort and offers a context menu to set a desired mode.
-        /// </summary>
         private void DrawCodeOptimizationDropdown()
         {
             ReadCodeOptimization(out _codeOptimizationState);
 
-            // Default to Disk Size with LTO if Unknown (best for WebGL size optimization)
             if (_codeOptimizationState == CodeOptimizationState.Unknown)
             {
                 _codeOptimizationState = CodeOptimizationState.DiskSizeLTO;
@@ -873,7 +768,6 @@ namespace Playgama.Bridge.Tabs
             {
                 var menu = new GenericMenu();
 
-                // Size optimization options
                 AddCodeOptimizationItem(menu, "Disk Size with LTO", CodeOptimizationState.DiskSizeLTO,
                     "Disk size optimization with Link Time Optimization. Smallest build, longer build time.");
 
@@ -882,7 +776,6 @@ namespace Playgama.Bridge.Tabs
 
                 menu.AddSeparator("");
 
-                // Speed optimization options
                 AddCodeOptimizationItem(menu, "Runtime Speed with LTO", CodeOptimizationState.RuntimeSpeedLTO,
                     "Maximum runtime speed with Link Time Optimization. Longest build time.");
 
@@ -891,7 +784,6 @@ namespace Playgama.Bridge.Tabs
 
                 menu.AddSeparator("");
 
-                // Build time options
                 AddCodeOptimizationItem(menu, "Shorter Build Time", CodeOptimizationState.ShorterBuildTime,
                     "Faster incremental builds. Less optimized code.");
 
@@ -902,9 +794,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Adds an item to the code optimization menu.
-        /// </summary>
         private void AddCodeOptimizationItem(GenericMenu menu, string title, CodeOptimizationState state, string tooltip)
         {
             bool on = _codeOptimizationState == state;
@@ -923,9 +812,6 @@ namespace Playgama.Bridge.Tabs
             });
         }
 
-        /// <summary>
-        /// Converts code optimization state to a short label for the dropdown button.
-        /// </summary>
         private static string CodeOptimizationLabel(CodeOptimizationState s)
         {
             switch (s)
@@ -941,14 +827,10 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Gets the raw Code Optimization value from Unity for debugging purposes.
-        /// </summary>
         private static string GetRawCodeOptimizationValue()
         {
             try
             {
-                // Try GetPlatformSettings first
                 var getPlatformSettings = typeof(EditorUserBuildSettings).GetMethod(
                     "GetPlatformSettings",
                     BindingFlags.Public | BindingFlags.Static,
@@ -965,7 +847,6 @@ namespace Playgama.Bridge.Tabs
                     }
                 }
 
-                // Try il2CppCodeGeneration
                 var il2cppProp = typeof(EditorUserBuildSettings).GetProperty("il2CppCodeGeneration", BindingFlags.Public | BindingFlags.Static);
                 if (il2cppProp != null)
                 {
@@ -978,18 +859,13 @@ namespace Playgama.Bridge.Tabs
             return null;
         }
 
-        /// <summary>
-        /// Reads Code Optimization setting via reflection (best-effort).
-        /// Tries multiple API locations across Unity versions.
-        /// </summary>
         private static void ReadCodeOptimization(out CodeOptimizationState state)
         {
             state = CodeOptimizationState.Unknown;
 
             try
             {
-                // Method 1: EditorUserBuildSettings.GetPlatformSettings (Unity 2022+ Build Profiles)
-                // This is the primary API used by Build Profiles for Code Optimization
+                // Try EditorUserBuildSettings.GetPlatformSettings (Unity 2022+ Build Profiles)
                 var getPlatformSettings = typeof(EditorUserBuildSettings).GetMethod(
                     "GetPlatformSettings",
                     BindingFlags.Public | BindingFlags.Static,
@@ -999,7 +875,6 @@ namespace Playgama.Bridge.Tabs
 
                 if (getPlatformSettings != null)
                 {
-                    // Try with "WebGL" as platform name
                     object result = getPlatformSettings.Invoke(null, new object[] { "WebGL", "CodeOptimization" });
                     if (result != null && !string.IsNullOrEmpty(result.ToString()))
                     {
@@ -1007,7 +882,6 @@ namespace Playgama.Bridge.Tabs
                         if (state != CodeOptimizationState.Unknown) return;
                     }
 
-                    // Try with BuildTargetGroup name
                     result = getPlatformSettings.Invoke(null, new object[] { BuildTargetGroup.WebGL.ToString(), "CodeOptimization" });
                     if (result != null && !string.IsNullOrEmpty(result.ToString()))
                     {
@@ -1016,14 +890,13 @@ namespace Playgama.Bridge.Tabs
                     }
                 }
 
-                // Method 2: PlayerSettings.GetIl2CppCodeGeneration (Unity 2022+)
+                // Try PlayerSettings.GetIl2CppCodeGeneration (Unity 2022+)
                 var getIl2CppCodeGen = typeof(PlayerSettings).GetMethod(
                     "GetIl2CppCodeGeneration",
                     BindingFlags.Public | BindingFlags.Static);
 
                 if (getIl2CppCodeGen != null)
                 {
-                    // Try to get NamedBuildTarget.WebGL via reflection (safe for older Unity versions)
                     var namedBuildTargetType = Type.GetType("UnityEditor.Build.NamedBuildTarget, UnityEditor");
                     if (namedBuildTargetType != null)
                     {
@@ -1041,7 +914,7 @@ namespace Playgama.Bridge.Tabs
                     }
                 }
 
-                // Method 3: EditorUserBuildSettings.il2CppCodeGeneration (legacy)
+                // Try EditorUserBuildSettings.il2CppCodeGeneration (legacy)
                 var il2cppProp = typeof(EditorUserBuildSettings).GetProperty("il2CppCodeGeneration", BindingFlags.Public | BindingFlags.Static);
                 if (il2cppProp != null)
                 {
@@ -1059,17 +932,13 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Parses a string value from Unity's code optimization enums or platform settings into our state enum.
-        /// Handles both enum names (OptimizeSize) and setting values (diskSizeLto).
-        /// </summary>
         private static CodeOptimizationState ParseCodeOptimizationValue(string value)
         {
             if (string.IsNullOrEmpty(value)) return CodeOptimizationState.Unknown;
 
             string s = value.ToLowerInvariant();
 
-            // Exact matches first (platform settings values)
+            // Exact matches first
             if (s == "disksizelto") return CodeOptimizationState.DiskSizeLTO;
             if (s == "runtimespeedlto") return CodeOptimizationState.RuntimeSpeedLTO;
             if (s == "disksize") return CodeOptimizationState.DiskSize;
@@ -1078,23 +947,19 @@ namespace Playgama.Bridge.Tabs
             if (s == "speed") return CodeOptimizationState.Speed;
             if (s == "none") return CodeOptimizationState.None;
 
-            // Check for Disk Size with LTO (pattern matching for enum names)
+            // Pattern matching for enum names
             if ((s.Contains("disk") && s.Contains("lto")) || s.Contains("disksizewithlto"))
                 return CodeOptimizationState.DiskSizeLTO;
 
-            // Check for Runtime Speed with LTO
             if ((s.Contains("speed") && s.Contains("lto")) || s.Contains("runtimespeedwithlto"))
                 return CodeOptimizationState.RuntimeSpeedLTO;
 
-            // Check for Disk Size (without LTO)
             if (s.Contains("disksize") || (s.Contains("disk") && s.Contains("size") && !s.Contains("lto")))
                 return CodeOptimizationState.DiskSize;
 
-            // Check for shorter build time / faster build
             if (s.Contains("shorterbuildtime") || s.Contains("fasterwithoutlto") || s.Contains("fasterbuilds"))
                 return CodeOptimizationState.ShorterBuildTime;
 
-            // Standard options - check for enum names like "OptimizeSize", "OptimizeSpeed"
             if (s.Contains("optimizesize") || s.Contains("optforsize") || (s.Contains("size") && !s.Contains("disk")))
                 return CodeOptimizationState.Size;
 
@@ -1107,23 +972,15 @@ namespace Playgama.Bridge.Tabs
             return CodeOptimizationState.Unknown;
         }
 
-        /// <summary>
-        /// Attempts to set Code Optimization via reflection (best-effort).
-        /// Tries multiple API locations across Unity versions.
-        /// Returns false if the API is not available or the enum cannot be mapped.
-        /// Made internal so BuildAnalyzer can use it.
-        /// </summary>
         internal static bool TrySetCodeOptimization(CodeOptimizationState desired)
         {
             try
             {
                 bool anySuccess = false;
 
-                // Get the string value for the desired state (used by SetPlatformSettings)
                 string settingValue = GetCodeOptimizationSettingValue(desired);
 
-                // Method 1: EditorUserBuildSettings.SetPlatformSettings (Unity 2022+ Build Profiles)
-                // This is the primary API used by Build Profiles for Code Optimization
+                // Try EditorUserBuildSettings.SetPlatformSettings (Unity 2022+ Build Profiles)
                 var setPlatformSettings = typeof(EditorUserBuildSettings).GetMethod(
                     "SetPlatformSettings",
                     BindingFlags.Public | BindingFlags.Static,
@@ -1133,19 +990,17 @@ namespace Playgama.Bridge.Tabs
 
                 if (setPlatformSettings != null && !string.IsNullOrEmpty(settingValue))
                 {
-                    // Set for WebGL platform
                     setPlatformSettings.Invoke(null, new object[] { "WebGL", "CodeOptimization", settingValue });
                     anySuccess = true;
                 }
 
-                // Method 2: PlayerSettings.SetIl2CppCodeGeneration (Unity 2022+)
+                // Try PlayerSettings.SetIl2CppCodeGeneration (Unity 2022+)
                 var setIl2CppCodeGen = typeof(PlayerSettings).GetMethod(
                     "SetIl2CppCodeGeneration",
                     BindingFlags.Public | BindingFlags.Static);
 
                 if (setIl2CppCodeGen != null)
                 {
-                    // Try to get NamedBuildTarget.WebGL via reflection (safe for older Unity versions)
                     var namedBuildTargetType = Type.GetType("UnityEditor.Build.NamedBuildTarget, UnityEditor");
                     if (namedBuildTargetType != null)
                     {
@@ -1155,7 +1010,6 @@ namespace Playgama.Bridge.Tabs
                         {
                             object target = webglTarget.GetValue(null);
 
-                            // Find the Il2CppCodeGeneration enum type via reflection
                             var il2cppEnumType = Type.GetType("UnityEditor.Build.Il2CppCodeGeneration, UnityEditor");
                             if (il2cppEnumType != null)
                             {
@@ -1171,7 +1025,7 @@ namespace Playgama.Bridge.Tabs
                     }
                 }
 
-                // Method 3: EditorUserBuildSettings.il2CppCodeGeneration (legacy)
+                // Try EditorUserBuildSettings.il2CppCodeGeneration (legacy)
                 var il2cppProp = typeof(EditorUserBuildSettings).GetProperty("il2CppCodeGeneration", BindingFlags.Public | BindingFlags.Static);
                 if (il2cppProp != null && il2cppProp.CanWrite)
                 {
@@ -1196,10 +1050,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Converts our CodeOptimizationState to the string value used by SetPlatformSettings.
-        /// These values match what Unity's Build Profiles use internally.
-        /// </summary>
         private static string GetCodeOptimizationSettingValue(CodeOptimizationState state)
         {
             switch (state)
@@ -1215,15 +1065,10 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Finds an enum value that matches the desired code optimization state.
-        /// Handles multiple naming conventions across Unity versions.
-        /// </summary>
         private static object FindEnumValue(Type enumType, CodeOptimizationState desired)
         {
             var names = Enum.GetNames(enumType);
 
-            // For LTO variants, we need to check for combined patterns first
             if (desired == CodeOptimizationState.DiskSizeLTO)
             {
                 for (int i = 0; i < names.Length; i++)
@@ -1251,14 +1096,12 @@ namespace Playgama.Bridge.Tabs
                 for (int i = 0; i < names.Length; i++)
                 {
                     string n = names[i].ToLowerInvariant();
-                    // Match disk size but NOT disk size with LTO
                     if ((n.Contains("disksize") || (n.Contains("disk") && n.Contains("size"))) && !n.Contains("lto"))
                         return Enum.Parse(enumType, names[i]);
                 }
                 return null;
             }
 
-            // Build search patterns based on desired state
             string[] patterns;
             string[] excludePatterns = null;
 
@@ -1266,11 +1109,11 @@ namespace Playgama.Bridge.Tabs
             {
                 case CodeOptimizationState.Size:
                     patterns = new[] { "size", "optforsize", "optimizesize" };
-                    excludePatterns = new[] { "disk", "lto" }; // Exclude disk size variants
+                    excludePatterns = new[] { "disk", "lto" };
                     break;
                 case CodeOptimizationState.Speed:
                     patterns = new[] { "speed", "runtime", "optforspeed", "optimizespeed" };
-                    excludePatterns = new[] { "lto" }; // Exclude LTO variants
+                    excludePatterns = new[] { "lto" };
                     break;
                 case CodeOptimizationState.None:
                     patterns = new[] { "none", "disabled", "off" };
@@ -1282,12 +1125,10 @@ namespace Playgama.Bridge.Tabs
                     return null;
             }
 
-            // Search for matching enum value
             for (int i = 0; i < names.Length; i++)
             {
                 string n = names[i].ToLowerInvariant();
 
-                // Check exclusion patterns first
                 if (excludePatterns != null)
                 {
                     bool excluded = false;
@@ -1312,12 +1153,6 @@ namespace Playgama.Bridge.Tabs
             return null;
         }
 
-        /// <summary>
-        /// Invokes the build/analyze pipeline without hard-binding to a specific signature.
-        /// Tries:
-        /// 1) BuildAnalyzer.BuildAndAnalyze(string outputPath)
-        /// 2) BuildAnalyzer.BuildAndAnalyze()
-        /// </summary>
         private static void InvokeBuildAnalyzer(string outputPath)
         {
             try

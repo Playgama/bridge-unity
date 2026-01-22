@@ -5,9 +5,6 @@ using UnityEngine;
 
 namespace Playgama.Bridge.Tabs
 {
-    /// <summary>
-    /// Home tab for Playgama Bridge - the main landing page with branding and quick actions.
-    /// </summary>
     public sealed class HomeTab : ITab
     {
         public string TabName => "Home";
@@ -15,7 +12,6 @@ namespace Playgama.Bridge.Tabs
         private BuildInfo _buildInfo;
         private Vector2 _scroll;
 
-        // Cached styles
         private static GUIStyle _titleStyle;
         private static GUIStyle _subtitleStyle;
         private static GUIStyle _versionStyle;
@@ -23,7 +19,6 @@ namespace Playgama.Bridge.Tabs
         private static GUIStyle _menuDescStyle;
         private static Texture2D _headerBgTexture;
 
-        // Cached version from package.json
         private static string _cachedVersion;
         private static bool _versionLoaded;
         private const string DocsUrl = "https://wiki.playgama.com/playgama/sdk/engines/unity/intro";
@@ -56,27 +51,21 @@ namespace Playgama.Bridge.Tabs
 
         private void DrawHeader()
         {
-            // Header background
             Rect headerRect = EditorGUILayout.GetControlRect(false, 120);
 
-            // Gradient-like background
             EditorGUI.DrawRect(headerRect, new Color(0.15f, 0.15f, 0.18f));
 
-            // Purple accent line at top
             Rect accentRect = new Rect(headerRect.x, headerRect.y, headerRect.width, 4);
             EditorGUI.DrawRect(accentRect, BridgeStyles.BrandPurple);
 
-            // Title
             Rect titleRect = new Rect(headerRect.x + 20, headerRect.y + 25, headerRect.width - 40, 40);
             EditorGUI.LabelField(titleRect, "Playgama Bridge", _titleStyle);
 
-            // Subtitle
             Rect subRect = new Rect(headerRect.x + 20, headerRect.y + 65, headerRect.width - 40, 24);
             EditorGUI.LabelField(subRect, "Cross-Platform Game Publishing SDK", _subtitleStyle);
 
-            // Version badge
             string version = GetPackageVersion();
-            float versionWidth = version.Length > 6 ? 70 : 60; // Wider for longer versions
+            float versionWidth = version.Length > 6 ? 70 : 60;
             Rect versionRect = new Rect(headerRect.x + headerRect.width - versionWidth - 20, headerRect.y + 30, versionWidth, 20);
             EditorGUI.DrawRect(versionRect, BridgeStyles.BrandPurple);
             EditorGUI.LabelField(versionRect, "v" + version, _versionStyle);
@@ -88,7 +77,6 @@ namespace Playgama.Bridge.Tabs
 
             GUILayout.Space(8);
 
-            // Wizard button - prominent placement
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.Space(10);
@@ -115,7 +103,6 @@ namespace Playgama.Bridge.Tabs
             {
                 GUILayout.Space(10);
 
-                // Install Files button
                 using (new EditorGUILayout.VerticalScope(GUILayout.Width(180)))
                 {
                     if (DrawMenuButton("Install Files", "Set up WebGL templates and required files for your project"))
@@ -126,7 +113,6 @@ namespace Playgama.Bridge.Tabs
 
                 GUILayout.Space(10);
 
-                // Build & Analyze button
                 using (new EditorGUILayout.VerticalScope(GUILayout.Width(180)))
                 {
                     if (DrawMenuButton("Build & Analyze", "Build WebGL and analyze asset sizes"))
@@ -137,12 +123,10 @@ namespace Playgama.Bridge.Tabs
 
                 GUILayout.Space(10);
 
-                // Open Settings button
                 using (new EditorGUILayout.VerticalScope(GUILayout.Width(180)))
                 {
                     if (DrawMenuButton("Settings", "Configure Playgama Bridge settings"))
                     {
-                        // Settings tab is index 9 (after Home, Summary, Textures, Audio, Meshes, Shaders, Fonts, Build Settings, Platform Checks)
                         OpenTab(9);
                     }
                 }
@@ -174,30 +158,24 @@ namespace Playgama.Bridge.Tabs
         {
             Rect rowRect = EditorGUILayout.GetControlRect(false, 36);
 
-            // Hover effect
             if (rowRect.Contains(Event.current.mousePosition))
             {
                 EditorGUI.DrawRect(rowRect, new Color(1f, 1f, 1f, 0.05f));
                 EditorGUIUtility.AddCursorRect(rowRect, MouseCursor.Link);
             }
 
-            // Icon
             Rect iconRect = new Rect(rowRect.x + 10, rowRect.y + 8, 24, 20);
             EditorGUI.LabelField(iconRect, icon, EditorStyles.boldLabel);
 
-            // Title
             Rect titleRect = new Rect(rowRect.x + 40, rowRect.y + 4, 120, 18);
             EditorGUI.LabelField(titleRect, title, EditorStyles.boldLabel);
 
-            // Description
             Rect descRect = new Rect(rowRect.x + 40, rowRect.y + 20, rowRect.width - 100, 14);
             EditorGUI.LabelField(descRect, description, _menuDescStyle);
 
-            // Arrow
             Rect arrowRect = new Rect(rowRect.x + rowRect.width - 30, rowRect.y + 10, 20, 16);
             EditorGUI.LabelField(arrowRect, "\u25B8", EditorStyles.miniLabel);
 
-            // Click handler
             if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
             {
                 OpenTab(tabIndex);
@@ -256,7 +234,6 @@ namespace Playgama.Bridge.Tabs
         {
             Rect btnRect = EditorGUILayout.GetControlRect(false, 70);
 
-            // Background
             Color bgColor = new Color(0.22f, 0.22f, 0.25f);
             bool isHover = btnRect.Contains(Event.current.mousePosition);
             if (isHover)
@@ -266,19 +243,15 @@ namespace Playgama.Bridge.Tabs
             }
             EditorGUI.DrawRect(btnRect, bgColor);
 
-            // Purple left accent
             Rect accentRect = new Rect(btnRect.x, btnRect.y, 4, btnRect.height);
             EditorGUI.DrawRect(accentRect, BridgeStyles.BrandPurple);
 
-            // Title
             Rect titleRect = new Rect(btnRect.x + 14, btnRect.y + 12, btnRect.width - 20, 22);
             EditorGUI.LabelField(titleRect, title, EditorStyles.boldLabel);
 
-            // Description
             Rect descRect = new Rect(btnRect.x + 14, btnRect.y + 34, btnRect.width - 20, 30);
             EditorGUI.LabelField(descRect, tooltip, _menuDescStyle);
 
-            // Handle click
             if (Event.current.type == EventType.MouseDown && btnRect.Contains(Event.current.mousePosition))
             {
                 Event.current.Use();
@@ -294,28 +267,21 @@ namespace Playgama.Bridge.Tabs
 
             bool isHover = btnRect.Contains(Event.current.mousePosition);
 
-            // Background with hover effect
             Color bgColor = isHover
-                ? new Color(0.35f, 0.25f, 0.45f) // Purple tint on hover
+                ? new Color(0.35f, 0.25f, 0.45f)
                 : new Color(0.2f, 0.2f, 0.23f);
             EditorGUI.DrawRect(btnRect, bgColor);
 
-            // Border on hover
             if (isHover)
             {
-                // Top border
                 EditorGUI.DrawRect(new Rect(btnRect.x, btnRect.y, btnRect.width, 1), BridgeStyles.BrandPurple);
-                // Bottom border
                 EditorGUI.DrawRect(new Rect(btnRect.x, btnRect.y + btnRect.height - 1, btnRect.width, 1), BridgeStyles.BrandPurple);
-                // Left border
                 EditorGUI.DrawRect(new Rect(btnRect.x, btnRect.y, 1, btnRect.height), BridgeStyles.BrandPurple);
-                // Right border
                 EditorGUI.DrawRect(new Rect(btnRect.x + btnRect.width - 1, btnRect.y, 1, btnRect.height), BridgeStyles.BrandPurple);
 
                 EditorGUIUtility.AddCursorRect(btnRect, MouseCursor.Link);
             }
 
-            // Center text
             GUIStyle centeredStyle = new GUIStyle(EditorStyles.miniLabel);
             centeredStyle.alignment = TextAnchor.MiddleCenter;
             centeredStyle.fontSize = 11;
@@ -323,7 +289,6 @@ namespace Playgama.Bridge.Tabs
 
             EditorGUI.LabelField(btnRect, new GUIContent(title, tooltip), centeredStyle);
 
-            // Handle click
             if (Event.current.type == EventType.MouseDown && btnRect.Contains(Event.current.mousePosition))
             {
                 Event.current.Use();
@@ -340,7 +305,6 @@ namespace Playgama.Bridge.Tabs
 
         private void OpenTab(int index)
         {
-            // Find the BridgeWindow and change tab
             var window = EditorWindow.GetWindow<BridgeWindow>();
             if (window != null)
             {
@@ -348,7 +312,7 @@ namespace Playgama.Bridge.Tabs
                 if (field != null)
                 {
                     field.SetValue(window, index);
-                    EditorPrefs.SetInt("SUIT_SELECTED_TAB", index);
+                    EditorPrefs.SetInt("BRIDGE_SELECTED_TAB", index);
                     window.Repaint();
                 }
             }
@@ -387,17 +351,13 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Reads the package version from package.json.
-        /// Caches the result for subsequent calls.
-        /// </summary>
         private static string GetPackageVersion()
         {
             if (_versionLoaded)
                 return _cachedVersion ?? "1.0.0";
 
             _versionLoaded = true;
-            _cachedVersion = "1.0.0"; // Default fallback
+            _cachedVersion = "1.0.0";
 
             string[] possiblePaths = new[]
             {
@@ -413,7 +373,6 @@ namespace Playgama.Bridge.Tabs
                     if (File.Exists(fullPath))
                     {
                         string json = File.ReadAllText(fullPath);
-                        // Simple parsing - find "version": "x.x.x"
                         int versionIndex = json.IndexOf("\"version\"");
                         if (versionIndex >= 0)
                         {

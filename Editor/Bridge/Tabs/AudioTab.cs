@@ -5,108 +5,45 @@ using UnityEngine;
 
 namespace Playgama.Bridge.Tabs
 {
-    /// <summary>
-    /// Editor tab that displays tracked audio assets from the latest build analysis.
-    /// Provides:
-    /// - A size-sorted list of audio clips with a lightweight importer snapshot (best-effort).
-    /// - Search and selection helpers for batching.
-    /// - Batch application of AudioImporter settings and forced reimport.
-    /// </summary>
     public sealed class AudioTab : ITab
     {
-        /// <summary>Displayed name of the tab in the parent UI.</summary>
         public string TabName { get { return "Audio"; } }
 
         private BuildInfo _buildInfo;
-
-        /// <summary>Cached UI rows representing tracked audio assets.</summary>
         private readonly List<Row> _rows = new List<Row>(1024);
-
-        /// <summary>
-        /// When true, the next repaint will schedule a rebuild of the internal row cache.
-        /// This avoids doing heavy work directly inside OnGUI.
-        /// </summary>
         private bool _needsRebuild = true;
-
-        /// <summary>True while a delayed rebuild is queued/executing.</summary>
         private bool _isRebuilding = false;
-
-        /// <summary>Scroll state for the full page.</summary>
         private Vector2 _scrollPage;
-
-        /// <summary>Scroll state for the list view.</summary>
         private Vector2 _scroll;
-
-        /// <summary>General status messages for the tab (non-error, non-exception).</summary>
         private string _status = "";
-
-        /// <summary>Case-insensitive filter applied to asset paths.</summary>
         private string _search = "";
-
-        /// <summary>If true, the list view only renders rows that are currently selected.</summary>
         private bool _onlySelected = false;
 
-        /// <summary>Batch settings that will be applied to selected audio assets (AudioImporter).</summary>
+        // Batch settings
         private AudioClipLoadType _loadType = AudioClipLoadType.CompressedInMemory;
-
-        /// <summary>Batch toggle: convert stereo to mono on import (can reduce size, may change audio feel).</summary>
         private bool _forceToMono = true;
-
-        /// <summary>Batch compression format (Vorbis is often a good baseline for WebGL).</summary>
         private AudioCompressionFormat _format = AudioCompressionFormat.Vorbis;
-
-        /// <summary>Batch compression quality (0..1 range). Higher = better quality, usually larger size.</summary>
         private float _quality = 0.6f;
-
-        /// <summary>
-        /// Batch toggle: Preload Audio Data (loads clip data at start).
-        /// For WebGL this is a trade-off between startup time and runtime stutter.
-        /// </summary>
         private bool _preload = true;
 
-        // Foldout states for collapsible sections.
+        // Foldout states
         private bool _foldHeader = true;
         private bool _foldBatch = true;
         private bool _foldList = true;
 
-        /// <summary>
-        /// UI row model for a single tracked audio asset.
-        /// Values are extracted from the analysis data (size/path) and from the importer (settings snapshot).
-        /// </summary>
         private sealed class Row
         {
-            /// <summary>AssetDatabase path (e.g., "Assets/Audio/sfx_click.ogg").</summary>
             public string Path;
-
-            /// <summary>Tracked size from analysis (bytes). May be estimated depending on analysis mode.</summary>
             public long SizeBytes;
-
-            /// <summary>True if the size value is an estimate rather than an exact measurement.</summary>
             public bool IsSizeEstimated;
-
-            /// <summary>UI selection flag used by batch operations.</summary>
             public bool Selected;
-
-            /// <summary>True if an AudioImporter was successfully resolved for this path.</summary>
             public bool ImporterFound;
-
-            /// <summary>Snapshot: importer load type (best-effort across Unity versions).</summary>
             public AudioClipLoadType LoadType;
-
-            /// <summary>Snapshot: importer Force To Mono setting.</summary>
             public bool ForceToMono;
-
-            /// <summary>Snapshot: importer compression format (best-effort).</summary>
             public AudioCompressionFormat Format;
-
-            /// <summary>Snapshot: importer quality (best-effort).</summary>
             public float Quality;
         }
 
-        /// <summary>
-        /// Centralized GUIContent labels with tooltips.
-        /// Keeping these in one place makes the IMGUI code cleaner and consistent.
-        /// </summary>
         private static class UI
         {
             public static readonly GUIContent Refresh = new GUIContent(
@@ -138,9 +75,9 @@ namespace Playgama.Bridge.Tabs
             public static readonly GUIContent LoadType = new GUIContent(
                 "Load Type",
                 "How Unity loads the audio clip at runtime:\n" +
-                "• Decompress On Load: larger memory, faster playback start\n" +
-                "• Compressed In Memory: smaller memory, some CPU decode cost\n" +
-                "• Streaming: smallest memory, continuous decoding during playback");
+                "- Decompress On Load: larger memory, faster playback start\n" +
+                "- Compressed In Memory: smaller memory, some CPU decode cost\n" +
+                "- Streaming: smallest memory, continuous decoding during playback");
 
             public static readonly GUIContent Format = new GUIContent(
                 "Format",
@@ -176,19 +113,12 @@ namespace Playgama.Bridge.Tabs
                 "Select the asset in the Project window (Selection.activeObject).");
         }
 
-        /// <summary>
-        /// Called by the hosting window/controller to provide analysis data.
-        /// </summary>
         public void Init(BuildInfo buildInfo)
         {
             _buildInfo = buildInfo;
             RequestRebuild("Init");
         }
 
-        /// <summary>
-        /// Main Unity IMGUI entry point for the tab.
-        /// Heavy work is scheduled via delayCall to keep UI responsive.
-        /// </summary>
         public void OnGUI()
         {
             using (var sv = new EditorGUILayout.ScrollViewScope(_scrollPage))
@@ -227,9 +157,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Displays analysis context and important notes about batch operations.
-        /// </summary>
         private void DrawHeader()
         {
             _foldHeader = BridgeStyles.DrawSectionHeader("Analysis Info", _foldHeader, "\u2139");
@@ -249,13 +176,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Toolbar with quick actions and filters:
-        /// - Refresh
-        /// - Search
-        /// - Only Selected filter
-        /// - Selection helpers
-        /// </summary>
         private void DrawToolbar()
         {
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
@@ -279,10 +199,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Batch settings panel that modifies AudioImporter settings for selected audio assets.
-        /// Changes are only applied when "Apply to Selected" is pressed.
-        /// </summary>
         private void DrawBatchPanel()
         {
             _foldBatch = BridgeStyles.DrawSectionHeader("Batch Apply", _foldBatch, "\u2699");
@@ -290,7 +206,6 @@ namespace Playgama.Bridge.Tabs
 
             BridgeStyles.BeginCard();
 
-            // First row: Load Type and Format
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.Label(UI.LoadType, GUILayout.Width(65));
@@ -304,7 +219,6 @@ namespace Playgama.Bridge.Tabs
 
             GUILayout.Space(2);
 
-            // Second row: Quality slider
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.Label(UI.Quality, GUILayout.Width(50));
@@ -314,7 +228,6 @@ namespace Playgama.Bridge.Tabs
 
             GUILayout.Space(2);
 
-            // Third row: Toggles and Apply button
             using (new EditorGUILayout.HorizontalScope())
             {
                 _forceToMono = EditorGUILayout.ToggleLeft(UI.ForceToMono, _forceToMono, GUILayout.MinWidth(100), GUILayout.MaxWidth(130));
@@ -329,13 +242,10 @@ namespace Playgama.Bridge.Tabs
             }
 
             GUILayout.Space(4);
-            EditorGUILayout.LabelField("Recommended: Vorbis, Compressed In Memory, Mono, Quality ~0.5–0.7", BridgeStyles.SubtitleStyle);
+            EditorGUILayout.LabelField("Recommended: Vorbis, Compressed In Memory, Mono, Quality ~0.5-0.7", BridgeStyles.SubtitleStyle);
             BridgeStyles.EndCard();
         }
 
-        /// <summary>
-        /// List view of rows. Applies search filter and "Only Selected" filter at draw time.
-        /// </summary>
         private void DrawList()
         {
             _foldList = BridgeStyles.DrawSectionHeader($"Audio List ({_rows.Count} items)", _foldList, "\u266A");
@@ -362,15 +272,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Draws a single row with:
-        /// - selection checkbox
-        /// - audio file name
-        /// - tracked size (with "~" if estimated)
-        /// - importer snapshot (load type / format / quality / mono)
-        /// - asset path
-        /// - Ping/Select shortcuts
-        /// </summary>
         private void DrawRow(Row r)
         {
             Rect rect = EditorGUILayout.GetControlRect(false, 24);
@@ -381,31 +282,27 @@ namespace Playgama.Bridge.Tabs
             Color bg = r.ImporterFound ? BridgeStyles.StatusGray : BridgeStyles.StatusRed;
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), bg);
 
-            // Calculate available width for content (excluding margins and buttons)
             float availableWidth = rect.width - 12;
             float buttonWidth = 108;
             float checkboxWidth = 22;
             float contentWidth = availableWidth - buttonWidth - checkboxWidth;
 
-            // Determine layout mode based on available width
             bool compactMode = contentWidth < 450;
             bool veryCompactMode = contentWidth < 300;
 
             float x = rect.x + 4;
 
-            // Checkbox
             r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 2, 18, rect.height), r.Selected);
             x += checkboxWidth;
 
-            string fileName = string.IsNullOrEmpty(r.Path) ? "—" : System.IO.Path.GetFileName(r.Path);
-            if (string.IsNullOrEmpty(fileName)) fileName = "—";
+            string fileName = string.IsNullOrEmpty(r.Path) ? "-" : System.IO.Path.GetFileName(r.Path);
+            if (string.IsNullOrEmpty(fileName)) fileName = "-";
 
             string size = SharedTypes.FormatBytes(r.SizeBytes);
             if (r.IsSizeEstimated) size += " ~";
 
             if (veryCompactMode)
             {
-                // Very compact: only name and size
                 float nameWidth = contentWidth * 0.65f;
                 float sizeWidth = contentWidth * 0.35f;
 
@@ -416,7 +313,6 @@ namespace Playgama.Bridge.Tabs
             }
             else if (compactMode)
             {
-                // Compact: name, size, load type, format
                 float nameWidth = contentWidth * 0.28f;
                 float sizeWidth = contentWidth * 0.18f;
                 float ltWidth = contentWidth * 0.3f;
@@ -435,7 +331,6 @@ namespace Playgama.Bridge.Tabs
             }
             else
             {
-                // Full layout: all columns
                 float nameWidth = Mathf.Max(100, contentWidth * 0.2f);
                 float sizeWidth = Mathf.Max(70, contentWidth * 0.12f);
                 float ltWidth = Mathf.Max(100, contentWidth * 0.22f);
@@ -461,7 +356,6 @@ namespace Playgama.Bridge.Tabs
                 EditorGUI.LabelField(new Rect(x, rect.y + 2, monoWidth, rect.height), r.ForceToMono ? "Mono" : "Stereo", EditorStyles.miniLabel);
             }
 
-            // Buttons always at the right edge
             Rect pingR = new Rect(rect.x + rect.width - 112, rect.y + 2, 50, rect.height);
             if (GUI.Button(pingR, UI.Ping))
             {
@@ -477,15 +371,13 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>Truncates a string and adds ellipsis if it exceeds the max length.</summary>
         private static string TruncateWithEllipsis(string s, int maxLen)
         {
-            if (string.IsNullOrEmpty(s)) return "—";
+            if (string.IsNullOrEmpty(s)) return "-";
             if (s.Length <= maxLen) return s;
-            return s.Substring(0, maxLen - 1) + "…";
+            return s.Substring(0, maxLen - 1) + "...";
         }
 
-        /// <summary>Shortens AudioClipLoadType names for compact display.</summary>
         private static string TruncateLoadType(AudioClipLoadType lt)
         {
             switch (lt)
@@ -497,10 +389,6 @@ namespace Playgama.Bridge.Tabs
             }
         }
 
-        /// <summary>
-        /// Ensures the row cache is built.
-        /// The actual rebuild work is scheduled via EditorApplication.delayCall to avoid heavy work inside OnGUI.
-        /// </summary>
         private void EnsureRebuilt()
         {
             if (!_needsRebuild || _isRebuilding) return;
@@ -523,9 +411,6 @@ namespace Playgama.Bridge.Tabs
 
                         var imp = AssetImporter.GetAtPath(a.Path) as AudioImporter;
 
-                        // Always use build report size (a.SizeBytes) as primary source
-                        // In PackedAssets mode: this is the actual packed size from build report
-                        // In DependenciesFallback mode: this is the file size (estimated)
                         var row = new Row
                         {
                             Path = a.Path,
@@ -533,15 +418,12 @@ namespace Playgama.Bridge.Tabs
                             IsSizeEstimated = a.IsSizeEstimated,
                             Selected = false,
                             ImporterFound = (imp != null),
-
-                            // Defaults (used if importer snapshot cannot be read on this Unity version).
                             LoadType = AudioClipLoadType.DecompressOnLoad,
                             ForceToMono = false,
                             Format = AudioCompressionFormat.PCM,
                             Quality = 1.0f
                         };
 
-                        // Snapshot is best-effort: different Unity versions expose settings differently.
                         if (imp != null)
                         {
                             TryReadSnapshot(imp, ref row);
@@ -553,7 +435,6 @@ namespace Playgama.Bridge.Tabs
                     _rows.Sort((x, y) => y.SizeBytes.CompareTo(x.SizeBytes));
                     _status = $"Tracked audio assets: {_rows.Count}";
 
-                    // Force repaint to show updated values
                     try { EditorWindow.focusedWindow?.Repaint(); } catch { }
                 }
                 catch (Exception ex)
@@ -564,16 +445,11 @@ namespace Playgama.Bridge.Tabs
                 finally
                 {
                     _isRebuilding = false;
-                    // Force another repaint after rebuild completes
                     try { EditorWindow.focusedWindow?.Repaint(); } catch { }
                 }
             };
         }
 
-        /// <summary>
-        /// Attempts to read a lightweight settings snapshot from AudioImporter without hard-binding to APIs that change
-        /// between Unity versions. Reflection is used so the editor code compiles across a wide Unity range.
-        /// </summary>
         private void TryReadSnapshot(AudioImporter imp, ref Row row)
         {
             try
@@ -596,14 +472,10 @@ namespace Playgama.Bridge.Tabs
             }
             catch
             {
-                // Snapshot failures are not fatal; the list still works with defaults.
+                // Snapshot read failed, defaults will be used
             }
         }
 
-        /// <summary>
-        /// Applies current batch settings to all selected audio assets and forces reimport.
-        /// This delegates the per-importer logic to AudioOptimizationUtility to keep version-dependent code centralized.
-        /// </summary>
         private void ApplyBatchToSelected()
         {
             var paths = CollectSelectedPaths();
@@ -687,28 +559,22 @@ namespace Playgama.Bridge.Tabs
             };
         }
 
-        /// <summary>
-        /// Marks the row cache as stale and sets a user-facing status message.
-        /// </summary>
         private void RequestRebuild(string reason)
         {
             _needsRebuild = true;
             _status = "Rebuild requested: " + reason;
         }
 
-        /// <summary>Select or deselect every row.</summary>
         private void SelectAll(bool v)
         {
             for (int i = 0; i < _rows.Count; i++) _rows[i].Selected = v;
         }
 
-        /// <summary>Invert selection for every row.</summary>
         private void InvertSelection()
         {
             for (int i = 0; i < _rows.Count; i++) _rows[i].Selected = !_rows[i].Selected;
         }
 
-        /// <summary>Returns the number of selected rows.</summary>
         private int GetSelectedCount()
         {
             int c = 0;
@@ -716,7 +582,6 @@ namespace Playgama.Bridge.Tabs
             return c;
         }
 
-        /// <summary>Collects AssetDatabase paths for selected rows.</summary>
         private List<string> CollectSelectedPaths()
         {
             var list = new List<string>(256);
@@ -729,7 +594,6 @@ namespace Playgama.Bridge.Tabs
             return list;
         }
 
-        /// <summary>Case-insensitive substring search against the asset path.</summary>
         private static bool PassSearch(string path, string search)
         {
             if (string.IsNullOrEmpty(search)) return true;

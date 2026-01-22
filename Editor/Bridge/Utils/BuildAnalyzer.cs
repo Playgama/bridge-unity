@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -10,85 +9,40 @@ using UnityEngine;
 
 namespace Playgama.Bridge
 {
-    /// <summary>
-    /// Builds a WebGL player with a DetailedBuildReport and extracts build-size analytics into <see cref="BuildInfo"/>.
-    ///
-    /// Output:
-    /// - Raises <see cref="OnBuildInfoChanged"/> multiple times during the workflow:
-    ///   1) "Analyzing build..." (early status)
-    ///   2) Final results (success/failure + asset list + summary)
-    ///
-    /// Analysis modes:
-    /// - PackedAssets (preferred): uses <see cref="BuildReport"/> packedAssets mapping to estimate per-asset packed size.
-    /// - DependenciesFallback (always available): uses AssetDatabase dependencies + file sizes as estimates.
-    /// </summary>
     public static class BuildAnalyzer
     {
-        /// <summary>
-        /// Fired whenever new build/analysis state is available.
-        /// Subscribers should treat this as a snapshot update (not incremental diffs).
-        /// </summary>
         public static event Action<BuildInfo> OnBuildInfoChanged;
 
-        /// <summary>EditorPrefs key used to persist the last successful build folder.</summary>
         private const string Pref_LastBuildFolder = "SUIT.Build.LastFolder";
 
-        /// <summary>
-        /// Returns the most recently used build folder, or a default folder if none was stored.
-        /// </summary>
         public static string GetLastBuildFolder()
         {
             var p = EditorPrefs.GetString(Pref_LastBuildFolder, "");
             return string.IsNullOrEmpty(p) ? GetDefaultBuildFolder() : p;
         }
 
-        /// <summary>
-        /// Stores the last build folder in EditorPrefs.
-        /// </summary>
         public static void SetLastBuildFolder(string folder)
         {
             if (!string.IsNullOrEmpty(folder))
                 EditorPrefs.SetString(Pref_LastBuildFolder, folder);
         }
 
-        /// <summary>
-        /// Returns the default build output folder under the project working directory:
-        /// {ProjectRoot}/Builds/WebGL
-        /// </summary>
         public static string GetDefaultBuildFolder()
         {
             string root = Directory.GetCurrentDirectory();
             return Path.Combine(root, "Builds", "WebGL");
         }
 
-        /// <summary>
-        /// Schedules a WebGL build using the default/last-used folder.
-        /// Uses "Shorter Build Time" optimization for faster analysis.
-        /// </summary>
         public static void BuildAndAnalyze()
         {
             BuildAndAnalyze(GetLastBuildFolder(), useReleaseOptimization: false);
         }
 
-        /// <summary>
-        /// Schedules a WebGL build optimized for release (smallest size).
-        /// Uses "Disk Size with LTO" optimization - takes longer but produces smallest build.
-        /// </summary>
         public static void BuildForRelease()
         {
             BuildAndAnalyze(GetLastBuildFolder(), useReleaseOptimization: true);
         }
 
-        /// <summary>
-        /// Schedules a WebGL build (DetailedBuildReport) and then analyzes the result.
-        ///
-        /// Notes:
-        /// - The build is executed via <see cref="EditorApplication.delayCall"/> to avoid running long operations inside IMGUI.
-        /// - Ensures there is at least one enabled scene in Build Settings.
-        /// - Optionally switches the active build target to WebGL after a user confirmation dialog.
-        /// </summary>
-        /// <param name="buildFolder">Output folder for the build.</param>
-        /// <param name="useReleaseOptimization">If true, uses "Disk Size with LTO" for smallest build. If false, uses "Shorter Build Time" for faster builds.</param>
         public static void BuildAndAnalyze(string buildFolder, bool useReleaseOptimization = false)
         {
             EditorApplication.delayCall += () =>
@@ -135,16 +89,13 @@ namespace Playgama.Bridge
                         }
                     }
 
-                    // Set code optimization based on build type
                     if (useReleaseOptimization)
                     {
-                        // Use Disk Size with LTO for smallest possible build
                         Tabs.BuildSettingsTab.TrySetCodeOptimization(Tabs.BuildSettingsTab.CodeOptimizationState.DiskSizeLTO);
                         Debug.Log("[Bridge] Using 'Disk Size with LTO' optimization for release build (smallest size, longer build time)");
                     }
                     else
                     {
-                        // Use Shorter Build Time for faster analysis builds
                         Tabs.BuildSettingsTab.TrySetCodeOptimization(Tabs.BuildSettingsTab.CodeOptimizationState.ShorterBuildTime);
                         Debug.Log("[Bridge] Using 'Shorter Build Time' optimization for faster analysis");
                     }
@@ -154,7 +105,6 @@ namespace Playgama.Bridge
                         scenes = scenes,
                         locationPathName = buildFolder,
                         target = BuildTarget.WebGL,
-                        // CleanBuildCache forces a non-incremental build, which is required for packedAssets data
                         options = BuildOptions.DetailedBuildReport | BuildOptions.CleanBuildCache
                     };
 
@@ -184,7 +134,6 @@ namespace Playgama.Bridge
 
                     AnalyzeReport(report, elapsed);
 
-                    // Create ZIP archive if build succeeded
                     if (report != null && report.summary.result == BuildResult.Succeeded)
                     {
                         CreateBuildArchive(buildFolder);
@@ -202,10 +151,6 @@ namespace Playgama.Bridge
             };
         }
 
-        /// <summary>
-        /// Creates a ZIP archive of the build folder for easy uploading.
-        /// The archive is saved next to the build folder with a timestamp.
-        /// </summary>
         private static void CreateBuildArchive(string buildFolder)
         {
             try
@@ -218,29 +163,24 @@ namespace Playgama.Bridge
 
                 EditorUtility.DisplayProgressBar("Playgama Bridge", "Creating ZIP archive...", 0.5f);
 
-                // Generate archive name with timestamp
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
                 string folderName = Path.GetFileName(buildFolder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
                 string parentFolder = Path.GetDirectoryName(buildFolder);
                 string archiveName = $"{folderName}_{timestamp}.zip";
                 string archivePath = Path.Combine(parentFolder, archiveName);
 
-                // Delete existing archive if present
                 if (File.Exists(archivePath))
                 {
                     File.Delete(archivePath);
                 }
 
-                // Create the ZIP archive
                 ZipFile.CreateFromDirectory(buildFolder, archivePath, System.IO.Compression.CompressionLevel.Optimal, false);
 
-                // Get archive size
                 var archiveInfo = new FileInfo(archivePath);
                 string sizeStr = SharedTypes.FormatBytes(archiveInfo.Length);
 
                 Debug.Log($"[Bridge] Build archive created: {archivePath} ({sizeStr})");
 
-                // Show in explorer/finder
                 EditorUtility.RevealInFinder(archivePath);
             }
             catch (Exception ex)
@@ -253,12 +193,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Builds a <see cref="BuildInfo"/> snapshot from a <see cref="BuildReport"/> and raises it to subscribers.
-        /// Chooses the best available data mode:
-        /// - PackedAssets (preferred) if usable per-asset mapping exists
-        /// - DependenciesFallback otherwise (guaranteed to produce a list)
-        /// </summary>
         private static void AnalyzeReport(BuildReport report, TimeSpan buildTime)
         {
             var info = new BuildInfo();
@@ -328,7 +262,6 @@ namespace Playgama.Bridge
                     $"Total: {SharedTypes.FormatBytes(info.TotalBuildSizeBytes)} | " +
                     $"Mode: {info.DataMode} | Tracked: {count}";
 
-                // Auto-save the report
                 if (info.HasData)
                 {
                     BuildReportStorage.SaveReport(info);
@@ -346,9 +279,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Preferred analysis: uses BuildReport.packedAssets to map packed sizes to source assets.
-        /// </summary>
         private static bool TryAnalyzePackedAssets(
             BuildReport report,
             out List<AssetInfo> assets,
@@ -363,10 +293,8 @@ namespace Playgama.Bridge
 
             try
             {
-                // Log build report info for diagnostics
                 Debug.Log($"[Bridge] BuildReport summary: result={report.summary.result}, totalSize={report.summary.totalSize}, totalTime={report.summary.totalTime}");
 
-                // Try packedAssets first (preferred, gives per-asset sizes)
                 var packedAssetsArray = report.packedAssets;
 
                 if (packedAssetsArray != null && packedAssetsArray.Length > 0)
@@ -446,7 +374,6 @@ namespace Playgama.Bridge
                     }
                 }
 
-                // Fallback: Try to use GetFiles() to get build output file information
                 Debug.Log("[Bridge] packedAssets empty, trying GetFiles() fallback...");
 
 #if UNITY_2020_1_OR_NEWER
@@ -455,7 +382,6 @@ namespace Playgama.Bridge
                 {
                     Debug.Log($"[Bridge] Found {files.Length} files in build report");
 
-                    // Log first few files for diagnostics
                     for (int i = 0; i < Mathf.Min(5, files.Length); i++)
                     {
                         Debug.Log($"[Bridge] File[{i}]: path={files[i].path}, role={files[i].role}, size={files[i].size}");
@@ -479,9 +405,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Fallback analysis: collects dependencies of enabled build scenes using AssetDatabase.GetDependencies.
-        /// </summary>
         private static List<AssetInfo> AnalyzeDependenciesFallback()
         {
             var result = new List<AssetInfo>(4096);
@@ -621,13 +544,11 @@ namespace Playgama.Bridge
             if (t != null && t.Name == "Mesh")
                 return AssetCategory.Meshes;
 
-            // Shaders
             if (t != null && (t.Name == "Shader" || t.Name == "ComputeShader"))
                 return AssetCategory.Shaders;
             if (ext == ".shader" || ext == ".cginc" || ext == ".hlsl" || ext == ".compute")
                 return AssetCategory.Shaders;
 
-            // Fonts
             if (t != null && (t.Name == "Font" || t.Name == "TMP_FontAsset" || t.Name == "FontAsset"))
                 return AssetCategory.Fonts;
             if (ext == ".ttf" || ext == ".otf" || ext == ".fnt" || ext == ".fontsettings")

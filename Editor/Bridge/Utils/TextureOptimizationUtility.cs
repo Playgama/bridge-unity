@@ -1,4 +1,3 @@
-// Editor/Bridge/Utils/TextureOptimizationUtility.cs
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -42,10 +41,7 @@ namespace Playgama.Bridge
 
     public static class TextureOptimizationUtility
     {
-        // Порог "критично по размеру" — объясняем в UI. 5MB выбран как практичный сигнал для WebGL.
-        public const long CriticalSizeBytes = 5L * 1024L * 1024L;
-
-        // Порог "слишком большой Max Size" — тоже объясняем в UI.
+        public const long CriticalSizeBytes = 5L * 1024L * 1024L; // 5MB
         public const int LargeMaxSize = 2048;
 
         public static bool TryBuildRow(string assetPath, long sizeBytes, bool isEstimated, out TextureRowData row)
@@ -63,7 +59,6 @@ namespace Playgama.Bridge
             row.SizeBytes = sizeBytes;
             row.IsEstimated = isEstimated;
 
-            // безопасно, без загрузки текстуры
             int w = 0, h = 0;
             try { importer.GetSourceTextureWidthAndHeight(out w, out h); } catch { }
             row.SrcWidth = w;
@@ -71,7 +66,6 @@ namespace Playgama.Bridge
 
             row.ReadWrite = importer.isReadable;
 
-            // WebGL platform settings
             var ps = importer.GetPlatformTextureSettings("WebGL");
             row.MaxSizeWebGL = ps != null && ps.maxTextureSize > 0 ? ps.maxTextureSize : 0;
             row.CompressionWebGL = ps != null ? ps.textureCompression : importer.textureCompression;
@@ -84,10 +78,9 @@ namespace Playgama.Bridge
         public static RowQuality Evaluate(TextureRowData row)
         {
             bool uncompressed = row.CompressionWebGL == TextureImporterCompression.Uncompressed;
-            bool tooBigMax = row.MaxSizeWebGL > LargeMaxSize; // 2048+
+            bool tooBigMax = row.MaxSizeWebGL > LargeMaxSize;
             bool rwOn = row.ReadWrite;
 
-            // Красный: uncompressed OR (rwOn && huge) OR max слишком большой вместе с большим размером
             if (uncompressed)
                 return RowQuality.Red;
 
@@ -97,11 +90,9 @@ namespace Playgama.Bridge
             if (tooBigMax && row.SizeBytes >= CriticalSizeBytes)
                 return RowQuality.Red;
 
-            // Желтый: есть компрессия, но есть "подозрительные" настройки
             if (rwOn || tooBigMax)
                 return RowQuality.Yellow;
 
-            // Зеленый: компрессия есть, maxSize разумный, RW выключен
             return RowQuality.Green;
         }
 
@@ -127,7 +118,6 @@ namespace Playgama.Bridge
 
                     Undo.RecordObject(importer, "Bridge Texture Batch Apply");
 
-                    // Read/Write
                     if (settings.DisableReadWrite)
                         importer.isReadable = false;
 
@@ -147,8 +137,6 @@ namespace Playgama.Bridge
                     }
                     else
                     {
-                        // максимально просто: применяем "общую" компрессию (без платформы),
-                        // но maxSize/crunch в старых версиях удобнее держать именно в WebGL override.
                         importer.textureCompression = settings.CompressionWebGL;
                     }
 

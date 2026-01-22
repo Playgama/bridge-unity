@@ -7,52 +7,15 @@ using UnityEngine.SceneManagement;
 
 namespace Playgama.Bridge
 {
-    /// <summary>
-    /// Helper methods for batch-optimizing model import settings and optionally applying Static flags
-    /// to scene objects that use selected model assets.
-    ///
-    /// This utility focuses on safe, predictable importer changes:
-    /// - Mesh compression
-    /// - Read/Write toggle
-    /// - Mesh optimization toggle (reflection-safe across Unity versions)
-    ///
-    /// Additionally, it can scan build scenes and set StaticEditorFlags on objects that reference
-    /// the selected model files via MeshFilter or SkinnedMeshRenderer.
-    /// </summary>
     public static class MeshOptimizationUtility
     {
-        /// <summary>
-        /// Settings applied to a ModelImporter during a batch operation.
-        /// </summary>
         public struct ModelBatchSettings
         {
-            /// <summary>
-            /// Compression level for meshes inside the imported model.
-            /// Higher compression can reduce build size but may affect precision.
-            /// </summary>
             public ModelImporterMeshCompression MeshCompression;
-
-            /// <summary>
-            /// If true, disables Read/Write by setting ModelImporter.isReadable = false.
-            /// Disabling Read/Write reduces memory usage and can reduce build size for some pipelines,
-            /// but will break runtime mesh modification that requires read access.
-            /// </summary>
             public bool DisableReadWrite;
-
-            /// <summary>
-            /// Enables Unity's mesh optimization pass (when available in the current Unity version).
-            /// Applied via reflection to avoid compile issues across versions.
-            /// </summary>
             public bool OptimizeMesh;
         }
 
-        /// <summary>
-        /// Reads the current import settings for the model at the given asset path.
-        /// </summary>
-        /// <param name="assetPath">AssetDatabase path to a model file (e.g. "Assets/Models/Ship.fbx").</param>
-        /// <param name="current">Current importer settings (output).</param>
-        /// <param name="message">Human-readable message describing failures (output).</param>
-        /// <returns>True if the asset has a ModelImporter and settings were read; otherwise false.</returns>
         public static bool TryReadCurrent(string assetPath, out ModelBatchSettings current, out string message)
         {
             current = default;
@@ -83,14 +46,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Applies the target settings to a model importer.
-        /// </summary>
-        /// <param name="assetPath">AssetDatabase path to a model file.</param>
-        /// <param name="target">Desired settings.</param>
-        /// <param name="changed">True if any setting was changed and reimport occurred.</param>
-        /// <param name="message">Result message (applied / no changes / error).</param>
-        /// <returns>True if the operation ran and the importer existed; false if not a ModelImporter or exception.</returns>
         public static bool Apply(string assetPath, ModelBatchSettings target, out bool changed, out string message)
         {
             changed = false;
@@ -145,14 +100,7 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Reads the mesh optimization toggle from a ModelImporter using reflection.
-        ///
-        /// Unity has changed importer APIs across versions; this method currently attempts to read:
-        /// - ModelImporter.optimizeMesh (bool)
-        ///
-        /// If the property is missing or unreadable, returns false (safe default).
-        /// </summary>
+        // Uses reflection to support different Unity versions
         private static bool GetOptimizeMesh(ModelImporter importer)
         {
             try
@@ -168,13 +116,7 @@ namespace Playgama.Bridge
             return false;
         }
 
-        /// <summary>
-        /// Sets the mesh optimization toggle on a ModelImporter using reflection.
-        ///
-        /// Behavior:
-        /// - If property exists and the value differs, sets it and returns true.
-        /// - If the property doesn't exist, returns false and does not treat it as an error.
-        /// </summary>
+        // Uses reflection to support different Unity versions
         private static bool SetOptimizeMesh(ModelImporter importer, bool value)
         {
             try
@@ -201,24 +143,6 @@ namespace Playgama.Bridge
             return false;
         }
 
-        /// <summary>
-        /// Applies StaticEditorFlags to GameObjects in the provided scenes that reference any of the selected model assets.
-        ///
-        /// Matching logic:
-        /// - MeshFilter.sharedMesh asset path matches one of the model asset paths (typically .fbx/.obj)
-        /// - SkinnedMeshRenderer.sharedMesh asset path matches one of the model asset paths
-        ///
-        /// Notes:
-        /// - Scene scanning opens scenes one-by-one (Single mode), applies changes, marks dirty, and saves.
-        /// - The caller supplies the desired flags (the method sets EXACTLY that flags value).
-        /// - The method prompts the user to save modified scenes before switching scenes (best-effort across Unity versions).
-        /// </summary>
-        /// <param name="scenePaths">AssetDatabase paths to scenes (e.g. "Assets/Scenes/Main.unity").</param>
-        /// <param name="modelAssetPaths">Set of model file paths (e.g. "Assets/Models/Ship.fbx").</param>
-        /// <param name="flags">Static flags to apply to matching GameObjects.</param>
-        /// <param name="affectedObjects">Number of GameObjects whose flags were changed.</param>
-        /// <param name="affectedScenes">Number of scenes saved with changes.</param>
-        /// <param name="message">Result message summary.</param>
         public static void ApplyStaticFlagsInBuildScenes(
             string[] scenePaths,
             System.Collections.Generic.HashSet<string> modelAssetPaths,
@@ -291,9 +215,6 @@ namespace Playgama.Bridge
             }
         }
 
-        /// <summary>
-        /// Applies the provided static flags to all matching GameObjects in an already opened scene.
-        /// </summary>
         private static int ApplyStaticInOpenScene(Scene scene, System.Collections.Generic.HashSet<string> modelAssetPaths, StaticEditorFlags flags)
         {
             int changed = 0;
@@ -305,13 +226,6 @@ namespace Playgama.Bridge
             return changed;
         }
 
-        /// <summary>
-        /// Recursively traverses the hierarchy and sets flags on GameObjects that use selected models.
-        ///
-        /// Flags are set exactly to the provided value (no merging):
-        /// - predictable behavior
-        /// - the caller UI can present the full resulting flags state
-        /// </summary>
         private static int ApplyStaticRecursive(GameObject go, System.Collections.Generic.HashSet<string> modelAssetPaths, StaticEditorFlags flags)
         {
             int changed = 0;
@@ -335,14 +249,6 @@ namespace Playgama.Bridge
             return changed;
         }
 
-        /// <summary>
-        /// Checks whether a GameObject references any selected model asset via:
-        /// - MeshFilter.sharedMesh
-        /// - SkinnedMeshRenderer.sharedMesh
-        ///
-        /// AssetDatabase.GetAssetPath(mesh) typically returns the model file path (e.g. .fbx),
-        /// even if the mesh is a sub-asset inside the model.
-        /// </summary>
         private static bool UsesSelectedModel(GameObject go, System.Collections.Generic.HashSet<string> modelAssetPaths)
         {
             var mf = go.GetComponent<MeshFilter>();
@@ -364,15 +270,7 @@ namespace Playgama.Bridge
             return false;
         }
 
-        /// <summary>
-        /// Prompts the user to save modified scenes before the utility starts opening other scenes.
-        ///
-        /// Uses reflection to maximize compatibility with Unity versions that expose different APIs:
-        /// 1) EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()
-        /// 2) EditorSceneManager.SaveModifiedScenesIfUserWantsTo(Scene[] scenes)
-        ///
-        /// If no compatible method is found, it returns true so the operation is not blocked.
-        /// </summary>
+        // Uses reflection to maximize compatibility across Unity versions
         private static bool SaveIfUserWants()
         {
             try
