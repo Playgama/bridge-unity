@@ -312,18 +312,18 @@ namespace Playgama.Bridge.Tabs
                 var m = typeof(EditorUserBuildSettings).GetMethod("GetPlatformSettings", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string), typeof(string) }, null);
                 if (m != null)
                 {
-                    var r = m.Invoke(null, new object[] { "WebGL", "CodeOptimization" })?.ToString().ToLowerInvariant();
+                    var r = m.Invoke(null, new object[] { "WebGL", "CodeOptimization" })?.ToString();
                     if (!string.IsNullOrEmpty(r))
                     {
-                        if (r.Contains("disksizelto") || r == "disksizelto")
+                        if (r == "DiskSizeLTO")
                             state = CodeOptimizationState.DiskSizeLTO;
-                        else if (r.Contains("disksize") || r == "disksize")
+                        else if (r == "DiskSize")
                             state = CodeOptimizationState.DiskSize;
-                        else if (r.Contains("runtimespeedlto") || r == "runtimespeedlto")
+                        else if (r == "RuntimeSpeedLTO")
                             state = CodeOptimizationState.RuntimeSpeedLTO;
-                        else if (r.Contains("runtimespeed") || r == "runtimespeed")
+                        else if (r == "RuntimeSpeed")
                             state = CodeOptimizationState.Speed;
-                        else if (r.Contains("shorterbuildtime") || r == "shorterbuildtime")
+                        else if (r == "BuildTimes")
                             state = CodeOptimizationState.ShorterBuildTime;
                     }
                 }
@@ -341,12 +341,12 @@ namespace Playgama.Bridge.Tabs
                     string v;
                     switch (d)
                     {
-                        case CodeOptimizationState.DiskSizeLTO: v = "diskSizeLto"; break;
-                        case CodeOptimizationState.DiskSize: v = "diskSize"; break;
-                        case CodeOptimizationState.RuntimeSpeedLTO: v = "runtimeSpeedLto"; break;
-                        case CodeOptimizationState.Speed: v = "runtimeSpeed"; break;
-                        case CodeOptimizationState.ShorterBuildTime: v = "shorterBuildTime"; break;
-                        default: v = "shorterBuildTime"; break;
+                        case CodeOptimizationState.DiskSizeLTO: v = "DiskSizeLTO"; break;
+                        case CodeOptimizationState.DiskSize: v = "DiskSize"; break;
+                        case CodeOptimizationState.RuntimeSpeedLTO: v = "RuntimeSpeedLTO"; break;
+                        case CodeOptimizationState.Speed: v = "RuntimeSpeed"; break;
+                        case CodeOptimizationState.ShorterBuildTime: v = "BuildTimes"; break;
+                        default: v = "BuildTimes"; break;
                     }
                     m.Invoke(null, new object[] { "WebGL", "CodeOptimization", v });
                     return true;
