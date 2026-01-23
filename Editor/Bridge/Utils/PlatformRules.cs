@@ -106,6 +106,11 @@ namespace Playgama.Bridge
             return bi != null && bi.HasData && bi.TotalBuildSizeBytes > 0;
         }
 
+        public static long GetSizeLimit(TargetPlatform p)
+        {
+            return GetHardLimit(p);
+        }
+
         private static long GetSoftLimit(TargetPlatform p)
         {
             switch (p)

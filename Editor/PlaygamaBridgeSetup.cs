@@ -10,20 +10,58 @@ namespace Playgama.Editor
     public static class PlaygamaBridgeSetup
     {
         /// <summary>
-        /// Opens the Bridge Setup window (Install Files).
+        /// Opens the Playgama Bridge window.
         /// </summary>
-        [MenuItem("Playgama/Bridge Setup", priority = 0)]
+        [MenuItem("Playgama/Bridge", priority = 0)]
+        public static void ShowBridge()
+        {
+            Bridge.BridgeWindow.ShowWindow();
+        }
+
+        /// <summary>
+        /// Opens the Install Template Files window.
+        /// </summary>
+        [MenuItem("Playgama/Install Template Files", priority = 100)]
         public static void ShowBridgeSetup()
         {
             Bridge.InstallFilesWindow.Show();
         }
 
         /// <summary>
-        /// Opens the Playgama Bridge window.
+        /// Resets the first-run state for testing purposes.
         /// </summary>
-        [MenuItem("Playgama/Bridge", priority = 100)]
-        public static void ShowBridge()
+        [MenuItem("Playgama/Debug/Reset First-Run State", priority = 1000)]
+        public static void ResetFirstRunState()
         {
+            EditorPrefs.DeleteKey("PlaygamaBridge_InstalledVersion");
+            SessionState.SetBool("PlaygamaBridge_SessionChecked", false);
+            Debug.Log("[Playgama Bridge] First-run state reset. Restart Unity or recompile to trigger fresh install.");
+        }
+
+        /// <summary>
+        /// Manually triggers fresh install behavior.
+        /// </summary>
+        [MenuItem("Playgama/Debug/Trigger Fresh Install", priority = 1001)]
+        public static void TriggerFreshInstall()
+        {
+            Debug.Log("[Playgama Bridge] Manually triggering fresh install...");
+            Bridge.InstallFilesWindow.InstallAllSilently();
+
+            // Set WebGL template
+            try
+            {
+                string templatePath = System.IO.Path.Combine(Application.dataPath, "WebGLTemplates/Bridge/index.html");
+                if (System.IO.File.Exists(templatePath))
+                {
+                    PlayerSettings.WebGL.template = "PROJECT:Bridge";
+                    Debug.Log("[Playgama Bridge] WebGL template set to 'Bridge'");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[Playgama Bridge] Failed to set template: {ex.Message}");
+            }
+
             Bridge.BridgeWindow.ShowWindow();
         }
     }
@@ -49,20 +87,38 @@ namespace Playgama.Editor
             // Get current package version
             string currentVersion = GetPackageVersion();
             if (string.IsNullOrEmpty(currentVersion))
+            {
+                Debug.Log("[Playgama Bridge] Could not determine package version.");
                 return;
+            }
 
             // Get previously installed version
             string installedVersion = EditorPrefs.GetString(VERSION_PREF_KEY, "");
+
+            Debug.Log($"[Playgama Bridge] Current version: {currentVersion}, Installed version: {(string.IsNullOrEmpty(installedVersion) ? "(none)" : installedVersion)}");
 
             // Check if new install or update
             if (currentVersion == installedVersion)
                 return;
 
+            // Detect fresh install (no previous version)
+            bool isFreshInstall = string.IsNullOrEmpty(installedVersion);
+
             // Save current version
             EditorPrefs.SetString(VERSION_PREF_KEY, currentVersion);
 
-            // Show windows
-            EditorApplication.delayCall += ShowWindows;
+            if (isFreshInstall)
+            {
+                Debug.Log("[Playgama Bridge] Fresh install detected, auto-installing templates...");
+                // Fresh install: auto-install files silently and show Bridge window
+                EditorApplication.delayCall += OnFreshInstall;
+            }
+            else
+            {
+                Debug.Log("[Playgama Bridge] Update detected, showing install window...");
+                // Update: show Bridge window and InstallFilesWindow
+                EditorApplication.delayCall += OnUpdate;
+            }
         }
 
         private static string GetPackageVersion()
@@ -105,8 +161,50 @@ namespace Playgama.Editor
             return null;
         }
 
-        private static void ShowWindows()
+        private static void OnFreshInstall()
         {
+            // Auto-install template files silently
+            Bridge.InstallFilesWindow.InstallAllSilently();
+
+            // Set WebGL template to Bridge
+            EditorApplication.delayCall += () =>
+            {
+                SetWebGLTemplate();
+
+                // Show Bridge window
+                EditorApplication.delayCall += () =>
+                {
+                    Bridge.BridgeWindow.ShowWindow();
+                };
+            };
+        }
+
+        private static void SetWebGLTemplate()
+        {
+            try
+            {
+                // Check if Bridge template was installed
+                string templatePath = Path.Combine(Application.dataPath, "WebGLTemplates/Bridge/index.html");
+                if (!File.Exists(templatePath))
+                {
+                    Debug.LogWarning("[Playgama Bridge] Bridge template not found, skipping template selection.");
+                    return;
+                }
+
+                // Set the WebGL template to Bridge
+                // Format is "PROJECT:TemplateName" for templates in Assets/WebGLTemplates/
+                PlayerSettings.WebGL.template = "PROJECT:Bridge";
+                Debug.Log("[Playgama Bridge] WebGL template set to 'Bridge'");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[Playgama Bridge] Failed to set WebGL template: {ex.Message}");
+            }
+        }
+
+        private static void OnUpdate()
+        {
+            // Show Bridge window and InstallFilesWindow on update
             EditorApplication.delayCall += () =>
             {
                 Bridge.BridgeWindow.ShowWindow();

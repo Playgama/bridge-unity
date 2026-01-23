@@ -35,7 +35,7 @@ namespace Playgama.Bridge
             { "thumbnail.png", "Template thumbnail preview image" }
         };
 
-        public static void Show()
+        public static new void Show()
         {
             if (_instance != null)
             {
@@ -49,6 +49,102 @@ namespace Playgama.Bridge
             _instance.maxSize = new Vector2(500, 550);
             _instance.LoadTemplateFiles();
             _instance.ShowUtility();
+        }
+
+        /// <summary>
+        /// Silently installs all template files without showing the window.
+        /// Used for first-time fresh installs.
+        /// </summary>
+        public static void InstallAllSilently()
+        {
+            var sourcePath = GetSourcePathStatic();
+            if (string.IsNullOrEmpty(sourcePath) || !Directory.Exists(sourcePath))
+            {
+                Debug.LogWarning("[Playgama Bridge] Template source path not found, skipping silent install.");
+                return;
+            }
+
+            var destinationPath = Path.GetFullPath(DESTINATION_TEMPLATE_PATH);
+
+            try
+            {
+                if (!Directory.Exists(destinationPath))
+                {
+                    Directory.CreateDirectory(destinationPath);
+                }
+
+                int successCount = 0;
+                InstallFilesRecursive(sourcePath, sourcePath, destinationPath, ref successCount);
+
+                AssetDatabase.Refresh();
+
+                if (successCount > 0)
+                {
+                    Debug.Log($"[Playgama Bridge] Auto-installed {successCount} template file(s) to {DESTINATION_TEMPLATE_PATH}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Playgama Bridge] Silent installation failed: {ex.Message}");
+            }
+        }
+
+        private static string GetSourcePathStatic()
+        {
+            var sourcePath = Path.GetFullPath(SOURCE_TEMPLATE_PATH);
+            if (Directory.Exists(sourcePath))
+                return sourcePath;
+
+            sourcePath = Path.Combine(Application.dataPath, "../Packages/com.playgama.bridge/Runtime/WebGLTemplates/Bridge");
+            sourcePath = Path.GetFullPath(sourcePath);
+            if (Directory.Exists(sourcePath))
+                return sourcePath;
+
+            sourcePath = Path.Combine(Application.dataPath, "../../bridge-unity/Runtime/WebGLTemplates/Bridge");
+            sourcePath = Path.GetFullPath(sourcePath);
+            if (Directory.Exists(sourcePath))
+                return sourcePath;
+
+            return null;
+        }
+
+        private static void InstallFilesRecursive(string currentPath, string rootPath, string destRoot, ref int successCount)
+        {
+            foreach (string file in Directory.GetFiles(currentPath))
+            {
+                var fileName = Path.GetFileName(file);
+                if (fileName.EndsWith(".meta") || fileName == ".DS_Store")
+                    continue;
+
+                var relativePath = file.Substring(rootPath.Length + 1).Replace("\\", "/");
+
+                try
+                {
+                    var destFile = Path.Combine(destRoot, relativePath);
+                    var destDir = Path.GetDirectoryName(destFile);
+
+                    if (!Directory.Exists(destDir))
+                    {
+                        Directory.CreateDirectory(destDir);
+                    }
+
+                    // Don't overwrite existing files during silent install
+                    if (!File.Exists(destFile))
+                    {
+                        File.Copy(file, destFile);
+                        successCount++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[Playgama Bridge] Failed to install {relativePath}: {ex.Message}");
+                }
+            }
+
+            foreach (string directory in Directory.GetDirectories(currentPath))
+            {
+                InstallFilesRecursive(directory, rootPath, destRoot, ref successCount);
+            }
         }
 
         private void OnDestroy()

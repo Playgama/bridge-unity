@@ -36,6 +36,11 @@ namespace Playgama.Bridge.Tabs
         private bool _foldTinify = false;
         private bool _foldList = true;
 
+        // Status counts for quick reference
+        private int _redCount = 0;
+        private int _yellowCount = 0;
+        private int _greenCount = 0;
+
         private enum Preset
         {
             WebGL_Balanced_1024,
@@ -87,11 +92,11 @@ namespace Playgama.Bridge.Tabs
                 "Useful when you're working on a small batch.");
 
             public static readonly GUIContent SelectAll = new GUIContent(
-                "Select All",
-                "Select every visible row (ignores the 'Only Selected' filter).");
+                "All",
+                "Select every visible row.");
 
             public static readonly GUIContent Deselect = new GUIContent(
-                "Deselect",
+                "None",
                 "Clear selection for every row.");
 
             public static readonly GUIContent Invert = new GUIContent(
@@ -140,11 +145,11 @@ namespace Playgama.Bridge.Tabs
 
             public static readonly GUIContent Ping = new GUIContent(
                 "Ping",
-                "Ping the asset in the Project window.");
+                "Highlights the asset in the Project window so you can locate it quickly.");
 
             public static readonly GUIContent Select = new GUIContent(
-                "Select",
-                "Select the asset in the Project window (Selection.activeObject).");
+                "Sel",
+                "Selects the asset in the Project window (Selection.activeObject).");
         }
 
         public void Init(BuildInfo buildInfo)
@@ -208,56 +213,89 @@ namespace Playgama.Bridge.Tabs
                 if (_buildInfo.DataMode == BuildDataMode.DependenciesFallback) tb += " (estimated)";
                 EditorGUILayout.LabelField("Tracked Bytes", tb);
 
+                GUILayout.Space(8);
+
+                // Status color legend - more prominent
+                EditorGUILayout.LabelField("Status Color Legend:", EditorStyles.boldLabel);
                 GUILayout.Space(4);
 
-                if (_buildInfo.DataMode == BuildDataMode.PackedAssets)
+                using (new EditorGUILayout.HorizontalScope())
                 {
-                    EditorGUILayout.LabelField("Sizes: From build report (actual packed sizes)", EditorStyles.miniBoldLabel);
+                    DrawStatusLegendItem(BridgeStyles.StatusGreen, "Green", "Optimized", _greenCount);
+                    GUILayout.Space(10);
+                    DrawStatusLegendItem(BridgeStyles.StatusYellow, "Yellow", "Could improve", _yellowCount);
+                    GUILayout.Space(10);
+                    DrawStatusLegendItem(BridgeStyles.StatusRed, "Red", "Needs attention", _redCount);
+                    GUILayout.FlexibleSpace();
                 }
-                else
+
+                GUILayout.Space(4);
+
+                if (_buildInfo.DataMode != BuildDataMode.PackedAssets)
                 {
                     EditorGUILayout.HelpBox(
                         "Sizes are estimated from source file sizes. Run 'Build & Analyze' to get actual compressed sizes from the build report.",
                         MessageType.Warning);
                 }
 
-                GUILayout.Space(4);
-                EditorGUILayout.LabelField("Status Colors:", EditorStyles.miniBoldLabel);
-                EditorGUILayout.LabelField("\u2022 Green: optimized | Yellow: could improve | Red: needs attention", BridgeStyles.SubtitleStyle);
                 BridgeStyles.EndCard();
             }
+        }
+
+        private void DrawStatusLegendItem(Color color, string label, string desc, int count)
+        {
+            Rect rect = EditorGUILayout.GetControlRect(false, 20, GUILayout.Width(130));
+            Rect colorRect = new Rect(rect.x, rect.y + 4, 12, 12);
+            EditorGUI.DrawRect(colorRect, color);
+
+            Rect labelRect = new Rect(rect.x + 18, rect.y, 110, 20);
+            EditorGUI.LabelField(labelRect, new GUIContent($"{label}: {count}", desc), EditorStyles.miniLabel);
         }
 
         private void DrawToolbar()
         {
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
-                if (GUILayout.Button(UI.Refresh, EditorStyles.toolbarButton, GUILayout.Width(70)))
+                if (GUILayout.Button(UI.Refresh, EditorStyles.toolbarButton, GUILayout.Width(60)))
                     RequestRebuild("User Refresh");
 
-                GUILayout.Space(8);
-                GUILayout.Label(UI.SearchLabel, GUILayout.Width(45));
-                string newSearch = GUILayout.TextField(_search, EditorStyles.toolbarTextField, GUILayout.MinWidth(120));
+                GUILayout.Space(6);
+                GUILayout.Label(UI.SearchLabel, GUILayout.Width(42));
+                string newSearch = GUILayout.TextField(_search, EditorStyles.toolbarTextField, GUILayout.MinWidth(100));
                 if (newSearch != _search) _search = newSearch;
 
-                GUILayout.Space(8);
-                _onlySelected = GUILayout.Toggle(_onlySelected, UI.OnlySelected, EditorStyles.toolbarButton, GUILayout.Width(110));
+                GUILayout.Space(6);
+                _onlySelected = GUILayout.Toggle(_onlySelected, UI.OnlySelected, EditorStyles.toolbarButton, GUILayout.Width(90));
 
                 GUILayout.FlexibleSpace();
 
-                if (GUILayout.Button(UI.SelectAll, EditorStyles.toolbarButton, GUILayout.Width(80))) SelectAll(true);
-                if (GUILayout.Button(UI.Deselect, EditorStyles.toolbarButton, GUILayout.Width(70))) SelectAll(false);
-                if (GUILayout.Button(UI.Invert, EditorStyles.toolbarButton, GUILayout.Width(60))) InvertSelection();
+                // Quick filter buttons
+                if (GUILayout.Button(new GUIContent("Red", "Select all textures with Red status (needs attention)"), EditorStyles.toolbarButton, GUILayout.Width(35)))
+                    SelectByStatus(StatusLevel.Red);
+                if (GUILayout.Button(new GUIContent("Yellow", "Select all textures with Yellow status (could improve)"), EditorStyles.toolbarButton, GUILayout.Width(45)))
+                    SelectByStatus(StatusLevel.Yellow);
+
+                GUILayout.Space(6);
+
+                if (GUILayout.Button(UI.SelectAll, EditorStyles.toolbarButton, GUILayout.Width(30))) SelectAll(true);
+                if (GUILayout.Button(UI.Deselect, EditorStyles.toolbarButton, GUILayout.Width(40))) SelectAll(false);
+                if (GUILayout.Button(UI.Invert, EditorStyles.toolbarButton, GUILayout.Width(45))) InvertSelection();
             }
         }
 
         private void DrawBatchPanel()
         {
-            _foldBatch = BridgeStyles.DrawSectionHeader("Batch Apply", _foldBatch, "\u2699");
+            int selectedCount = GetSelectedCount();
+            string headerText = selectedCount > 0
+                ? $"Batch Apply - {selectedCount} texture(s) selected"
+                : "Batch Apply - Select textures to apply";
+
+            _foldBatch = BridgeStyles.DrawSectionHeader(headerText, _foldBatch, "\u2699");
             if (_foldBatch)
             {
                 BridgeStyles.BeginCard();
 
+                // Preset with preview
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     GUILayout.Label(UI.Preset, GUILayout.Width(50));
@@ -269,14 +307,14 @@ namespace Playgama.Bridge.Tabs
                     }
 
                     GUILayout.FlexibleSpace();
-
-                    GUI.enabled = GetSelectedCount() > 0;
-                    if (GUILayout.Button(UI.ApplyToSelected, GUILayout.Height(26), GUILayout.MinWidth(100), GUILayout.MaxWidth(140)))
-                        ApplyBatchToSelected();
-                    GUI.enabled = true;
                 }
 
-                GUILayout.Space(4);
+                // Show preset details
+                GUILayout.Space(2);
+                string presetDetails = GetPresetDetails(_preset);
+                EditorGUILayout.LabelField(presetDetails, BridgeStyles.SubtitleStyle);
+
+                GUILayout.Space(8);
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
@@ -293,23 +331,63 @@ namespace Playgama.Bridge.Tabs
                     _batchCompression = (TextureImporterCompression)EditorGUILayout.EnumPopup(_batchCompression, GUILayout.MinWidth(100), GUILayout.MaxWidth(140));
                 }
 
-                GUILayout.Space(2);
+                GUILayout.Space(4);
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     _batchCrunch = EditorGUILayout.ToggleLeft(UI.Crunch, _batchCrunch, GUILayout.Width(70));
 
                     GUILayout.Label(UI.CrunchQuality, GUILayout.Width(50));
-                    _batchCrunchQuality = EditorGUILayout.IntSlider(_batchCrunchQuality, 0, 100, GUILayout.MinWidth(100), GUILayout.MaxWidth(200));
+                    _batchCrunchQuality = EditorGUILayout.IntSlider(_batchCrunchQuality, 0, 100, GUILayout.MinWidth(100), GUILayout.MaxWidth(180));
+
+                    // Quality context label
+                    string qualityLabel = _batchCrunchQuality < 30 ? "(Aggressive)" :
+                                         _batchCrunchQuality < 60 ? "(Balanced)" : "(High Quality)";
+                    GUILayout.Label(qualityLabel, EditorStyles.miniLabel, GUILayout.Width(80));
 
                     GUILayout.FlexibleSpace();
 
                     _batchDisableReadWrite = EditorGUILayout.ToggleLeft(UI.DisableReadWrite, _batchDisableReadWrite, GUILayout.MinWidth(120), GUILayout.MaxWidth(160));
                 }
 
-                GUILayout.Space(4);
-                EditorGUILayout.LabelField("Presets: Balanced (1024) | Aggressive (512) | High Quality (2048)", BridgeStyles.SubtitleStyle);
+                GUILayout.Space(8);
+
+                // Apply button with explicit count
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.FlexibleSpace();
+
+                    GUI.enabled = selectedCount > 0;
+
+                    Color oldBg = GUI.backgroundColor;
+                    if (selectedCount > 0)
+                        GUI.backgroundColor = BridgeStyles.BrandPurple;
+
+                    string applyText = selectedCount > 0
+                        ? $"Apply to {selectedCount} Selected Texture(s)"
+                        : "Select Textures First";
+
+                    if (GUILayout.Button(applyText, GUILayout.Height(28), GUILayout.MinWidth(200)))
+                        ApplyBatchToSelected();
+
+                    GUI.backgroundColor = oldBg;
+                    GUI.enabled = true;
+                }
+
                 BridgeStyles.EndCard();
+            }
+        }
+
+        private string GetPresetDetails(Preset p)
+        {
+            switch (p)
+            {
+                case Preset.WebGL_Aggressive_512:
+                    return "Max 512px, Compressed, Crunch Q45, R/W Off - Smallest size";
+                case Preset.WebGL_HighQuality_2048:
+                    return "Max 2048px, Compressed, No Crunch, R/W Off - Best quality";
+                default:
+                    return "Max 1024px, Compressed, Crunch Q50, R/W Off - Good balance";
             }
         }
 
@@ -319,28 +397,82 @@ namespace Playgama.Bridge.Tabs
             if (_foldTinify)
             {
                 BridgeStyles.BeginCard();
-                    bool hasKey = TinifyUtility.HasKey();
-                    EditorGUILayout.LabelField("Key", hasKey ? "Set" : "Not set");
+                bool hasKey = TinifyUtility.HasKey();
 
-                    EditorGUILayout.LabelField("Optimizes source PNG/JPG/JPEG files via Tinify API", BridgeStyles.SubtitleStyle);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField("API Key Status:", GUILayout.Width(100));
 
-                    GUILayout.Space(4);
-
-                    using (new EditorGUILayout.HorizontalScope())
+                    if (hasKey)
                     {
-                        GUI.enabled = !_tinifyRunning && hasKey && GetSelectedCount() > 0;
-
-                        if (BridgeStyles.DrawAccentButton(UI.TinifyButton, GUILayout.Height(28)))
-                            TinifySelected();
-
-                        GUI.enabled = true;
-
-                        GUILayout.FlexibleSpace();
-
-                        if (!hasKey)
-                            GUILayout.Label("Set key in Settings tab.", EditorStyles.miniLabel);
+                        Color oldColor = GUI.color;
+                        GUI.color = BridgeStyles.StatusGreen;
+                        EditorGUILayout.LabelField("\u2714 Configured", EditorStyles.boldLabel);
+                        GUI.color = oldColor;
                     }
+                    else
+                    {
+                        Color oldColor = GUI.color;
+                        GUI.color = BridgeStyles.StatusYellow;
+                        EditorGUILayout.LabelField("\u26A0 Not Set", EditorStyles.boldLabel);
+                        GUI.color = oldColor;
+
+                        if (GUILayout.Button("Set up in Settings \u2192", EditorStyles.miniButton, GUILayout.Width(130)))
+                        {
+                            OpenSettingsTab();
+                        }
+                    }
+
+                    GUILayout.FlexibleSpace();
+                }
+
+                GUILayout.Space(4);
+                EditorGUILayout.LabelField("Compresses source PNG/JPG files up to 70%. Files are overwritten on disk.", BridgeStyles.SubtitleStyle);
+
+                GUILayout.Space(6);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    int selectedCount = GetSelectedCount();
+                    GUI.enabled = !_tinifyRunning && hasKey && selectedCount > 0;
+
+                    string btnText = selectedCount > 0
+                        ? $"Tinify {selectedCount} Selected Texture(s)"
+                        : "Select Textures First";
+
+                    if (BridgeStyles.DrawAccentButton(new GUIContent(btnText, UI.TinifyButton.tooltip), GUILayout.Height(28)))
+                        TinifySelected();
+
+                    GUI.enabled = true;
+
+                    GUILayout.FlexibleSpace();
+                }
+
+                if (!hasKey)
+                {
+                    GUILayout.Space(4);
+                    if (GUILayout.Button("Get free API key at tinypng.com/developers \u2197", EditorStyles.linkLabel))
+                    {
+                        Application.OpenURL("https://tinypng.com/developers");
+                    }
+                }
+
                 BridgeStyles.EndCard();
+            }
+        }
+
+        private void OpenSettingsTab()
+        {
+            var window = EditorWindow.GetWindow<BridgeWindow>();
+            if (window != null)
+            {
+                var field = typeof(BridgeWindow).GetField("_selectedTab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (field != null)
+                {
+                    field.SetValue(window, 9); // Settings tab index
+                    EditorPrefs.SetInt("BRIDGE_SELECTED_TAB", 9);
+                    window.Repaint();
+                }
             }
         }
 
@@ -402,16 +534,38 @@ namespace Playgama.Bridge.Tabs
 
         private void DrawList()
         {
-            _foldList = BridgeStyles.DrawSectionHeader($"Texture List ({_rows.Count} items)", _foldList, "\u25A6");
+            // Count visible items
+            int visibleCount = 0;
+            int selectedCount = 0;
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                var r = _rows[i];
+                if (_onlySelected && !r.Selected) continue;
+                if (!PassSearch(r.Path, _search)) continue;
+                visibleCount++;
+                if (r.Selected) selectedCount++;
+            }
+
+            string headerText = $"Texture List - Showing {visibleCount} of {_rows.Count}";
+            if (selectedCount > 0)
+                headerText += $" ({selectedCount} selected)";
+
+            _foldList = BridgeStyles.DrawSectionHeader(headerText, _foldList, "\u25A6");
             if (!_foldList) return;
 
-            using (var sv = new EditorGUILayout.ScrollViewScope(_scroll))
+            using (var sv = new EditorGUILayout.ScrollViewScope(_scroll, GUILayout.Height(400)))
             {
                 _scroll = sv.scrollPosition;
 
                 if (_rows.Count == 0)
                 {
                     EditorGUILayout.HelpBox("No tracked textures found.", MessageType.Info);
+                    return;
+                }
+
+                if (visibleCount == 0)
+                {
+                    EditorGUILayout.HelpBox("No textures match current filter.", MessageType.Info);
                     return;
                 }
 
@@ -425,29 +579,45 @@ namespace Playgama.Bridge.Tabs
                     DrawRow(r);
                 }
             }
+
+            // Bottom status bar
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField($"Selected: {GetSelectedCount()} | Total: {_rows.Count}", EditorStyles.miniLabel);
+                GUILayout.FlexibleSpace();
+            }
         }
 
         private void DrawRow(Row r)
         {
-            Rect rect = EditorGUILayout.GetControlRect(false, 24);
+            Rect rect = EditorGUILayout.GetControlRect(false, 26);
             rect.x += 6;
             rect.y += 2;
             rect.height -= 4;
 
+            // Background based on status
             Color bg = StatusToColor(r.Status);
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), bg);
 
+            // Selection highlight - more prominent
+            if (r.Selected)
+            {
+                EditorGUI.DrawRect(new Rect(rect.x, rect.y, 4, rect.height), BridgeStyles.BrandPurple);
+                EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, 2), new Color(0.55f, 0.36f, 0.96f, 0.5f));
+                EditorGUI.DrawRect(new Rect(rect.x, rect.y + rect.height - 2, rect.width, 2), new Color(0.55f, 0.36f, 0.96f, 0.5f));
+            }
+
             float availableWidth = rect.width - 12;
-            float buttonWidth = 108;
-            float checkboxWidth = 22;
+            float buttonWidth = 90;
+            float checkboxWidth = 24;
             float contentWidth = availableWidth - buttonWidth - checkboxWidth;
 
             bool compactMode = contentWidth < 450;
             bool veryCompactMode = contentWidth < 300;
 
-            float x = rect.x + 4;
+            float x = rect.x + 6;
 
-            r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 2, 18, rect.height), r.Selected);
+            r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 4, 18, rect.height - 4), r.Selected);
             x += checkboxWidth;
 
             if (veryCompactMode)
@@ -456,12 +626,12 @@ namespace Playgama.Bridge.Tabs
                 float sizeWidth = contentWidth * 0.35f;
 
                 string fileName = string.IsNullOrEmpty(r.Path) ? "—" : System.IO.Path.GetFileName(r.Path);
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 20), r.Path), EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 20), r.Path), EditorStyles.miniLabel);
                 x += nameWidth;
 
                 string size = SharedTypes.FormatBytes(r.SizeBytes);
                 if (r.IsSizeEstimated) size += " ~";
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, sizeWidth, rect.height), size, EditorStyles.miniLabel);
             }
             else if (compactMode)
             {
@@ -471,20 +641,20 @@ namespace Playgama.Bridge.Tabs
                 float compWidth = contentWidth * 0.25f;
 
                 string fileName = string.IsNullOrEmpty(r.Path) ? "—" : System.IO.Path.GetFileName(r.Path);
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 25), r.Path), EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 25), r.Path), EditorStyles.miniLabel);
                 x += nameWidth;
 
                 string size = SharedTypes.FormatBytes(r.SizeBytes);
                 if (r.IsSizeEstimated) size += " ~";
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, sizeWidth, rect.height), size, EditorStyles.miniLabel);
                 x += sizeWidth;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, maxWidth, rect.height), "Max " + r.WebGLMaxSize, EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, maxWidth, rect.height), "Max " + r.WebGLMaxSize, EditorStyles.miniLabel);
                 x += maxWidth;
 
                 string compText = r.Compression.ToString();
                 if (r.Crunch) compText += " Cr";
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, compWidth, rect.height), compText, EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, compWidth, rect.height), compText, EditorStyles.miniLabel);
             }
             else
             {
@@ -496,36 +666,39 @@ namespace Playgama.Bridge.Tabs
                 float crunchWidth = Mathf.Max(70, contentWidth * 0.15f);
 
                 string fileName = string.IsNullOrEmpty(r.Path) ? "—" : System.IO.Path.GetFileName(r.Path);
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 30), r.Path), EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 30), r.Path), EditorStyles.miniLabel);
                 x += nameWidth;
 
                 string size = SharedTypes.FormatBytes(r.SizeBytes);
                 if (r.IsSizeEstimated) size += " ~";
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, sizeWidth, rect.height), size, EditorStyles.miniLabel);
                 x += sizeWidth;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, maxWidth, rect.height), "Max " + r.WebGLMaxSize, EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, maxWidth, rect.height), "Max " + r.WebGLMaxSize, EditorStyles.miniLabel);
                 x += maxWidth;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, rwWidth, rect.height), r.ReadWrite ? "R/W ON" : "R/W OFF", EditorStyles.miniLabel);
+                string rwText = r.ReadWrite ? "R/W ON" : "R/W OFF";
+                GUIStyle rwStyle = new GUIStyle(EditorStyles.miniLabel);
+                if (r.ReadWrite) rwStyle.normal.textColor = new Color(1f, 0.6f, 0.4f);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, rwWidth, rect.height), rwText, rwStyle);
                 x += rwWidth;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, compWidth, rect.height), r.Compression.ToString(), EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, compWidth, rect.height), r.Compression.ToString(), EditorStyles.miniLabel);
                 x += compWidth;
 
                 string crunchText = r.Crunch ? "Crunch " + r.CrunchQuality : "Crunch OFF";
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, crunchWidth, rect.height), crunchText, EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, crunchWidth, rect.height), crunchText, EditorStyles.miniLabel);
             }
 
-            Rect pingR = new Rect(rect.x + rect.width - 112, rect.y + 2, 50, rect.height);
-            if (GUI.Button(pingR, UI.Ping))
+            Rect pingR = new Rect(rect.x + rect.width - 90, rect.y + 3, 42, rect.height - 2);
+            if (GUI.Button(pingR, UI.Ping, EditorStyles.miniButton))
             {
                 var obj = AssetDatabase.LoadMainAssetAtPath(r.Path);
                 if (obj != null) EditorGUIUtility.PingObject(obj);
             }
 
-            Rect selR = new Rect(rect.x + rect.width - 58, rect.y + 2, 55, rect.height);
-            if (GUI.Button(selR, UI.Select))
+            Rect selR = new Rect(rect.x + rect.width - 45, rect.y + 3, 42, rect.height - 2);
+            if (GUI.Button(selR, UI.Select, EditorStyles.miniButton))
             {
                 var obj = AssetDatabase.LoadMainAssetAtPath(r.Path);
                 if (obj != null) Selection.activeObject = obj;
@@ -551,6 +724,9 @@ namespace Playgama.Bridge.Tabs
                 try
                 {
                     _rows.Clear();
+                    _redCount = 0;
+                    _yellowCount = 0;
+                    _greenCount = 0;
 
                     for (int i = 0; i < _buildInfo.Assets.Count; i++)
                     {
@@ -584,6 +760,15 @@ namespace Playgama.Bridge.Tabs
                         };
 
                         row.Status = EvaluateStatus(row);
+
+                        // Count by status
+                        switch (row.Status)
+                        {
+                            case StatusLevel.Red: _redCount++; break;
+                            case StatusLevel.Yellow: _yellowCount++; break;
+                            case StatusLevel.Green: _greenCount++; break;
+                        }
+
                         _rows.Add(row);
                     }
 
@@ -615,6 +800,12 @@ namespace Playgama.Bridge.Tabs
         {
             for (int i = 0; i < _rows.Count; i++)
                 _rows[i].Selected = v;
+        }
+
+        private void SelectByStatus(StatusLevel status)
+        {
+            for (int i = 0; i < _rows.Count; i++)
+                _rows[i].Selected = (_rows[i].Status == status);
         }
 
         private void InvertSelection()
@@ -916,9 +1107,7 @@ namespace Playgama.Bridge.Tabs
                 case TextureFormat.DXT1Crunched:
                 case TextureFormat.ETC_RGB4:
                 case TextureFormat.ETC2_RGB:
-                case TextureFormat.PVRTC_RGB4:
-                case TextureFormat.PVRTC_RGBA4:
-                    return 4;
+                return 4;
 
                 // Compressed formats (8 bits per pixel)
                 case TextureFormat.DXT5:

@@ -22,8 +22,22 @@ namespace Playgama.Bridge.Tabs
         private string _search = "";
         private bool _onlySelected = false;
 
-        private bool _foldHeader = true;
+        private bool _foldHeader = false;
+        private bool _foldTips = true;
         private bool _foldList = true;
+
+        // Sorting
+        private enum SortMode { Size, Name, Type }
+        private SortMode _sortMode = SortMode.Size;
+        private bool _sortAscending = false;
+
+        // Status counts
+        private int _largeFontCount = 0;    // > 500KB
+        private int _tmpFontCount = 0;
+        private int _normalFontCount = 0;
+        private long _totalFontBytes = 0;
+
+        private const long LARGE_FONT_THRESHOLD = 500 * 1024; // 500KB
 
         private sealed class Row
         {
@@ -34,7 +48,10 @@ namespace Playgama.Bridge.Tabs
             public string FontName;
             public string FontType;
             public bool IsTMP;
+            public StatusLevel Status;
         }
+
+        private enum StatusLevel { Good, Warning, Critical }
 
         private static class UI
         {
@@ -46,6 +63,13 @@ namespace Playgama.Bridge.Tabs
             public static readonly GUIContent Invert = new GUIContent("Invert", "Invert selection state for every row.");
             public static readonly GUIContent Ping = new GUIContent("Ping", "Ping the asset in the Project window.");
             public static readonly GUIContent Select = new GUIContent("Select", "Select the asset in the Project window.");
+
+            public static readonly GUIContent LargeFonts = new GUIContent(">500KB", "Select fonts larger than 500KB that may need optimization.");
+            public static readonly GUIContent TMPFonts = new GUIContent("TMP", "Select TextMeshPro font assets.");
+
+            public static readonly GUIContent SortSize = new GUIContent("Size", "Sort by file size.");
+            public static readonly GUIContent SortName = new GUIContent("Name", "Sort alphabetically by name.");
+            public static readonly GUIContent SortType = new GUIContent("Type", "Sort by font type.");
         }
 
         public void Init(BuildInfo buildInfo)
@@ -74,8 +98,6 @@ namespace Playgama.Bridge.Tabs
                     return;
                 }
 
-                DrawToolbar();
-
                 if (_isRebuilding)
                 {
                     EditorGUILayout.HelpBox("Rebuilding font list...", MessageType.Info);
@@ -84,6 +106,14 @@ namespace Playgama.Bridge.Tabs
 
                 EnsureRebuilt();
 
+                // Urgent callout for large fonts
+                if (_largeFontCount > 0)
+                {
+                    DrawLargeFontWarning();
+                }
+
+                DrawTipsPanel();
+                DrawToolbar();
                 DrawList();
 
                 if (!string.IsNullOrEmpty(_status))
@@ -93,7 +123,30 @@ namespace Playgama.Bridge.Tabs
 
         private void DrawHeader()
         {
-            _foldHeader = BridgeStyles.DrawSectionHeader("Analysis Info", _foldHeader, "\u2139");
+            string headerText = "Analysis Info";
+
+            _foldHeader = BridgeStyles.DrawSectionHeader(headerText, _foldHeader, "\u2139");
+
+            // Draw status badges
+            if (_rows.Count > 0)
+            {
+                Rect lastRect = GUILayoutUtility.GetLastRect();
+                float badgeX = lastRect.x + 140;
+
+                if (_largeFontCount > 0)
+                {
+                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_largeFontCount} Large", BridgeStyles.StatusRed);
+                }
+                if (_tmpFontCount > 0)
+                {
+                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_tmpFontCount} TMP", BridgeStyles.StatusYellow);
+                }
+                if (_normalFontCount > 0)
+                {
+                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_normalFontCount} OK", BridgeStyles.StatusGreen);
+                }
+            }
+
             if (_foldHeader)
             {
                 BridgeStyles.BeginCard();
@@ -104,10 +157,96 @@ namespace Playgama.Bridge.Tabs
                 if (_buildInfo.DataMode == BuildDataMode.DependenciesFallback) tb += " (estimated)";
                 EditorGUILayout.LabelField("Tracked Bytes", tb);
 
+                if (_rows.Count > 0)
+                {
+                    GUILayout.Space(4);
+                    EditorGUILayout.LabelField($"Total Font Size: {SharedTypes.FormatBytes(_totalFontBytes)}", EditorStyles.boldLabel);
+                }
+
                 GUILayout.Space(4);
                 EditorGUILayout.LabelField("Fonts (especially TMP fonts with many characters) can be large.", BridgeStyles.SubtitleStyle);
                 BridgeStyles.EndCard();
             }
+        }
+
+        private void DrawStatusBadge(ref float x, float y, string text, Color color)
+        {
+            GUIStyle badgeStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = Color.white }
+            };
+
+            Vector2 size = badgeStyle.CalcSize(new GUIContent(text));
+            size.x += 8;
+            size.y = 16;
+
+            Rect badgeRect = new Rect(x, y, size.x, size.y);
+            EditorGUI.DrawRect(badgeRect, color);
+            GUI.Label(badgeRect, text, badgeStyle);
+
+            x += size.x + 4;
+        }
+
+        private void DrawLargeFontWarning()
+        {
+            BridgeStyles.BeginCard();
+
+            // Red warning background
+            Rect warningRect = GUILayoutUtility.GetRect(0, 60, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(warningRect, new Color(0.6f, 0.15f, 0.15f, 0.4f));
+
+            // Warning icon and text
+            GUIStyle warningStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 14,
+                alignment = TextAnchor.MiddleLeft,
+                normal = { textColor = new Color(1f, 0.4f, 0.4f) }
+            };
+
+            GUI.Label(new Rect(warningRect.x + 10, warningRect.y + 5, warningRect.width - 20, 25),
+                $"⚠ {_largeFontCount} font(s) exceed 500KB!", warningStyle);
+
+            GUIStyle descStyle = new GUIStyle(EditorStyles.label) { wordWrap = true };
+            GUI.Label(new Rect(warningRect.x + 10, warningRect.y + 28, warningRect.width - 20, 30),
+                "Large fonts significantly impact download size. Consider stripping unused characters.", descStyle);
+
+            BridgeStyles.EndCard();
+        }
+
+        private void DrawTipsPanel()
+        {
+            _foldTips = BridgeStyles.DrawSectionHeader("Font Optimization Tips", _foldTips, "\u26A1");
+            if (!_foldTips) return;
+
+            BridgeStyles.BeginCard();
+
+            GUIStyle tipStyle = new GUIStyle(EditorStyles.label) { wordWrap = true, richText = true };
+
+            EditorGUILayout.LabelField("<b>Strip Unused Characters:</b> For TMP fonts, use Font Asset Creator to include only needed character sets.", tipStyle);
+            GUILayout.Space(2);
+
+            EditorGUILayout.LabelField("<b>Use Static Fonts:</b> If you don't need runtime text generation, use static font atlases.", tipStyle);
+            GUILayout.Space(2);
+
+            EditorGUILayout.LabelField("<b>Subset Languages:</b> Include only the languages your game actually supports.", tipStyle);
+            GUILayout.Space(2);
+
+            EditorGUILayout.LabelField("<b>Reduce Atlas Size:</b> Smaller atlas resolution = smaller file size. 512x512 often suffices.", tipStyle);
+
+            GUILayout.Space(8);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("TMP Font Asset optimization guide →", EditorStyles.linkLabel))
+                {
+                    Application.OpenURL("https://docs.unity3d.com/Packages/com.unity.textmeshpro@3.0/manual/FontAssets.html");
+                }
+                GUILayout.FlexibleSpace();
+            }
+
+            BridgeStyles.EndCard();
         }
 
         private void DrawToolbar()
@@ -117,28 +256,91 @@ namespace Playgama.Bridge.Tabs
                 if (GUILayout.Button(UI.Refresh, EditorStyles.toolbarButton, GUILayout.Width(70)))
                     RequestRebuild("User Refresh");
 
-                GUILayout.Space(8);
-                GUILayout.Label(UI.SearchLabel, GUILayout.Width(45));
-                string newSearch = GUILayout.TextField(_search, EditorStyles.toolbarTextField, GUILayout.MinWidth(120));
-                if (newSearch != _search) _search = newSearch;
+                GUILayout.Space(4);
+
+                // Quick filters
+                if (GUILayout.Button(UI.LargeFonts, EditorStyles.toolbarButton, GUILayout.Width(60)))
+                    SelectLargeFonts();
+
+                if (GUILayout.Button(UI.TMPFonts, EditorStyles.toolbarButton, GUILayout.Width(40)))
+                    SelectTMPFonts();
 
                 GUILayout.Space(8);
+                GUILayout.Label(UI.SearchLabel, GUILayout.Width(45));
+                string newSearch = GUILayout.TextField(_search, EditorStyles.toolbarTextField, GUILayout.MinWidth(100));
+                if (newSearch != _search) _search = newSearch;
+
+                GUILayout.Space(4);
                 _onlySelected = GUILayout.Toggle(_onlySelected, UI.OnlySelected, EditorStyles.toolbarButton, GUILayout.Width(100));
 
                 GUILayout.FlexibleSpace();
 
-                if (GUILayout.Button(UI.SelectAll, EditorStyles.toolbarButton, GUILayout.Width(80))) SelectAll(true);
-                if (GUILayout.Button(UI.Deselect, EditorStyles.toolbarButton, GUILayout.Width(70))) SelectAll(false);
-                if (GUILayout.Button(UI.Invert, EditorStyles.toolbarButton, GUILayout.Width(60))) InvertSelection();
+                // Sorting controls
+                GUILayout.Label("Sort:", EditorStyles.miniLabel, GUILayout.Width(30));
+
+                bool sizeActive = _sortMode == SortMode.Size;
+                bool nameActive = _sortMode == SortMode.Name;
+                bool typeActive = _sortMode == SortMode.Type;
+
+                if (GUILayout.Toggle(sizeActive, UI.SortSize, EditorStyles.toolbarButton, GUILayout.Width(40)) && !sizeActive)
+                {
+                    _sortMode = SortMode.Size;
+                    _sortAscending = false;
+                    SortRows();
+                }
+                if (GUILayout.Toggle(nameActive, UI.SortName, EditorStyles.toolbarButton, GUILayout.Width(45)) && !nameActive)
+                {
+                    _sortMode = SortMode.Name;
+                    _sortAscending = true;
+                    SortRows();
+                }
+                if (GUILayout.Toggle(typeActive, UI.SortType, EditorStyles.toolbarButton, GUILayout.Width(40)) && !typeActive)
+                {
+                    _sortMode = SortMode.Type;
+                    _sortAscending = true;
+                    SortRows();
+                }
+
+                string arrow = _sortAscending ? "▲" : "▼";
+                if (GUILayout.Button(arrow, EditorStyles.toolbarButton, GUILayout.Width(22)))
+                {
+                    _sortAscending = !_sortAscending;
+                    SortRows();
+                }
+
+                GUILayout.Space(4);
+
+                if (GUILayout.Button(UI.SelectAll, EditorStyles.toolbarButton, GUILayout.Width(70))) SelectAll(true);
+                if (GUILayout.Button(UI.Deselect, EditorStyles.toolbarButton, GUILayout.Width(60))) SelectAll(false);
+                if (GUILayout.Button(UI.Invert, EditorStyles.toolbarButton, GUILayout.Width(50))) InvertSelection();
             }
         }
 
         private void DrawList()
         {
-            _foldList = BridgeStyles.DrawSectionHeader($"Font List ({_rows.Count} items)", _foldList, "\u0041");
+            int selectedCount = 0;
+            foreach (var r in _rows) if (r.Selected) selectedCount++;
+
+            string listHeader = $"Font List ({_rows.Count} items)";
+            if (selectedCount > 0) listHeader += $" • {selectedCount} selected";
+
+            _foldList = BridgeStyles.DrawSectionHeader(listHeader, _foldList, "\u0041");
             if (!_foldList) return;
 
-            using (var sv = new EditorGUILayout.ScrollViewScope(_scroll))
+            // Column headers
+            BridgeStyles.BeginCard();
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(26); // Checkbox space
+                GUILayout.Label("Font Name", EditorStyles.boldLabel, GUILayout.Width(180));
+                GUILayout.Label("Size", EditorStyles.boldLabel, GUILayout.Width(80));
+                GUILayout.Label("Type", EditorStyles.boldLabel, GUILayout.Width(100));
+                GUILayout.Label("Status", EditorStyles.boldLabel, GUILayout.Width(80));
+                GUILayout.FlexibleSpace();
+            }
+            BridgeStyles.EndCard();
+
+            using (var sv = new EditorGUILayout.ScrollViewScope(_scroll, GUILayout.Height(350)))
             {
                 _scroll = sv.scrollPosition;
 
@@ -152,7 +354,7 @@ namespace Playgama.Bridge.Tabs
                 {
                     var r = _rows[i];
                     if (_onlySelected && !r.Selected) continue;
-                    if (!PassSearch(r.Path, _search)) continue;
+                    if (!PassSearch(r, _search)) continue;
 
                     DrawRow(r);
                 }
@@ -161,88 +363,87 @@ namespace Playgama.Bridge.Tabs
 
         private void DrawRow(Row r)
         {
-            Rect rect = EditorGUILayout.GetControlRect(false, 24);
+            Rect rect = EditorGUILayout.GetControlRect(false, 26);
             rect.x += 6;
             rect.y += 2;
             rect.height -= 4;
 
-            Color bg = r.IsTMP ? BridgeStyles.StatusYellow : BridgeStyles.StatusGray;
-            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), bg);
+            // Background color based on status
+            Color bgColor = BridgeStyles.StatusGray;
+            if (r.Status == StatusLevel.Critical) bgColor = new Color(0.5f, 0.2f, 0.2f, 0.3f);
+            else if (r.Status == StatusLevel.Warning) bgColor = new Color(0.5f, 0.4f, 0.1f, 0.3f);
 
-            float availableWidth = rect.width - 12;
-            float buttonWidth = 108;
-            float checkboxWidth = 22;
-            float contentWidth = availableWidth - buttonWidth - checkboxWidth;
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width - 12, rect.height), bgColor);
 
-            bool compactMode = contentWidth < 320;
-            bool veryCompactMode = contentWidth < 200;
+            // Selection highlight
+            if (r.Selected)
+            {
+                EditorGUI.DrawRect(new Rect(rect.x, rect.y, 3, rect.height), BridgeStyles.BrandPurple);
+            }
 
             float x = rect.x + 4;
 
-            r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 2, 18, rect.height), r.Selected);
-            x += checkboxWidth;
+            // Checkbox
+            r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 3, 18, rect.height), r.Selected);
+            x += 22;
 
+            // Font name
             string displayName = !string.IsNullOrEmpty(r.FontName) ? r.FontName : System.IO.Path.GetFileName(r.Path);
-            if (string.IsNullOrEmpty(displayName)) displayName = "-";
+            if (string.IsNullOrEmpty(displayName)) displayName = "—";
 
+            EditorGUI.LabelField(new Rect(x, rect.y + 3, 180, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 25), r.Path), EditorStyles.miniLabel);
+            x += 180;
+
+            // Size with comparison indicator
             string size = SharedTypes.FormatBytes(r.SizeBytes);
             if (r.IsSizeEstimated) size += " ~";
 
-            if (veryCompactMode)
+            GUIStyle sizeStyle = EditorStyles.miniLabel;
+            if (r.SizeBytes > LARGE_FONT_THRESHOLD)
             {
-                float nameWidth = contentWidth * 0.6f;
-                float sizeWidth = contentWidth * 0.4f;
-
-                string name = displayName;
-                if (r.IsTMP) name = "[TMP] " + name;
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(name, 16), r.Path), EditorStyles.miniLabel);
-                x += nameWidth;
-
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                sizeStyle = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = new Color(1f, 0.4f, 0.4f) }, fontStyle = FontStyle.Bold };
             }
-            else if (compactMode)
+            EditorGUI.LabelField(new Rect(x, rect.y + 3, 80, rect.height), size, sizeStyle);
+            x += 80;
+
+            // Type
+            string typeText = r.FontType;
+            if (r.IsTMP) typeText = "TMP";
+            EditorGUI.LabelField(new Rect(x, rect.y + 3, 100, rect.height), typeText, EditorStyles.miniLabel);
+            x += 100;
+
+            // Status indicator
+            string statusText = "OK";
+            Color statusColor = BridgeStyles.StatusGreen;
+            if (r.Status == StatusLevel.Critical)
             {
-                float nameWidth = contentWidth * 0.5f;
-                float sizeWidth = contentWidth * 0.3f;
-                float tmpWidth = contentWidth * 0.2f;
-
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 22), r.Path), EditorStyles.miniLabel);
-                x += nameWidth;
-
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
-                x += sizeWidth;
-
-                if (r.IsTMP)
-                    EditorGUI.LabelField(new Rect(x, rect.y + 2, tmpWidth, rect.height), "TMP", EditorStyles.miniBoldLabel);
+                statusText = "Too Large";
+                statusColor = BridgeStyles.StatusRed;
             }
-            else
+            else if (r.Status == StatusLevel.Warning)
             {
-                float nameWidth = Mathf.Max(100, contentWidth * 0.35f);
-                float sizeWidth = Mathf.Max(70, contentWidth * 0.18f);
-                float typeWidth = Mathf.Max(80, contentWidth * 0.28f);
-                float tmpWidth = Mathf.Max(40, contentWidth * 0.12f);
-
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 28), r.Path), EditorStyles.miniLabel);
-                x += nameWidth;
-
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
-                x += sizeWidth;
-
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, typeWidth, rect.height), TruncateWithEllipsis(r.FontType, 15), EditorStyles.miniLabel);
-                x += typeWidth;
-
-                if (r.IsTMP)
-                    EditorGUI.LabelField(new Rect(x, rect.y + 2, tmpWidth, rect.height), "TMP", EditorStyles.miniBoldLabel);
+                statusText = "TMP";
+                statusColor = BridgeStyles.StatusYellow;
             }
 
-            Rect pingR = new Rect(rect.x + rect.width - 112, rect.y + 2, 50, rect.height);
+            Rect statusRect = new Rect(x, rect.y + 4, 65, rect.height - 4);
+            EditorGUI.DrawRect(statusRect, statusColor);
+            GUIStyle statusStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = Color.white }
+            };
+            GUI.Label(statusRect, statusText, statusStyle);
+
+            // Buttons
+            Rect pingR = new Rect(rect.x + rect.width - 124, rect.y + 3, 50, rect.height - 2);
             if (GUI.Button(pingR, UI.Ping))
             {
                 var obj = AssetDatabase.LoadMainAssetAtPath(r.Path);
                 if (obj != null) EditorGUIUtility.PingObject(obj);
             }
 
-            Rect selR = new Rect(rect.x + rect.width - 58, rect.y + 2, 55, rect.height);
+            Rect selR = new Rect(rect.x + rect.width - 70, rect.y + 3, 55, rect.height - 2);
             if (GUI.Button(selR, UI.Select))
             {
                 var obj = AssetDatabase.LoadMainAssetAtPath(r.Path);
@@ -252,9 +453,9 @@ namespace Playgama.Bridge.Tabs
 
         private static string TruncateWithEllipsis(string s, int maxLen)
         {
-            if (string.IsNullOrEmpty(s)) return "-";
+            if (string.IsNullOrEmpty(s)) return "—";
             if (s.Length <= maxLen) return s;
-            return s.Substring(0, maxLen - 1) + "...";
+            return s.Substring(0, maxLen - 1) + "…";
         }
 
         private void EnsureRebuilt()
@@ -269,6 +470,10 @@ namespace Playgama.Bridge.Tabs
                 try
                 {
                     _rows.Clear();
+                    _largeFontCount = 0;
+                    _tmpFontCount = 0;
+                    _normalFontCount = 0;
+                    _totalFontBytes = 0;
 
                     for (int i = 0; i < _buildInfo.Assets.Count; i++)
                     {
@@ -322,10 +527,28 @@ namespace Playgama.Bridge.Tabs
                                 row.FontType = "Font Asset";
                         }
 
+                        // Evaluate status
+                        if (row.SizeBytes > LARGE_FONT_THRESHOLD)
+                        {
+                            row.Status = StatusLevel.Critical;
+                            _largeFontCount++;
+                        }
+                        else if (row.IsTMP)
+                        {
+                            row.Status = StatusLevel.Warning;
+                            _tmpFontCount++;
+                        }
+                        else
+                        {
+                            row.Status = StatusLevel.Good;
+                            _normalFontCount++;
+                        }
+
+                        _totalFontBytes += row.SizeBytes;
                         _rows.Add(row);
                     }
 
-                    _rows.Sort((x, y) => y.SizeBytes.CompareTo(x.SizeBytes));
+                    SortRows();
                     _status = $"Tracked fonts: {_rows.Count}";
 
                     try { EditorWindow.focusedWindow?.Repaint(); } catch { }
@@ -341,6 +564,27 @@ namespace Playgama.Bridge.Tabs
                     try { EditorWindow.focusedWindow?.Repaint(); } catch { }
                 }
             };
+        }
+
+        private void SortRows()
+        {
+            switch (_sortMode)
+            {
+                case SortMode.Size:
+                    _rows.Sort((a, b) => _sortAscending ? a.SizeBytes.CompareTo(b.SizeBytes) : b.SizeBytes.CompareTo(a.SizeBytes));
+                    break;
+                case SortMode.Name:
+                    _rows.Sort((a, b) =>
+                    {
+                        string nameA = !string.IsNullOrEmpty(a.FontName) ? a.FontName : a.Path;
+                        string nameB = !string.IsNullOrEmpty(b.FontName) ? b.FontName : b.Path;
+                        return _sortAscending ? string.Compare(nameA, nameB, StringComparison.OrdinalIgnoreCase) : string.Compare(nameB, nameA, StringComparison.OrdinalIgnoreCase);
+                    });
+                    break;
+                case SortMode.Type:
+                    _rows.Sort((a, b) => _sortAscending ? string.Compare(a.FontType, b.FontType, StringComparison.OrdinalIgnoreCase) : string.Compare(b.FontType, a.FontType, StringComparison.OrdinalIgnoreCase));
+                    break;
+            }
         }
 
         private void RequestRebuild(string reason)
@@ -359,11 +603,30 @@ namespace Playgama.Bridge.Tabs
             for (int i = 0; i < _rows.Count; i++) _rows[i].Selected = !_rows[i].Selected;
         }
 
-        private static bool PassSearch(string path, string search)
+        private void SelectLargeFonts()
+        {
+            SelectAll(false);
+            foreach (var r in _rows)
+            {
+                if (r.SizeBytes > LARGE_FONT_THRESHOLD) r.Selected = true;
+            }
+        }
+
+        private void SelectTMPFonts()
+        {
+            SelectAll(false);
+            foreach (var r in _rows)
+            {
+                if (r.IsTMP) r.Selected = true;
+            }
+        }
+
+        private static bool PassSearch(Row r, string search)
         {
             if (string.IsNullOrEmpty(search)) return true;
-            if (string.IsNullOrEmpty(path)) return false;
-            return path.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+            if (!string.IsNullOrEmpty(r.Path) && r.Path.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (!string.IsNullOrEmpty(r.FontName) && r.FontName.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            return false;
         }
     }
 }

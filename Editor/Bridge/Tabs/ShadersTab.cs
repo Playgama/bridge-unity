@@ -22,8 +22,19 @@ namespace Playgama.Bridge.Tabs
         private string _search = "";
         private bool _onlySelected = false;
 
-        private bool _foldHeader = true;
+        private bool _foldHeader = false;
+        private bool _foldTips = true;
         private bool _foldList = true;
+
+        // Sorting
+        private enum SortMode { Size, Passes, Name }
+        private SortMode _sortMode = SortMode.Size;
+        private bool _sortAscending = false;
+
+        // Status counts
+        private int _multiPassCount = 0;
+        private int _highPassCount = 0;
+        private int _optimizedCount = 0;
 
         private sealed class Row
         {
@@ -34,18 +45,36 @@ namespace Playgama.Bridge.Tabs
             public string ShaderName;
             public int PassCount;
             public int PropertyCount;
+            public StatusLevel Status;
         }
+
+        private enum StatusLevel { Good, Warning, Critical }
 
         private static class UI
         {
             public static readonly GUIContent Refresh = new GUIContent("Refresh", "Rebuild the shader list from the latest analysis data.");
-            public static readonly GUIContent SearchLabel = new GUIContent("Search", "Filter shaders by path.");
+            public static readonly GUIContent SearchLabel = new GUIContent("Search", "Filter shaders by path or name.");
             public static readonly GUIContent OnlySelected = new GUIContent("Only Selected", "Show only currently selected rows.");
             public static readonly GUIContent SelectAll = new GUIContent("Select All", "Select every visible row.");
             public static readonly GUIContent Deselect = new GUIContent("Deselect", "Clear selection for every row.");
             public static readonly GUIContent Invert = new GUIContent("Invert", "Invert selection state for every row.");
             public static readonly GUIContent Ping = new GUIContent("Ping", "Ping the asset in the Project window.");
             public static readonly GUIContent Select = new GUIContent("Select", "Select the asset in the Project window.");
+
+            public static readonly GUIContent MultiPass = new GUIContent("Multi-Pass", "Select shaders with 2+ passes that increase draw calls.");
+            public static readonly GUIContent HighPass = new GUIContent("4+ Passes", "Select shaders with 4+ passes (high impact).");
+
+            public static readonly GUIContent SortSize = new GUIContent("Size", "Sort by file size.");
+            public static readonly GUIContent SortPasses = new GUIContent("Passes", "Sort by pass count.");
+            public static readonly GUIContent SortName = new GUIContent("Name", "Sort alphabetically by name.");
+
+            public static readonly GUIContent TipsTitle = new GUIContent(
+                "Shader Optimization Tips",
+                "Recommendations for optimizing shaders in WebGL builds.");
+
+            public static readonly GUIContent PropsTooltip = new GUIContent(
+                "Props",
+                "Number of shader properties (uniforms).\nMore properties = more memory and slightly slower uploads.");
         }
 
         public void Init(BuildInfo buildInfo)
@@ -74,8 +103,6 @@ namespace Playgama.Bridge.Tabs
                     return;
                 }
 
-                DrawToolbar();
-
                 if (_isRebuilding)
                 {
                     EditorGUILayout.HelpBox("Rebuilding shader list...", MessageType.Info);
@@ -84,6 +111,8 @@ namespace Playgama.Bridge.Tabs
 
                 EnsureRebuilt();
 
+                DrawTipsPanel();
+                DrawToolbar();
                 DrawList();
 
                 if (!string.IsNullOrEmpty(_status))
@@ -93,7 +122,35 @@ namespace Playgama.Bridge.Tabs
 
         private void DrawHeader()
         {
-            _foldHeader = BridgeStyles.DrawSectionHeader("Analysis Info", _foldHeader, "\u2139");
+            // Build header with status badges
+            string headerText = "Analysis Info";
+            if (_rows.Count > 0)
+            {
+                headerText = $"Analysis Info  ";
+            }
+
+            _foldHeader = BridgeStyles.DrawSectionHeader(headerText, _foldHeader, "\u2139");
+
+            // Draw status badges after header
+            if (_rows.Count > 0)
+            {
+                Rect lastRect = GUILayoutUtility.GetLastRect();
+                float badgeX = lastRect.x + 140;
+
+                if (_highPassCount > 0)
+                {
+                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_highPassCount} High", BridgeStyles.StatusRed);
+                }
+                if (_multiPassCount > 0)
+                {
+                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_multiPassCount} Multi", BridgeStyles.StatusYellow);
+                }
+                if (_optimizedCount > 0)
+                {
+                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_optimizedCount} OK", BridgeStyles.StatusGreen);
+                }
+            }
+
             if (_foldHeader)
             {
                 BridgeStyles.BeginCard();
@@ -105,9 +162,69 @@ namespace Playgama.Bridge.Tabs
                 EditorGUILayout.LabelField("Tracked Bytes", tb);
 
                 GUILayout.Space(4);
-                EditorGUILayout.LabelField("Shaders can significantly impact build size and compile time.", BridgeStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("Shaders are read-only in this view. Use tips below to optimize.", BridgeStyles.SubtitleStyle);
                 BridgeStyles.EndCard();
             }
+        }
+
+        private void DrawStatusBadge(ref float x, float y, string text, Color color)
+        {
+            GUIStyle badgeStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = Color.white }
+            };
+
+            Vector2 size = badgeStyle.CalcSize(new GUIContent(text));
+            size.x += 8;
+            size.y = 16;
+
+            Rect badgeRect = new Rect(x, y, size.x, size.y);
+            EditorGUI.DrawRect(badgeRect, color);
+            GUI.Label(badgeRect, text, badgeStyle);
+
+            x += size.x + 4;
+        }
+
+        private void DrawTipsPanel()
+        {
+            _foldTips = BridgeStyles.DrawSectionHeader("Shader Optimization Tips", _foldTips, "\u26A1");
+            if (!_foldTips) return;
+
+            BridgeStyles.BeginCard();
+
+            // Warning about read-only nature
+            EditorGUILayout.HelpBox("Shaders cannot be batch-modified. Use these tips to optimize manually.", MessageType.Info);
+
+            GUILayout.Space(4);
+
+            // Tips list
+            GUIStyle tipStyle = new GUIStyle(EditorStyles.label) { wordWrap = true, richText = true };
+
+            EditorGUILayout.LabelField("<b>Multi-Pass Shaders:</b> Each pass = extra draw call. Consider single-pass alternatives.", tipStyle);
+            GUILayout.Space(2);
+
+            EditorGUILayout.LabelField("<b>Shader Variants:</b> Use #pragma skip_variants to exclude unused features.", tipStyle);
+            GUILayout.Space(2);
+
+            EditorGUILayout.LabelField("<b>Mobile Shaders:</b> Use Mobile/ or Unlit/ shaders for better WebGL performance.", tipStyle);
+            GUILayout.Space(2);
+
+            EditorGUILayout.LabelField("<b>Shader Properties:</b> Fewer properties = less memory. Remove unused ones.", tipStyle);
+
+            GUILayout.Space(8);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Learn about shader optimization →", EditorStyles.linkLabel))
+                {
+                    Application.OpenURL("https://docs.unity3d.com/Manual/SL-ShaderPerformance.html");
+                }
+                GUILayout.FlexibleSpace();
+            }
+
+            BridgeStyles.EndCard();
         }
 
         private void DrawToolbar()
@@ -117,28 +234,92 @@ namespace Playgama.Bridge.Tabs
                 if (GUILayout.Button(UI.Refresh, EditorStyles.toolbarButton, GUILayout.Width(70)))
                     RequestRebuild("User Refresh");
 
-                GUILayout.Space(8);
-                GUILayout.Label(UI.SearchLabel, GUILayout.Width(45));
-                string newSearch = GUILayout.TextField(_search, EditorStyles.toolbarTextField, GUILayout.MinWidth(120));
-                if (newSearch != _search) _search = newSearch;
+                GUILayout.Space(4);
+
+                // Quick filters
+                if (GUILayout.Button(UI.MultiPass, EditorStyles.toolbarButton, GUILayout.Width(75)))
+                    SelectMultiPass();
+
+                if (GUILayout.Button(UI.HighPass, EditorStyles.toolbarButton, GUILayout.Width(70)))
+                    SelectHighPass();
 
                 GUILayout.Space(8);
+                GUILayout.Label(UI.SearchLabel, GUILayout.Width(45));
+                string newSearch = GUILayout.TextField(_search, EditorStyles.toolbarTextField, GUILayout.MinWidth(100));
+                if (newSearch != _search) _search = newSearch;
+
+                GUILayout.Space(4);
                 _onlySelected = GUILayout.Toggle(_onlySelected, UI.OnlySelected, EditorStyles.toolbarButton, GUILayout.Width(100));
 
                 GUILayout.FlexibleSpace();
 
-                if (GUILayout.Button(UI.SelectAll, EditorStyles.toolbarButton, GUILayout.Width(80))) SelectAll(true);
-                if (GUILayout.Button(UI.Deselect, EditorStyles.toolbarButton, GUILayout.Width(70))) SelectAll(false);
-                if (GUILayout.Button(UI.Invert, EditorStyles.toolbarButton, GUILayout.Width(60))) InvertSelection();
+                // Sorting controls
+                GUILayout.Label("Sort:", EditorStyles.miniLabel, GUILayout.Width(30));
+
+                bool sizeActive = _sortMode == SortMode.Size;
+                bool passActive = _sortMode == SortMode.Passes;
+                bool nameActive = _sortMode == SortMode.Name;
+
+                if (GUILayout.Toggle(sizeActive, UI.SortSize, EditorStyles.toolbarButton, GUILayout.Width(40)) && !sizeActive)
+                {
+                    _sortMode = SortMode.Size;
+                    _sortAscending = false;
+                    SortRows();
+                }
+                if (GUILayout.Toggle(passActive, UI.SortPasses, EditorStyles.toolbarButton, GUILayout.Width(50)) && !passActive)
+                {
+                    _sortMode = SortMode.Passes;
+                    _sortAscending = false;
+                    SortRows();
+                }
+                if (GUILayout.Toggle(nameActive, UI.SortName, EditorStyles.toolbarButton, GUILayout.Width(45)) && !nameActive)
+                {
+                    _sortMode = SortMode.Name;
+                    _sortAscending = true;
+                    SortRows();
+                }
+
+                string arrow = _sortAscending ? "▲" : "▼";
+                if (GUILayout.Button(arrow, EditorStyles.toolbarButton, GUILayout.Width(22)))
+                {
+                    _sortAscending = !_sortAscending;
+                    SortRows();
+                }
+
+                GUILayout.Space(4);
+
+                if (GUILayout.Button(UI.SelectAll, EditorStyles.toolbarButton, GUILayout.Width(70))) SelectAll(true);
+                if (GUILayout.Button(UI.Deselect, EditorStyles.toolbarButton, GUILayout.Width(60))) SelectAll(false);
+                if (GUILayout.Button(UI.Invert, EditorStyles.toolbarButton, GUILayout.Width(50))) InvertSelection();
             }
         }
 
         private void DrawList()
         {
-            _foldList = BridgeStyles.DrawSectionHeader($"Shader List ({_rows.Count} items)", _foldList, "\u2726");
+            int selectedCount = 0;
+            foreach (var r in _rows) if (r.Selected) selectedCount++;
+
+            string listHeader = $"Shader List ({_rows.Count} items)";
+            if (selectedCount > 0) listHeader += $" • {selectedCount} selected";
+
+            _foldList = BridgeStyles.DrawSectionHeader(listHeader, _foldList, "\u2726");
             if (!_foldList) return;
 
-            using (var sv = new EditorGUILayout.ScrollViewScope(_scroll))
+            // Column headers
+            BridgeStyles.BeginCard();
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(26); // Checkbox space
+                GUILayout.Label("Shader Name", EditorStyles.boldLabel, GUILayout.Width(200));
+                GUILayout.Label("Size", EditorStyles.boldLabel, GUILayout.Width(70));
+                GUILayout.Label(new GUIContent("Passes", "Number of render passes.\n⚠ Multiple passes = more draw calls = slower rendering."), EditorStyles.boldLabel, GUILayout.Width(60));
+                GUILayout.Label(UI.PropsTooltip, EditorStyles.boldLabel, GUILayout.Width(60));
+                GUILayout.Label("Status", EditorStyles.boldLabel, GUILayout.Width(80));
+                GUILayout.FlexibleSpace();
+            }
+            BridgeStyles.EndCard();
+
+            using (var sv = new EditorGUILayout.ScrollViewScope(_scroll, GUILayout.Height(400)))
             {
                 _scroll = sv.scrollPosition;
 
@@ -152,7 +333,7 @@ namespace Playgama.Bridge.Tabs
                 {
                     var r = _rows[i];
                     if (_onlySelected && !r.Selected) continue;
-                    if (!PassSearch(r.Path, _search)) continue;
+                    if (!PassSearch(r, _search)) continue;
 
                     DrawRow(r);
                 }
@@ -161,86 +342,96 @@ namespace Playgama.Bridge.Tabs
 
         private void DrawRow(Row r)
         {
-            Rect rect = EditorGUILayout.GetControlRect(false, 24);
+            Rect rect = EditorGUILayout.GetControlRect(false, 26);
             rect.x += 6;
             rect.y += 2;
             rect.height -= 4;
 
-            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), BridgeStyles.StatusGray);
+            // Background color based on status
+            Color bgColor = BridgeStyles.StatusGray;
+            if (r.Status == StatusLevel.Critical) bgColor = new Color(0.5f, 0.2f, 0.2f, 0.3f);
+            else if (r.Status == StatusLevel.Warning) bgColor = new Color(0.5f, 0.4f, 0.1f, 0.3f);
 
-            float availableWidth = rect.width - 12;
-            float buttonWidth = 108;
-            float checkboxWidth = 22;
-            float contentWidth = availableWidth - buttonWidth - checkboxWidth;
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width - 12, rect.height), bgColor);
 
-            bool compactMode = contentWidth < 350;
-            bool veryCompactMode = contentWidth < 220;
+            // Selection highlight
+            if (r.Selected)
+            {
+                EditorGUI.DrawRect(new Rect(rect.x, rect.y, 3, rect.height), BridgeStyles.BrandPurple);
+            }
 
             float x = rect.x + 4;
 
-            r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 2, 18, rect.height), r.Selected);
-            x += checkboxWidth;
+            // Checkbox
+            r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 3, 18, rect.height), r.Selected);
+            x += 22;
 
+            // Shader name
             string displayName = !string.IsNullOrEmpty(r.ShaderName) ? r.ShaderName : System.IO.Path.GetFileName(r.Path);
             if (string.IsNullOrEmpty(displayName)) displayName = "—";
 
+            EditorGUI.LabelField(new Rect(x, rect.y + 3, 200, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 30), r.Path), EditorStyles.miniLabel);
+            x += 200;
+
+            // Size
             string size = SharedTypes.FormatBytes(r.SizeBytes);
             if (r.IsSizeEstimated) size += " ~";
+            EditorGUI.LabelField(new Rect(x, rect.y + 3, 70, rect.height), size, EditorStyles.miniLabel);
+            x += 70;
 
-            if (veryCompactMode)
+            // Passes with warning
+            string passText = r.PassCount > 0 ? r.PassCount.ToString() : "—";
+            GUIStyle passStyle = EditorStyles.miniLabel;
+            if (r.PassCount >= 4)
             {
-                float nameWidth = contentWidth * 0.65f;
-                float sizeWidth = contentWidth * 0.35f;
-
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 18), r.Path), EditorStyles.miniLabel);
-                x += nameWidth;
-
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                passText = "⚠ " + passText;
+                passStyle = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = new Color(1f, 0.4f, 0.4f) } };
             }
-            else if (compactMode)
+            else if (r.PassCount >= 2)
             {
-                float nameWidth = contentWidth * 0.5f;
-                float sizeWidth = contentWidth * 0.25f;
-                float passWidth = contentWidth * 0.25f;
-
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 25), r.Path), EditorStyles.miniLabel);
-                x += nameWidth;
-
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
-                x += sizeWidth;
-
-                if (r.PassCount > 0)
-                    EditorGUI.LabelField(new Rect(x, rect.y + 2, passWidth, rect.height), $"{r.PassCount}p", EditorStyles.miniLabel);
+                passText = "⚠ " + passText;
+                passStyle = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = new Color(1f, 0.8f, 0.2f) } };
             }
-            else
+            EditorGUI.LabelField(new Rect(x, rect.y + 3, 60, rect.height), new GUIContent(passText, r.PassCount >= 2 ? "Multiple passes increase draw calls" : ""), passStyle);
+            x += 60;
+
+            // Props
+            string propText = r.PropertyCount > 0 ? r.PropertyCount.ToString() : "—";
+            EditorGUI.LabelField(new Rect(x, rect.y + 3, 60, rect.height), propText, EditorStyles.miniLabel);
+            x += 60;
+
+            // Status indicator
+            string statusText = "OK";
+            Color statusColor = BridgeStyles.StatusGreen;
+            if (r.Status == StatusLevel.Critical)
             {
-                float nameWidth = Mathf.Max(120, contentWidth * 0.4f);
-                float sizeWidth = Mathf.Max(70, contentWidth * 0.18f);
-                float passWidth = Mathf.Max(60, contentWidth * 0.18f);
-                float propWidth = Mathf.Max(60, contentWidth * 0.18f);
-
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(displayName, 35), r.Path), EditorStyles.miniLabel);
-                x += nameWidth;
-
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
-                x += sizeWidth;
-
-                if (r.PassCount > 0)
-                    EditorGUI.LabelField(new Rect(x, rect.y + 2, passWidth, rect.height), $"{r.PassCount} passes", EditorStyles.miniLabel);
-                x += passWidth;
-
-                if (r.PropertyCount > 0)
-                    EditorGUI.LabelField(new Rect(x, rect.y + 2, propWidth, rect.height), $"{r.PropertyCount} props", EditorStyles.miniLabel);
+                statusText = "High Impact";
+                statusColor = BridgeStyles.StatusRed;
+            }
+            else if (r.Status == StatusLevel.Warning)
+            {
+                statusText = "Multi-Pass";
+                statusColor = BridgeStyles.StatusYellow;
             }
 
-            Rect pingR = new Rect(rect.x + rect.width - 112, rect.y + 2, 50, rect.height);
+            Rect statusRect = new Rect(x, rect.y + 4, 70, rect.height - 4);
+            EditorGUI.DrawRect(statusRect, statusColor);
+            GUIStyle statusStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = Color.white }
+            };
+            GUI.Label(statusRect, statusText, statusStyle);
+
+            // Buttons
+            Rect pingR = new Rect(rect.x + rect.width - 124, rect.y + 3, 50, rect.height - 2);
             if (GUI.Button(pingR, UI.Ping))
             {
                 var obj = AssetDatabase.LoadMainAssetAtPath(r.Path);
                 if (obj != null) EditorGUIUtility.PingObject(obj);
             }
 
-            Rect selR = new Rect(rect.x + rect.width - 58, rect.y + 2, 55, rect.height);
+            Rect selR = new Rect(rect.x + rect.width - 70, rect.y + 3, 55, rect.height - 2);
             if (GUI.Button(selR, UI.Select))
             {
                 var obj = AssetDatabase.LoadMainAssetAtPath(r.Path);
@@ -267,6 +458,9 @@ namespace Playgama.Bridge.Tabs
                 try
                 {
                     _rows.Clear();
+                    _multiPassCount = 0;
+                    _highPassCount = 0;
+                    _optimizedCount = 0;
 
                     for (int i = 0; i < _buildInfo.Assets.Count; i++)
                     {
@@ -293,15 +487,32 @@ namespace Playgama.Bridge.Tabs
                             try
                             {
                                 row.PassCount = shader.passCount;
-                                row.PropertyCount = ShaderUtil.GetPropertyCount(shader);
+                                row.PropertyCount = shader.GetPropertyCount();
                             }
                             catch { }
+                        }
+
+                        // Evaluate status
+                        if (row.PassCount >= 4)
+                        {
+                            row.Status = StatusLevel.Critical;
+                            _highPassCount++;
+                        }
+                        else if (row.PassCount >= 2)
+                        {
+                            row.Status = StatusLevel.Warning;
+                            _multiPassCount++;
+                        }
+                        else
+                        {
+                            row.Status = StatusLevel.Good;
+                            _optimizedCount++;
                         }
 
                         _rows.Add(row);
                     }
 
-                    _rows.Sort((x, y) => y.SizeBytes.CompareTo(x.SizeBytes));
+                    SortRows();
                     _status = $"Tracked shaders: {_rows.Count}";
 
                     try { EditorWindow.focusedWindow?.Repaint(); } catch { }
@@ -317,6 +528,27 @@ namespace Playgama.Bridge.Tabs
                     try { EditorWindow.focusedWindow?.Repaint(); } catch { }
                 }
             };
+        }
+
+        private void SortRows()
+        {
+            switch (_sortMode)
+            {
+                case SortMode.Size:
+                    _rows.Sort((a, b) => _sortAscending ? a.SizeBytes.CompareTo(b.SizeBytes) : b.SizeBytes.CompareTo(a.SizeBytes));
+                    break;
+                case SortMode.Passes:
+                    _rows.Sort((a, b) => _sortAscending ? a.PassCount.CompareTo(b.PassCount) : b.PassCount.CompareTo(a.PassCount));
+                    break;
+                case SortMode.Name:
+                    _rows.Sort((a, b) =>
+                    {
+                        string nameA = !string.IsNullOrEmpty(a.ShaderName) ? a.ShaderName : a.Path;
+                        string nameB = !string.IsNullOrEmpty(b.ShaderName) ? b.ShaderName : b.Path;
+                        return _sortAscending ? string.Compare(nameA, nameB, StringComparison.OrdinalIgnoreCase) : string.Compare(nameB, nameA, StringComparison.OrdinalIgnoreCase);
+                    });
+                    break;
+            }
         }
 
         private void RequestRebuild(string reason)
@@ -335,11 +567,30 @@ namespace Playgama.Bridge.Tabs
             for (int i = 0; i < _rows.Count; i++) _rows[i].Selected = !_rows[i].Selected;
         }
 
-        private static bool PassSearch(string path, string search)
+        private void SelectMultiPass()
+        {
+            SelectAll(false);
+            foreach (var r in _rows)
+            {
+                if (r.PassCount >= 2) r.Selected = true;
+            }
+        }
+
+        private void SelectHighPass()
+        {
+            SelectAll(false);
+            foreach (var r in _rows)
+            {
+                if (r.PassCount >= 4) r.Selected = true;
+            }
+        }
+
+        private static bool PassSearch(Row r, string search)
         {
             if (string.IsNullOrEmpty(search)) return true;
-            if (string.IsNullOrEmpty(path)) return false;
-            return path.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+            if (!string.IsNullOrEmpty(r.Path) && r.Path.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (!string.IsNullOrEmpty(r.ShaderName) && r.ShaderName.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            return false;
         }
     }
 }

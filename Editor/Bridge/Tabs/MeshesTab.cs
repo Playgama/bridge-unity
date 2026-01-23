@@ -23,7 +23,10 @@ namespace Playgama.Bridge.Tabs
             public ModelImporterMeshCompression MeshCompression;
             public bool RootFound;
             public StaticEditorFlags RootStaticFlags;
+            public StatusLevel Status;
         }
+
+        private enum StatusLevel { Green, Yellow, Red, Unknown }
 
         private readonly List<Row> _rows = new List<Row>(1024);
         private bool _needsRebuild = true;
@@ -35,6 +38,7 @@ namespace Playgama.Bridge.Tabs
         // Foldout states
         private bool _foldHeader = true;
         private bool _foldBatch = true;
+        private bool _foldStaticFlags = false;
         private bool _foldList = true;
 
         private string _search = "";
@@ -47,6 +51,11 @@ namespace Playgama.Bridge.Tabs
         private bool _applyCompression = true;
         private StaticEditorFlags _staticFlagsToSet = 0;
         private bool _applyStaticFlags = false;
+
+        // Issue counts
+        private int _uncompressedCount = 0;
+        private int _readableCount = 0;
+        private int _optimizedCount = 0;
 
         // Deprecated static flags excluded from UI
         private static readonly HashSet<string> kDeprecatedStaticNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -72,20 +81,16 @@ namespace Playgama.Bridge.Tabs
                 "Useful when working with a small batch.");
 
             public static readonly GUIContent SelectAll = new GUIContent(
-                "Select All",
+                "All",
                 "Select every visible row (ignores the 'Only Selected' filter).");
 
             public static readonly GUIContent Deselect = new GUIContent(
-                "Deselect",
+                "None",
                 "Clear selection for every row.");
 
             public static readonly GUIContent Invert = new GUIContent(
                 "Invert",
                 "Invert selection state for every row.");
-
-            public static readonly GUIContent BatchApplyTitle = new GUIContent(
-                "Batch Apply",
-                "Batch tools for changing ModelImporter settings and (optionally) static flags on model root.");
 
             public static readonly GUIContent ApplyMeshCompression = new GUIContent(
                 "Apply Mesh Compression",
@@ -128,16 +133,12 @@ namespace Playgama.Bridge.Tabs
                 "Apply enabled batch settings to all selected rows.\n" +
                 "Importer changes trigger a reimport so settings take effect.");
 
-            public static readonly GUIContent SelectedCount = new GUIContent(
-                "Selected:",
-                "Number of rows currently selected.");
-
             public static readonly GUIContent Ping = new GUIContent(
                 "Ping",
-                "Ping the asset in the Project window.");
+                "Highlights the asset in the Project window so you can locate it quickly.");
 
             public static readonly GUIContent Select = new GUIContent(
-                "Select",
+                "Sel",
                 "Select the asset in the Project window (Selection.activeObject).");
         }
 
@@ -198,40 +199,74 @@ namespace Playgama.Bridge.Tabs
                 if (_buildInfo.DataMode == BuildDataMode.DependenciesFallback) tracked += " (estimated)";
                 EditorGUILayout.LabelField("Tracked Bytes", tracked);
 
-                GUILayout.Space(4);
-                EditorGUILayout.LabelField("Batch operations: Mesh Compression, Read/Write, Static Flags", BridgeStyles.SubtitleStyle);
+                GUILayout.Space(8);
+
+                // Status summary
+                EditorGUILayout.LabelField("Mesh Status Summary:", EditorStyles.boldLabel);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    DrawStatusBadge(BridgeStyles.StatusRed, $"{_uncompressedCount} uncompressed", "No mesh compression applied");
+                    GUILayout.Space(10);
+                    DrawStatusBadge(BridgeStyles.StatusYellow, $"{_readableCount} Read/Write ON", "Using extra memory");
+                    GUILayout.Space(10);
+                    DrawStatusBadge(BridgeStyles.StatusGreen, $"{_optimizedCount} optimized", "Good settings");
+                    GUILayout.FlexibleSpace();
+                }
+
                 BridgeStyles.EndCard();
             }
+        }
+
+        private void DrawStatusBadge(Color color, string text, string tooltip)
+        {
+            Rect rect = EditorGUILayout.GetControlRect(false, 20, GUILayout.Width(Mathf.Max(100, text.Length * 7 + 16)));
+            EditorGUI.DrawRect(rect, new Color(color.r, color.g, color.b, 0.25f));
+            EditorGUI.LabelField(rect, new GUIContent("  " + text, tooltip), EditorStyles.miniLabel);
         }
 
         private void DrawToolbar()
         {
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
-                if (GUILayout.Button(UI.Refresh, EditorStyles.toolbarButton, GUILayout.Width(70)))
+                if (GUILayout.Button(UI.Refresh, EditorStyles.toolbarButton, GUILayout.Width(60)))
                     RequestRebuild("User Refresh");
 
-                GUILayout.Space(8);
+                GUILayout.Space(6);
 
-                GUILayout.Label(UI.Search, GUILayout.Width(45));
-                string newSearch = GUILayout.TextField(_search, EditorStyles.toolbarTextField, GUILayout.MinWidth(120));
+                GUILayout.Label(UI.Search, GUILayout.Width(42));
+                string newSearch = GUILayout.TextField(_search, EditorStyles.toolbarTextField, GUILayout.MinWidth(100));
                 if (newSearch != _search) _search = newSearch;
 
-                GUILayout.Space(8);
+                GUILayout.Space(6);
 
-                _onlySelected = GUILayout.Toggle(_onlySelected, UI.OnlySelected, EditorStyles.toolbarButton, GUILayout.Width(100));
+                _onlySelected = GUILayout.Toggle(_onlySelected, UI.OnlySelected, EditorStyles.toolbarButton, GUILayout.Width(90));
 
                 GUILayout.FlexibleSpace();
 
-                if (GUILayout.Button(UI.SelectAll, EditorStyles.toolbarButton, GUILayout.Width(80))) SelectAll(true);
-                if (GUILayout.Button(UI.Deselect, EditorStyles.toolbarButton, GUILayout.Width(70))) SelectAll(false);
-                if (GUILayout.Button(UI.Invert, EditorStyles.toolbarButton, GUILayout.Width(60))) InvertSelection();
+                // Quick filter buttons
+                if (GUILayout.Button(new GUIContent("No Comp", "Select meshes with no compression"), EditorStyles.toolbarButton, GUILayout.Width(55)))
+                    SelectUncompressed();
+                if (GUILayout.Button(new GUIContent("R/W ON", "Select meshes with Read/Write enabled"), EditorStyles.toolbarButton, GUILayout.Width(50)))
+                    SelectReadable();
+                if (GUILayout.Button(new GUIContent(">50KB", "Select meshes larger than 50KB"), EditorStyles.toolbarButton, GUILayout.Width(45)))
+                    SelectLarge();
+
+                GUILayout.Space(6);
+
+                if (GUILayout.Button(UI.SelectAll, EditorStyles.toolbarButton, GUILayout.Width(30))) SelectAll(true);
+                if (GUILayout.Button(UI.Deselect, EditorStyles.toolbarButton, GUILayout.Width(40))) SelectAll(false);
+                if (GUILayout.Button(UI.Invert, EditorStyles.toolbarButton, GUILayout.Width(45))) InvertSelection();
             }
         }
 
         private void DrawBatchPanel()
         {
-            _foldBatch = BridgeStyles.DrawSectionHeader("Batch Apply", _foldBatch, "\u2699");
+            int selectedCount = GetSelectedCount();
+            string headerText = selectedCount > 0
+                ? $"Batch Apply - {selectedCount} mesh(es) selected"
+                : "Batch Apply - Select meshes to apply";
+
+            _foldBatch = BridgeStyles.DrawSectionHeader(headerText, _foldBatch, "\u2699");
             if (!_foldBatch) return;
 
             BridgeStyles.BeginCard();
@@ -239,57 +274,154 @@ namespace Playgama.Bridge.Tabs
             // Mesh Compression
             using (new EditorGUILayout.HorizontalScope())
             {
-                _applyCompression = EditorGUILayout.ToggleLeft(UI.ApplyMeshCompression, _applyCompression, GUILayout.MinWidth(130), GUILayout.MaxWidth(170));
+                _applyCompression = EditorGUILayout.ToggleLeft(UI.ApplyMeshCompression, _applyCompression, GUILayout.Width(160));
                 GUI.enabled = _applyCompression;
-                _compression = (ModelImporterMeshCompression)EditorGUILayout.EnumPopup(_compression, GUILayout.MinWidth(80), GUILayout.MaxWidth(120));
+                _compression = (ModelImporterMeshCompression)EditorGUILayout.EnumPopup(_compression, GUILayout.Width(100));
+
+                // Show what will happen
+                if (_applyCompression && selectedCount > 0)
+                {
+                    GUILayout.Space(10);
+                    GUILayout.Label($"Will apply {_compression} to {selectedCount} mesh(es)", BridgeStyles.SubtitleStyle);
+                }
+
                 GUI.enabled = true;
                 GUILayout.FlexibleSpace();
             }
 
-            GUILayout.Space(2);
+            GUILayout.Space(4);
 
             // Read/Write
             using (new EditorGUILayout.HorizontalScope())
             {
-                _applyReadable = EditorGUILayout.ToggleLeft(UI.ApplyReadWrite, _applyReadable, GUILayout.MinWidth(100), GUILayout.MaxWidth(140));
+                _applyReadable = EditorGUILayout.ToggleLeft(UI.ApplyReadWrite, _applyReadable, GUILayout.Width(120));
                 GUI.enabled = _applyReadable;
-                _setReadable = EditorGUILayout.ToggleLeft(UI.ReadWriteEnabled, _setReadable, GUILayout.MinWidth(80), GUILayout.MaxWidth(120));
+                _setReadable = EditorGUILayout.ToggleLeft(UI.ReadWriteEnabled, _setReadable, GUILayout.Width(130));
+
+                // Explain what the setting means
+                if (_applyReadable)
+                {
+                    GUILayout.Space(10);
+                    string readableInfo = _setReadable ? "(Enables CPU access - uses more memory)" : "(Disables CPU access - saves memory)";
+                    GUILayout.Label(readableInfo, BridgeStyles.SubtitleStyle);
+                }
+
                 GUI.enabled = true;
                 GUILayout.FlexibleSpace();
             }
 
             GUILayout.Space(8);
 
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            // Static Flags in collapsible section
+            _foldStaticFlags = EditorGUILayout.Foldout(_foldStaticFlags,
+                new GUIContent("Static Flags (Advanced)", "Apply static flags to model root GameObjects. Useful for batching and lightmapping."),
+                true);
+
+            if (_foldStaticFlags)
             {
-                _applyStaticFlags = EditorGUILayout.ToggleLeft(UI.ApplyStaticFlags, _applyStaticFlags);
-                GUI.enabled = _applyStaticFlags;
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    _applyStaticFlags = EditorGUILayout.ToggleLeft(UI.ApplyStaticFlags, _applyStaticFlags);
 
-                DrawStaticFlagsSelector(ref _staticFlagsToSet);
+                    if (_applyStaticFlags)
+                    {
+                        GUILayout.Space(4);
 
-                GUI.enabled = true;
+                        // Quick preset buttons
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            if (GUILayout.Button(new GUIContent("Recommended for Static", "Batching + Lightmap + Occlusion + Reflection"), EditorStyles.miniButton, GUILayout.Width(140)))
+                            {
+                                SetRecommendedStaticFlags();
+                            }
 
-                EditorGUILayout.LabelField("Static flags are applied to the imported model root.", BridgeStyles.SubtitleStyle);
+                            if (GUILayout.Button(UI.StaticAll, EditorStyles.miniButton, GUILayout.Width(40)))
+                            {
+                                SetAllStaticFlags();
+                            }
+
+                            if (GUILayout.Button(UI.StaticNone, EditorStyles.miniButton, GUILayout.Width(40)))
+                            {
+                                _staticFlagsToSet = 0;
+                            }
+
+                            GUILayout.FlexibleSpace();
+                        }
+
+                        GUILayout.Space(4);
+
+                        GUI.enabled = _applyStaticFlags;
+                        DrawStaticFlagsSelector(ref _staticFlagsToSet);
+                        GUI.enabled = true;
+                    }
+
+                    EditorGUILayout.LabelField("Static flags affect batching, lightmapping, occlusion, and reflection probes.", BridgeStyles.SubtitleStyle);
+                }
             }
 
             GUILayout.Space(8);
 
+            // Apply button
             using (new EditorGUILayout.HorizontalScope())
             {
-                int selected = GetSelectedCount();
-                GUILayout.Label(UI.SelectedCount, EditorStyles.miniLabel);
-                GUILayout.Label(selected.ToString(), EditorStyles.miniLabel);
-
                 GUILayout.FlexibleSpace();
 
-                GUI.enabled = selected > 0 && (_applyCompression || _applyReadable || _applyStaticFlags);
+                GUI.enabled = selectedCount > 0 && (_applyCompression || _applyReadable || _applyStaticFlags);
 
-                if (GUILayout.Button(UI.ApplyToSelected, GUILayout.Height(28), GUILayout.MinWidth(100), GUILayout.MaxWidth(160)))
+                Color oldBg = GUI.backgroundColor;
+                if (selectedCount > 0 && (_applyCompression || _applyReadable || _applyStaticFlags))
+                    GUI.backgroundColor = BridgeStyles.BrandPurple;
+
+                string applyText = selectedCount > 0
+                    ? $"Apply to {selectedCount} Selected Mesh(es)"
+                    : "Select Meshes First";
+
+                if (GUILayout.Button(applyText, GUILayout.Height(28), GUILayout.MinWidth(200)))
                     ApplyBatchToSelected();
 
+                GUI.backgroundColor = oldBg;
                 GUI.enabled = true;
             }
+
             BridgeStyles.EndCard();
+        }
+
+        private void SetRecommendedStaticFlags()
+        {
+            _staticFlagsToSet = StaticEditorFlags.BatchingStatic |
+                               StaticEditorFlags.OccludeeStatic |
+                               StaticEditorFlags.OccluderStatic |
+                               StaticEditorFlags.ReflectionProbeStatic;
+
+            // Try to add ContributeGI if available
+            try
+            {
+                var names = Enum.GetNames(typeof(StaticEditorFlags));
+                Array values = Enum.GetValues(typeof(StaticEditorFlags));
+                for (int i = 0; i < names.Length; i++)
+                {
+                    if (names[i].Contains("ContributeGI") || names[i].Contains("LightmapStatic"))
+                    {
+                        _staticFlagsToSet |= (StaticEditorFlags)values.GetValue(i);
+                        break;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void SetAllStaticFlags()
+        {
+            _staticFlagsToSet = 0;
+            var names = Enum.GetNames(typeof(StaticEditorFlags));
+            Array values = Enum.GetValues(typeof(StaticEditorFlags));
+            for (int i = 0; i < names.Length; i++)
+            {
+                string n = names[i];
+                if (string.Equals(n, "None", StringComparison.OrdinalIgnoreCase)) continue;
+                if (kDeprecatedStaticNames.Contains(n)) continue;
+                _staticFlagsToSet |= (StaticEditorFlags)values.GetValue(i);
+            }
         }
 
         private void DrawStaticFlagsSelector(ref StaticEditorFlags flags)
@@ -297,55 +429,95 @@ namespace Playgama.Bridge.Tabs
             var names = Enum.GetNames(typeof(StaticEditorFlags));
             Array values = Enum.GetValues(typeof(StaticEditorFlags));
 
-            using (new EditorGUILayout.VerticalScope())
+            // Draw in two columns
+            using (new EditorGUILayout.HorizontalScope())
             {
-                GUILayout.Label(UI.StaticFlags, EditorStyles.miniBoldLabel);
-
-                for (int i = 0; i < names.Length; i++)
+                using (new EditorGUILayout.VerticalScope())
                 {
-                    string n = names[i];
-                    if (string.Equals(n, "None", StringComparison.OrdinalIgnoreCase)) continue;
-                    if (kDeprecatedStaticNames.Contains(n)) continue;
-
-                    var v = (StaticEditorFlags)values.GetValue(i);
-                    bool has = (flags & v) != 0;
-
-                    bool newHas = EditorGUILayout.ToggleLeft(new GUIContent(n, "Toggle this static flag on the model root."), has);
-                    if (newHas != has)
+                    int half = 0;
+                    for (int i = 0; i < names.Length; i++)
                     {
-                        if (newHas) flags |= v;
-                        else flags &= ~v;
+                        string n = names[i];
+                        if (string.Equals(n, "None", StringComparison.OrdinalIgnoreCase)) continue;
+                        if (kDeprecatedStaticNames.Contains(n)) continue;
+                        half++;
+                    }
+                    half = (half + 1) / 2;
+
+                    int count = 0;
+                    for (int i = 0; i < names.Length; i++)
+                    {
+                        string n = names[i];
+                        if (string.Equals(n, "None", StringComparison.OrdinalIgnoreCase)) continue;
+                        if (kDeprecatedStaticNames.Contains(n)) continue;
+
+                        if (count >= half) break;
+
+                        var v = (StaticEditorFlags)values.GetValue(i);
+                        bool has = (flags & v) != 0;
+                        bool newHas = EditorGUILayout.ToggleLeft(new GUIContent(n), has, GUILayout.Width(150));
+                        if (newHas != has)
+                        {
+                            if (newHas) flags |= v;
+                            else flags &= ~v;
+                        }
+                        count++;
                     }
                 }
 
-                using (new EditorGUILayout.HorizontalScope())
+                using (new EditorGUILayout.VerticalScope())
                 {
-                    if (GUILayout.Button(UI.StaticAll, GUILayout.Width(60)))
+                    int half = 0;
+                    for (int i = 0; i < names.Length; i++)
                     {
-                        flags = 0;
-                        for (int i = 0; i < names.Length; i++)
+                        string n = names[i];
+                        if (string.Equals(n, "None", StringComparison.OrdinalIgnoreCase)) continue;
+                        if (kDeprecatedStaticNames.Contains(n)) continue;
+                        half++;
+                    }
+                    half = (half + 1) / 2;
+
+                    int count = 0;
+                    for (int i = 0; i < names.Length; i++)
+                    {
+                        string n = names[i];
+                        if (string.Equals(n, "None", StringComparison.OrdinalIgnoreCase)) continue;
+                        if (kDeprecatedStaticNames.Contains(n)) continue;
+
+                        count++;
+                        if (count <= half) continue;
+
+                        var v = (StaticEditorFlags)values.GetValue(i);
+                        bool has = (flags & v) != 0;
+                        bool newHas = EditorGUILayout.ToggleLeft(new GUIContent(n), has, GUILayout.Width(150));
+                        if (newHas != has)
                         {
-                            string n = names[i];
-                            if (string.Equals(n, "None", StringComparison.OrdinalIgnoreCase)) continue;
-                            if (kDeprecatedStaticNames.Contains(n)) continue;
-                            flags |= (StaticEditorFlags)values.GetValue(i);
+                            if (newHas) flags |= v;
+                            else flags &= ~v;
                         }
                     }
-
-                    if (GUILayout.Button(UI.StaticNone, GUILayout.Width(60)))
-                        flags = 0;
-
-                    GUILayout.FlexibleSpace();
                 }
+
+                GUILayout.FlexibleSpace();
             }
         }
 
         private void DrawList()
         {
-            _foldList = BridgeStyles.DrawSectionHeader($"Mesh List ({_rows.Count} items)", _foldList, "\u25B2");
+            int visibleCount = 0;
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                var r = _rows[i];
+                if (_onlySelected && !r.Selected) continue;
+                if (!PassSearch(r.Path, _search)) continue;
+                visibleCount++;
+            }
+
+            string headerText = $"Mesh List - Showing {visibleCount} of {_rows.Count}";
+            _foldList = BridgeStyles.DrawSectionHeader(headerText, _foldList, "\u25B2");
             if (!_foldList) return;
 
-            using (var sv = new EditorGUILayout.ScrollViewScope(_scroll))
+            using (var sv = new EditorGUILayout.ScrollViewScope(_scroll, GUILayout.Height(350)))
             {
                 _scroll = sv.scrollPosition;
 
@@ -355,7 +527,11 @@ namespace Playgama.Bridge.Tabs
                     return;
                 }
 
-                DrawListHeader();
+                if (visibleCount == 0)
+                {
+                    EditorGUILayout.HelpBox("No meshes match current filter.", MessageType.Info);
+                    return;
+                }
 
                 for (int i = 0; i < _rows.Count; i++)
                 {
@@ -363,47 +539,46 @@ namespace Playgama.Bridge.Tabs
                     if (_onlySelected && !r.Selected) continue;
                     if (!PassSearch(r.Path, _search)) continue;
 
-                    DrawRow(r);
+                    DrawRow(r, i);
                 }
             }
-        }
 
-        private void DrawListHeader()
-        {
-            using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
+            using (new EditorGUILayout.HorizontalScope())
             {
-                GUILayout.Label(new GUIContent("Sel", "Row selection for batch operations."), GUILayout.Width(26));
-                GUILayout.Label(new GUIContent("Name", "File name of the model asset."), GUILayout.Width(155));
-                GUILayout.Label(new GUIContent("Size", "Tracked size (bytes), '~' means estimated."), GUILayout.Width(95));
-                GUILayout.Label(new GUIContent("Compression", "ModelImporter mesh compression snapshot."), GUILayout.Width(125));
-                GUILayout.Label(new GUIContent("Read/Write", "ModelImporter isReadable snapshot."), GUILayout.Width(95));
-                GUILayout.Label(new GUIContent("Static Flags", "Static flags snapshot from the model root GameObject."), GUILayout.Width(125));
+                EditorGUILayout.LabelField($"Selected: {GetSelectedCount()} | Total: {_rows.Count}", EditorStyles.miniLabel);
                 GUILayout.FlexibleSpace();
             }
         }
 
-        private void DrawRow(Row r)
+        private void DrawRow(Row r, int index)
         {
-            Rect rect = EditorGUILayout.GetControlRect(false, 24);
+            Rect rect = EditorGUILayout.GetControlRect(false, 26);
             rect.x += 6;
             rect.y += 2;
             rect.height -= 4;
 
-            Color bg = r.ImporterFound ? BridgeStyles.StatusGray : BridgeStyles.StatusRed;
+            Color bg = StatusToColor(r.Status);
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), bg);
 
+            // Selection highlight
+            if (r.Selected)
+            {
+                EditorGUI.DrawRect(new Rect(rect.x, rect.y, 4, rect.height), BridgeStyles.BrandPurple);
+                EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, 2), new Color(0.55f, 0.36f, 0.96f, 0.4f));
+            }
+
             float availableWidth = rect.width - 12;
-            float buttonWidth = 108;
+            float buttonWidth = 85;
             float checkboxWidth = 22;
             float contentWidth = availableWidth - buttonWidth - checkboxWidth;
 
             bool compactMode = contentWidth < 400;
             bool veryCompactMode = contentWidth < 280;
 
-            float x = rect.x + 4;
+            float x = rect.x + 6;
 
             // Checkbox
-            r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 2, 18, rect.height), r.Selected);
+            r.Selected = EditorGUI.Toggle(new Rect(x, rect.y + 4, 18, rect.height - 4), r.Selected);
             x += checkboxWidth;
 
             string fileName = string.IsNullOrEmpty(r.Path) ? "—" : System.IO.Path.GetFileName(r.Path);
@@ -413,18 +588,17 @@ namespace Playgama.Bridge.Tabs
             if (r.IsSizeEstimated) size += " ~";
 
             string compression = r.ImporterFound ? ShortCompression(r.MeshCompression) : "N/A";
-            string readable = r.ImporterFound ? (r.IsReadable ? "R/W" : "—") : "N/A";
-            string sf = r.RootFound ? ShortStaticFlags(r.RootStaticFlags) : "N/A";
+            string readable = r.ImporterFound ? (r.IsReadable ? "R/W ON" : "R/W OFF") : "N/A";
 
             if (veryCompactMode)
             {
                 float nameWidth = contentWidth * 0.65f;
                 float sizeWidth = contentWidth * 0.35f;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 18), r.Path), EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 18), r.Path), EditorStyles.miniLabel);
                 x += nameWidth;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, sizeWidth, rect.height), size, EditorStyles.miniLabel);
             }
             else if (compactMode)
             {
@@ -432,49 +606,53 @@ namespace Playgama.Bridge.Tabs
                 float sizeWidth = contentWidth * 0.25f;
                 float compWidth = contentWidth * 0.35f;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 22), r.Path), EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 22), r.Path), EditorStyles.miniLabel);
                 x += nameWidth;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, sizeWidth, rect.height), size, EditorStyles.miniLabel);
                 x += sizeWidth;
 
                 string compInfo = compression;
-                if (readable == "R/W") compInfo += " R/W";
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, compWidth, rect.height), compInfo, EditorStyles.miniLabel);
+                if (r.IsReadable) compInfo += " R/W";
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, compWidth, rect.height), compInfo, EditorStyles.miniLabel);
             }
             else
             {
-                float nameWidth = Mathf.Max(100, contentWidth * 0.25f);
-                float sizeWidth = Mathf.Max(70, contentWidth * 0.14f);
-                float compWidth = Mathf.Max(80, contentWidth * 0.18f);
-                float rwWidth = Mathf.Max(40, contentWidth * 0.1f);
+                float nameWidth = Mathf.Max(100, contentWidth * 0.3f);
+                float sizeWidth = Mathf.Max(70, contentWidth * 0.15f);
+                float compWidth = Mathf.Max(60, contentWidth * 0.15f);
+                float rwWidth = Mathf.Max(60, contentWidth * 0.15f);
                 float flagsWidth = Mathf.Max(80, contentWidth * 0.2f);
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 28), r.Path), EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, nameWidth, rect.height), new GUIContent(TruncateWithEllipsis(fileName, 28), r.Path), EditorStyles.miniLabel);
                 x += nameWidth;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, sizeWidth, rect.height), size, EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, sizeWidth, rect.height), size, EditorStyles.miniLabel);
                 x += sizeWidth;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, compWidth, rect.height), compression, EditorStyles.miniLabel);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, compWidth, rect.height), compression, EditorStyles.miniLabel);
                 x += compWidth;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, rwWidth, rect.height), readable, EditorStyles.miniLabel);
+                // R/W with color
+                GUIStyle rwStyle = new GUIStyle(EditorStyles.miniLabel);
+                if (r.IsReadable) rwStyle.normal.textColor = new Color(1f, 0.6f, 0.4f);
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, rwWidth, rect.height), readable, rwStyle);
                 x += rwWidth;
 
-                EditorGUI.LabelField(new Rect(x, rect.y + 2, flagsWidth, rect.height), TruncateWithEllipsis(sf, 15), EditorStyles.miniLabel);
+                string sf = r.RootFound ? ShortStaticFlags(r.RootStaticFlags) : "N/A";
+                EditorGUI.LabelField(new Rect(x, rect.y + 4, flagsWidth, rect.height), TruncateWithEllipsis(sf, 12), EditorStyles.miniLabel);
             }
 
             // Buttons
-            Rect pingR = new Rect(rect.x + rect.width - 112, rect.y + 2, 50, rect.height);
-            if (GUI.Button(pingR, UI.Ping))
+            Rect pingR = new Rect(rect.x + rect.width - 85, rect.y + 3, 38, rect.height - 2);
+            if (GUI.Button(pingR, UI.Ping, EditorStyles.miniButton))
             {
                 var obj = AssetDatabase.LoadMainAssetAtPath(r.Path);
                 if (obj != null) EditorGUIUtility.PingObject(obj);
             }
 
-            Rect selR = new Rect(rect.x + rect.width - 58, rect.y + 2, 55, rect.height);
-            if (GUI.Button(selR, UI.Select))
+            Rect selR = new Rect(rect.x + rect.width - 43, rect.y + 3, 38, rect.height - 2);
+            if (GUI.Button(selR, UI.Select, EditorStyles.miniButton))
             {
                 var obj = AssetDatabase.LoadMainAssetAtPath(r.Path);
                 if (obj != null) Selection.activeObject = obj;
@@ -524,6 +702,34 @@ namespace Playgama.Bridge.Tabs
             return string.Join(", ", parts.ToArray());
         }
 
+        private StatusLevel EvaluateStatus(Row r)
+        {
+            if (!r.ImporterFound) return StatusLevel.Unknown;
+
+            // Uncompressed is a problem for large meshes
+            if (r.MeshCompression == ModelImporterMeshCompression.Off && r.SizeBytes > 50 * 1024)
+                return StatusLevel.Red;
+
+            // Read/Write ON uses extra memory
+            if (r.IsReadable) return StatusLevel.Yellow;
+
+            // No compression at all
+            if (r.MeshCompression == ModelImporterMeshCompression.Off) return StatusLevel.Yellow;
+
+            return StatusLevel.Green;
+        }
+
+        private static Color StatusToColor(StatusLevel s)
+        {
+            switch (s)
+            {
+                case StatusLevel.Red: return BridgeStyles.StatusRed;
+                case StatusLevel.Yellow: return BridgeStyles.StatusYellow;
+                case StatusLevel.Green: return BridgeStyles.StatusGreen;
+                default: return BridgeStyles.StatusGray;
+            }
+        }
+
         private void EnsureRebuilt()
         {
             if (!_needsRebuild || _isRebuilding) return;
@@ -536,6 +742,9 @@ namespace Playgama.Bridge.Tabs
                 try
                 {
                     _rows.Clear();
+                    _uncompressedCount = 0;
+                    _readableCount = 0;
+                    _optimizedCount = 0;
 
                     for (int i = 0; i < _buildInfo.Assets.Count; i++)
                     {
@@ -577,6 +786,13 @@ namespace Playgama.Bridge.Tabs
                             row.RootFound = true;
                             row.RootStaticFlags = GameObjectUtility.GetStaticEditorFlags(go);
                         }
+
+                        row.Status = EvaluateStatus(row);
+
+                        // Count issues
+                        if (row.MeshCompression == ModelImporterMeshCompression.Off) _uncompressedCount++;
+                        if (row.IsReadable) _readableCount++;
+                        if (row.Status == StatusLevel.Green) _optimizedCount++;
 
                         _rows.Add(row);
                     }
@@ -718,6 +934,24 @@ namespace Playgama.Bridge.Tabs
         private void SelectAll(bool v)
         {
             for (int i = 0; i < _rows.Count; i++) _rows[i].Selected = v;
+        }
+
+        private void SelectUncompressed()
+        {
+            for (int i = 0; i < _rows.Count; i++)
+                _rows[i].Selected = (_rows[i].MeshCompression == ModelImporterMeshCompression.Off);
+        }
+
+        private void SelectReadable()
+        {
+            for (int i = 0; i < _rows.Count; i++)
+                _rows[i].Selected = _rows[i].IsReadable;
+        }
+
+        private void SelectLarge()
+        {
+            for (int i = 0; i < _rows.Count; i++)
+                _rows[i].Selected = (_rows[i].SizeBytes > 50 * 1024);
         }
 
         private void InvertSelection()

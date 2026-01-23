@@ -18,105 +18,18 @@ namespace Playgama.Bridge.Tabs
         private string _status = "";
         private TargetPlatform _platform = TargetPlatform.Playgama;
 
-        // Foldout states
-        private bool _foldHeader = true;
+        private bool _foldHeader = false;
         private bool _foldPlatform = true;
+        private bool _foldMultiPlatform = true;
         private bool _foldInsights = true;
         private bool _foldRules = true;
         private bool _foldReport = false;
 
-        private static class UI
-        {
-            public static readonly GUIContent HeaderTitle = new GUIContent(
-                "Platform Checks (Build Size Only)",
-                "Runs build-size-focused checks against the latest Playgama Bridge analysis data.\n" +
-                "This tab does not change anything in the project.");
-
-            public static readonly GUIContent HeaderHelp = new GUIContent(
-                "This tab contains ONLY build-size-related guidance.\n" +
-                "- No auto-fixes\n" +
-                "- No non-size rules\n" +
-                "- No platform SDK assumptions beyond what the rules describe",
-                "High-level rules of engagement: report only, do not modify project.");
-
-            public static readonly GUIContent TargetPlatformTitle = new GUIContent(
-                "Target Platform",
-                "Select which platform's build-size requirements/guidance to evaluate.\n" +
-                "The selection is saved in EditorPrefs.");
-
-            public static readonly GUIContent PlatformField = new GUIContent(
-                "Platform",
-                "The platform whose rule set will be evaluated.");
-
-            public static readonly GUIContent BuildSizeReal = new GUIContent(
-                "Total Build Size (real)",
-                "Measured from the actual build output size, not estimates.");
-
-            public static readonly GUIContent AnalysisMode = new GUIContent(
-                "Analysis Mode",
-                "Which Playgama Bridge analysis source was used to estimate per-asset size mapping.");
-
-            public static readonly GUIContent NoData = new GUIContent(
-                "No analysis data yet. Run Build & Analyze first.",
-                "Platform checks rely on BuildInfo. Without analysis data, rules may fail or show generic messages.");
-
-            public static readonly GUIContent InsightsTitle = new GUIContent(
-                "Insights",
-                "Top failing rules (highest severity first). Shows only a few to keep focus.");
-
-            public static readonly GUIContent NoRulesLoaded = new GUIContent(
-                "No rules loaded.",
-                "No rules were returned for the selected platform (PlatformRules.GetRules).");
-
-            public static readonly GUIContent LooksGood = new GUIContent(
-                "Looks good. No build-size issues detected by current rules.",
-                "All rules passed for the selected platform.");
-
-            public static readonly GUIContent TopProblems = new GUIContent(
-                "Top problems (highest severity first):",
-                "This is a short list of the most severe failures so you can prioritize fixes.");
-
-            public static readonly GUIContent RulesTitle = new GUIContent(
-                "Rules",
-                "Full list of evaluated rules and their pass/fail result.");
-
-            public static readonly GUIContent NoRulesAvailable = new GUIContent(
-                "No rules available.",
-                "The selected platform returned an empty rule list.");
-
-            public static readonly GUIContent ReportTitle = new GUIContent(
-                "Report",
-                "Generate a text report of the current evaluation and copy it to clipboard.");
-
-            public static readonly GUIContent CopyReport = new GUIContent(
-                "Copy report to clipboard",
-                "Copies platform, build size, analysis mode, and rule results.\n" +
-                "Useful for sharing with teammates or pasting into a ticket.");
-
-            public static readonly GUIContent ReportHelp = new GUIContent(
-                "The report includes platform, real build size, analysis mode, and rule results.",
-                "This is a text-only summary for quick communication.");
-
-            public static readonly GUIContent PassLabel = new GUIContent(
-                "PASS",
-                "Rule passed for the current BuildInfo snapshot.");
-
-            public static readonly GUIContent FailLabel = new GUIContent(
-                "FAIL",
-                "Rule failed for the current BuildInfo snapshot.");
-
-            public static readonly GUIContent StatusSaved = new GUIContent(
-                "Platform selection saved.",
-                "The selected platform was persisted to EditorPrefs.");
-        }
-
         public void Init(BuildInfo buildInfo)
         {
             _buildInfo = buildInfo;
-
             string saved = EditorPrefs.GetString(Pref_Platform, TargetPlatform.Playgama.ToString());
-            if (!Enum.TryParse(saved, out _platform))
-                _platform = TargetPlatform.Playgama;
+            if (!Enum.TryParse(saved, out _platform)) _platform = TargetPlatform.Playgama;
         }
 
         public void OnGUI()
@@ -129,11 +42,15 @@ namespace Playgama.Bridge.Tabs
                 DrawPlatformSelector();
 
                 if (_buildInfo == null || !_buildInfo.HasData)
-                    EditorGUILayout.HelpBox(UI.NoData.text, MessageType.Warning);
+                {
+                    EditorGUILayout.HelpBox("No analysis data yet. Run Build & Analyze first.", MessageType.Warning);
+                    return;
+                }
 
                 var rules = PlatformRules.GetRules(_platform);
                 var results = EvaluateRules(rules, _buildInfo);
 
+                DrawMultiPlatformStatus();
                 DrawInsights(results);
                 DrawRules(results);
                 DrawCopyReport(results);
@@ -149,7 +66,7 @@ namespace Playgama.Bridge.Tabs
             if (_foldHeader)
             {
                 BridgeStyles.BeginCard();
-                EditorGUILayout.LabelField("Build-size-focused checks only. No auto-fixes, no non-size rules.", BridgeStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("Build-size-focused checks only. No auto-fixes.", BridgeStyles.SubtitleStyle);
                 BridgeStyles.EndCard();
             }
         }
@@ -157,197 +74,296 @@ namespace Playgama.Bridge.Tabs
         private void DrawPlatformSelector()
         {
             _foldPlatform = BridgeStyles.DrawSectionHeader("Target Platform", _foldPlatform, "\u2316");
-            if (_foldPlatform)
+            if (!_foldPlatform) return;
+
+            BridgeStyles.BeginCard();
+
+            var newPlat = (TargetPlatform)EditorGUILayout.EnumPopup("Platform", _platform);
+            if (newPlat != _platform)
             {
-                BridgeStyles.BeginCard();
-                var newPlat = (TargetPlatform)EditorGUILayout.EnumPopup(UI.PlatformField, _platform);
-                if (newPlat != _platform)
+                _platform = newPlat;
+                EditorPrefs.SetString(Pref_Platform, _platform.ToString());
+            }
+
+            if (_buildInfo != null && _buildInfo.HasData)
+            {
+                GUILayout.Space(4);
+
+                // Build size with visual indicator
+                long size = _buildInfo.TotalBuildSizeBytes;
+                long limit = PlatformRules.GetSizeLimit(_platform);
+                float pct = limit > 0 ? (float)size / limit : 0f;
+                bool overLimit = pct > 1f;
+
+                using (new EditorGUILayout.HorizontalScope())
                 {
-                    _platform = newPlat;
-                    EditorPrefs.SetString(Pref_Platform, _platform.ToString());
-                    _status = UI.StatusSaved.text;
+                    GUILayout.Label("Build Size:", GUILayout.Width(80));
+                    GUIStyle sizeStyle = new GUIStyle(EditorStyles.boldLabel)
+                    {
+                        normal = { textColor = overLimit ? new Color(1f, 0.4f, 0.4f) : pct > 0.8f ? new Color(1f, 0.8f, 0.2f) : new Color(0.4f, 0.9f, 0.4f) }
+                    };
+                    GUILayout.Label(SharedTypes.FormatBytes(size), sizeStyle);
+
+                    if (limit > 0)
+                    {
+                        GUILayout.Label($"/ {SharedTypes.FormatBytes(limit)} ({pct * 100:0}%)", EditorStyles.miniLabel);
+                    }
                 }
 
-                if (_buildInfo != null && _buildInfo.HasData)
+                // Progress bar
+                if (limit > 0)
                 {
-                    EditorGUILayout.LabelField(UI.BuildSizeReal, SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes));
-                    EditorGUILayout.LabelField(UI.AnalysisMode, _buildInfo.DataMode.ToString());
+                    Rect barRect = EditorGUILayout.GetControlRect(false, 8);
+                    barRect.x += 4; barRect.width -= 8;
+                    EditorGUI.DrawRect(barRect, new Color(0.2f, 0.2f, 0.2f));
+                    float fillWidth = Mathf.Min(barRect.width * pct, barRect.width);
+                    Color barColor = overLimit ? BridgeStyles.StatusRed : pct > 0.8f ? BridgeStyles.StatusYellow : BridgeStyles.StatusGreen;
+                    EditorGUI.DrawRect(new Rect(barRect.x, barRect.y, fillWidth, barRect.height), barColor);
                 }
-                BridgeStyles.EndCard();
+
+                EditorGUILayout.LabelField("Analysis Mode", _buildInfo.DataMode.ToString());
             }
+
+            BridgeStyles.EndCard();
+        }
+
+        private void DrawMultiPlatformStatus()
+        {
+            _foldMultiPlatform = BridgeStyles.DrawSectionHeader("Multi-Platform Overview", _foldMultiPlatform, "\u2605");
+            if (!_foldMultiPlatform) return;
+
+            BridgeStyles.BeginCard();
+
+            long buildSize = _buildInfo?.TotalBuildSizeBytes ?? 0;
+
+            // Platform compatibility grid
+            var platforms = (TargetPlatform[])Enum.GetValues(typeof(TargetPlatform));
+
+            foreach (var plat in platforms)
+            {
+                long limit = PlatformRules.GetSizeLimit(plat);
+                if (limit <= 0) continue;
+
+                bool fits = buildSize <= limit;
+                float pct = (float)buildSize / limit;
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    // Status icon
+                    string icon = fits ? "✓" : "✗";
+                    Color iconColor = fits ? new Color(0.4f, 0.9f, 0.4f) : new Color(1f, 0.4f, 0.4f);
+                    GUIStyle iconStyle = new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = iconColor } };
+                    GUILayout.Label(icon, iconStyle, GUILayout.Width(20));
+
+                    // Platform name
+                    GUILayout.Label(plat.ToString(), GUILayout.Width(100));
+
+                    // Mini progress bar
+                    Rect barRect = GUILayoutUtility.GetRect(100, 12, GUILayout.Width(100));
+                    EditorGUI.DrawRect(barRect, new Color(0.2f, 0.2f, 0.2f));
+                    float fillWidth = Mathf.Min(barRect.width * pct, barRect.width);
+                    Color barColor = !fits ? BridgeStyles.StatusRed : pct > 0.8f ? BridgeStyles.StatusYellow : BridgeStyles.StatusGreen;
+                    EditorGUI.DrawRect(new Rect(barRect.x, barRect.y, fillWidth, barRect.height), barColor);
+
+                    // Size info
+                    GUILayout.Label($"{SharedTypes.FormatBytes(limit)} limit", EditorStyles.miniLabel, GUILayout.Width(80));
+
+                    // Percentage
+                    string pctText = $"{pct * 100:0}%";
+                    GUIStyle pctStyle = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = fits ? Color.gray : new Color(1f, 0.4f, 0.4f) } };
+                    GUILayout.Label(pctText, pctStyle);
+
+                    GUILayout.FlexibleSpace();
+                }
+            }
+
+            BridgeStyles.EndCard();
         }
 
         private void DrawInsights(List<RuleResult> results)
         {
-            _foldInsights = BridgeStyles.DrawSectionHeader("Insights", _foldInsights, "\u26A0");
+            int failCount = results?.Count(r => !r.Passed) ?? 0;
+            int passCount = results?.Count(r => r.Passed) ?? 0;
+            bool allPassed = failCount == 0 && passCount > 0;
+
+            string headerText = allPassed ? "Insights ✓ All Passed!" : $"Insights ({failCount} issues)";
+            _foldInsights = BridgeStyles.DrawSectionHeader(headerText, _foldInsights, "\u26A0");
             if (!_foldInsights) return;
 
             BridgeStyles.BeginCard();
+
             if (results == null || results.Count == 0)
             {
-                EditorGUILayout.LabelField(UI.NoRulesLoaded.text, BridgeStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("No rules loaded.", BridgeStyles.SubtitleStyle);
                 BridgeStyles.EndCard();
                 return;
             }
 
+            // Celebratory message if all passed
+            if (allPassed)
+            {
+                Rect celebRect = EditorGUILayout.GetControlRect(false, 50);
+                EditorGUI.DrawRect(celebRect, new Color(0.15f, 0.4f, 0.15f, 0.4f));
+
+                GUIStyle celebStyle = new GUIStyle(EditorStyles.boldLabel)
+                {
+                    fontSize = 16,
+                    alignment = TextAnchor.MiddleCenter,
+                    normal = { textColor = new Color(0.4f, 0.95f, 0.4f) }
+                };
+                GUI.Label(celebRect, "All checks passed! Your build is ready.", celebStyle);
+
+                BridgeStyles.EndCard();
+                return;
+            }
+
+            // Show failing rules
             var failing = results
                 .Where(r => !r.Passed)
                 .OrderByDescending(r => (int)r.Rule.Severity)
                 .ThenBy(r => r.Rule.Id)
-                .Take(3)
+                .Take(5)
                 .ToList();
 
-            if (failing.Count == 0)
-            {
-                EditorGUILayout.LabelField(UI.LooksGood.text, BridgeStyles.SubtitleStyle);
-                BridgeStyles.EndCard();
-                return;
-            }
-
-            EditorGUILayout.LabelField("Top problems (highest severity first):", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField("Top issues:", EditorStyles.boldLabel);
+            GUILayout.Space(4);
 
             for (int i = 0; i < failing.Count; i++)
             {
                 var rr = failing[i];
 
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    GUILayout.Label(
-                        new GUIContent($"{i + 1}. [{rr.Rule.Severity}] {rr.Rule.Title}",
-                            "A top failing rule, sorted by severity then id."),
-                        EditorStyles.wordWrappedLabel);
-                }
+                Rect rowRect = EditorGUILayout.GetControlRect(false, 24);
+                Color bgColor = rr.Rule.Severity == RuleSeverity.Critical ? new Color(0.5f, 0.2f, 0.2f, 0.3f) : new Color(0.5f, 0.4f, 0.1f, 0.3f);
+                EditorGUI.DrawRect(rowRect, bgColor);
+
+                // Severity badge
+                string sevText = rr.Rule.Severity == RuleSeverity.Critical ? "CRITICAL" : "WARNING";
+                Color sevColor = rr.Rule.Severity == RuleSeverity.Critical ? BridgeStyles.StatusRed : BridgeStyles.StatusYellow;
+
+                Rect badgeRect = new Rect(rowRect.x + 4, rowRect.y + 4, 60, 16);
+                EditorGUI.DrawRect(badgeRect, sevColor);
+                GUIStyle badgeStyle = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleCenter, normal = { textColor = Color.white } };
+                GUI.Label(badgeRect, sevText, badgeStyle);
+
+                // Title
+                GUI.Label(new Rect(rowRect.x + 70, rowRect.y + 4, rowRect.width - 80, 16), rr.Rule.Title, EditorStyles.label);
 
                 if (!string.IsNullOrEmpty(rr.Message))
-                    EditorGUILayout.LabelField(new GUIContent("\u2192 " + rr.Message, "Rule-specific guidance/details."),
-                        BridgeStyles.SubtitleStyle);
-
-                GUILayout.Space(4);
+                {
+                    EditorGUILayout.LabelField("  → " + rr.Message, BridgeStyles.SubtitleStyle);
+                }
             }
+
             BridgeStyles.EndCard();
         }
 
         private void DrawRules(List<RuleResult> results)
         {
-            int ruleCount = results?.Count ?? 0;
-            _foldRules = BridgeStyles.DrawSectionHeader($"All Rules ({ruleCount} items)", _foldRules, "\u2714");
+            int passCount = results?.Count(r => r.Passed) ?? 0;
+            int failCount = results?.Count(r => !r.Passed) ?? 0;
+            string headerText = $"All Rules ({passCount} passed, {failCount} failed)";
+
+            _foldRules = BridgeStyles.DrawSectionHeader(headerText, _foldRules, "\u2714");
             if (!_foldRules) return;
 
             BridgeStyles.BeginCard();
+
             if (results == null || results.Count == 0)
             {
-                EditorGUILayout.LabelField(UI.NoRulesAvailable.text, BridgeStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("No rules available.", BridgeStyles.SubtitleStyle);
                 BridgeStyles.EndCard();
                 return;
             }
 
-            for (int i = 0; i < results.Count; i++)
-                DrawRuleRow(results[i]);
+            // Sort: failures first, then by severity
+            var sorted = results
+                .OrderBy(r => r.Passed ? 1 : 0)
+                .ThenByDescending(r => (int)r.Rule.Severity)
+                .ToList();
+
+            foreach (var rr in sorted)
+            {
+                Rect r = EditorGUILayout.GetControlRect(false, 22);
+                r.x += 4; r.width -= 8;
+
+                Color bg = rr.Passed ? new Color(0.2f, 0.4f, 0.2f, 0.3f) : SeverityColor(rr.Rule.Severity);
+                EditorGUI.DrawRect(r, bg);
+
+                // Pass/Fail badge
+                string badge = rr.Passed ? "PASS" : "FAIL";
+                Rect badgeR = new Rect(r.x + 4, r.y + 3, 40, 16);
+                EditorGUI.DrawRect(badgeR, rr.Passed ? BridgeStyles.StatusGreen : BridgeStyles.StatusRed);
+                GUIStyle badgeStyle = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleCenter, normal = { textColor = Color.white }, fontStyle = FontStyle.Bold };
+                GUI.Label(badgeR, badge, badgeStyle);
+
+                // Severity
+                GUI.Label(new Rect(r.x + 50, r.y + 3, 60, 16), rr.Rule.Severity.ToString(), EditorStyles.miniLabel);
+
+                // Title
+                GUI.Label(new Rect(r.x + 115, r.y + 3, r.width - 120, 16), rr.Rule.Title, EditorStyles.miniLabel);
+
+                if (!string.IsNullOrEmpty(rr.Message) && !rr.Passed)
+                {
+                    EditorGUILayout.LabelField("    " + rr.Message, EditorStyles.wordWrappedMiniLabel);
+                }
+            }
+
             BridgeStyles.EndCard();
-        }
-
-        private void DrawRuleRow(RuleResult rr)
-        {
-            Rect r = EditorGUILayout.GetControlRect(false, 24);
-            r.x += 6;
-            r.y += 2;
-            r.height -= 4;
-
-            Color bg = rr.Passed ? BridgeStyles.StatusGreen : SeverityColor(rr.Rule.Severity);
-            EditorGUI.DrawRect(new Rect(r.x, r.y, r.width, r.height), bg);
-
-            Rect iconR = new Rect(r.x + 6, r.y + 2, 60, r.height);
-            EditorGUI.LabelField(
-                iconR,
-                rr.Passed ? UI.PassLabel : UI.FailLabel,
-                EditorStyles.miniBoldLabel);
-
-            Rect sevR = new Rect(r.x + 66, r.y + 2, 80, r.height);
-            EditorGUI.LabelField(
-                sevR,
-                new GUIContent(rr.Rule.Severity.ToString(), "Rule severity (used for prioritization)."),
-                EditorStyles.miniLabel);
-
-            Rect titleR = new Rect(r.x + 150, r.y + 2, r.width - 150, r.height);
-            EditorGUI.LabelField(
-                titleR,
-                new GUIContent(rr.Rule.Title, $"Rule ID: {rr.Rule.Id}\nSeverity: {rr.Rule.Severity}"),
-                EditorStyles.miniLabel);
-
-            if (!string.IsNullOrEmpty(rr.Message))
-                EditorGUILayout.LabelField(new GUIContent("  " + rr.Message, "Rule output / guidance."),
-                    EditorStyles.wordWrappedMiniLabel);
         }
 
         private static Color SeverityColor(RuleSeverity s)
         {
             switch (s)
             {
-                case RuleSeverity.Critical: return BridgeStyles.StatusRed;
-                case RuleSeverity.Warning: return BridgeStyles.StatusYellow;
+                case RuleSeverity.Critical: return new Color(0.5f, 0.2f, 0.2f, 0.4f);
+                case RuleSeverity.Warning: return new Color(0.5f, 0.4f, 0.15f, 0.4f);
                 default: return BridgeStyles.StatusGray;
             }
         }
 
         private void DrawCopyReport(List<RuleResult> results)
         {
-            _foldReport = BridgeStyles.DrawSectionHeader("Copy Report", _foldReport, "\u2398");
+            _foldReport = BridgeStyles.DrawSectionHeader("Export Report", _foldReport, "\u2398");
             if (!_foldReport) return;
 
             BridgeStyles.BeginCard();
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (BridgeStyles.DrawAccentButton(UI.CopyReport, GUILayout.Height(28)))
+                if (BridgeStyles.DrawAccentButton(new GUIContent("Copy Report to Clipboard"), GUILayout.Height(26)))
                 {
-                    string text = BuildReportText(results);
-                    EditorGUIUtility.systemCopyBuffer = text;
-                    _status = "Report copied to clipboard.";
+                    EditorGUIUtility.systemCopyBuffer = BuildReportText(results);
+                    _status = "Report copied!";
                 }
-
                 GUILayout.FlexibleSpace();
             }
-
-            EditorGUILayout.LabelField("Includes platform, real build size, analysis mode, and rule results.", BridgeStyles.SubtitleStyle);
+            EditorGUILayout.LabelField("Includes platform, build size, and all rule results.", BridgeStyles.SubtitleStyle);
             BridgeStyles.EndCard();
         }
 
         private string BuildReportText(List<RuleResult> results)
         {
             var sb = new StringBuilder(2048);
-
-            sb.AppendLine("Playgama Bridge Platform Checks Report (Build Size Only)");
-            sb.AppendLine("------------------------------------------------");
-            sb.AppendLine("Platform: " + _platform);
+            sb.AppendLine("Playgama Bridge Platform Checks Report");
+            sb.AppendLine("--------------------------------------");
+            sb.AppendLine($"Platform: {_platform}");
 
             if (_buildInfo != null && _buildInfo.HasData)
             {
-                sb.AppendLine("Total Build Size (real): " + SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes));
-                sb.AppendLine("Analysis Mode: " + _buildInfo.DataMode);
-                sb.AppendLine("Tracked Assets: " + _buildInfo.TrackedAssetCount);
-
-                string trackedBytes = SharedTypes.FormatBytes(_buildInfo.TrackedBytes) +
-                                      (_buildInfo.DataMode == BuildDataMode.DependenciesFallback ? " (estimated)" : "");
-                sb.AppendLine("Tracked Bytes: " + trackedBytes);
-            }
-            else
-            {
-                sb.AppendLine(UI.NoData.text);
+                sb.AppendLine($"Build Size: {SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes)}");
+                sb.AppendLine($"Analysis Mode: {_buildInfo.DataMode}");
+                sb.AppendLine($"Assets: {_buildInfo.TrackedAssetCount}");
             }
 
             sb.AppendLine();
             sb.AppendLine("Rules:");
-
             if (results != null)
             {
-                for (int i = 0; i < results.Count; i++)
+                foreach (var rr in results)
                 {
-                    var rr = results[i];
                     sb.AppendLine($"- {(rr.Passed ? "PASS" : "FAIL")} [{rr.Rule.Severity}] {rr.Rule.Title}");
-                    if (!string.IsNullOrEmpty(rr.Message))
-                        sb.AppendLine("  " + rr.Message);
+                    if (!string.IsNullOrEmpty(rr.Message)) sb.AppendLine($"  {rr.Message}");
                 }
             }
-
             return sb.ToString();
         }
 
@@ -360,44 +376,17 @@ namespace Playgama.Bridge.Tabs
 
         private static List<RuleResult> EvaluateRules(List<PlatformRule> rules, BuildInfo bi)
         {
-            var list = new List<RuleResult>(rules != null ? rules.Count : 0);
+            var list = new List<RuleResult>(rules?.Count ?? 0);
             if (rules == null) return list;
 
-            for (int i = 0; i < rules.Count; i++)
+            foreach (var rule in rules)
             {
-                var rule = rules[i];
                 bool pass = true;
                 string msg = "";
-
-                try
-                {
-                    pass = rule.Check != null ? rule.Check(bi) : true;
-                }
-                catch (Exception ex)
-                {
-                    pass = false;
-                    msg = "Rule check exception: " + ex.Message;
-                }
-
-                try
-                {
-                    if (rule.GetMessage != null)
-                        msg = rule.GetMessage(bi);
-                }
-                catch (Exception ex)
-                {
-                    if (string.IsNullOrEmpty(msg))
-                        msg = "Rule message exception: " + ex.Message;
-                }
-
-                list.Add(new RuleResult
-                {
-                    Rule = rule,
-                    Passed = pass,
-                    Message = msg
-                });
+                try { pass = rule.Check?.Invoke(bi) ?? true; } catch (Exception ex) { pass = false; msg = ex.Message; }
+                try { if (rule.GetMessage != null) msg = rule.GetMessage(bi); } catch { }
+                list.Add(new RuleResult { Rule = rule, Passed = pass, Message = msg });
             }
-
             return list;
         }
     }
