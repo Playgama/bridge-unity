@@ -249,7 +249,19 @@ namespace Playgama.Bridge.Tabs
         private static void EnsureDir(string p) { if (!string.IsNullOrEmpty(p) && !Directory.Exists(p)) Directory.CreateDirectory(p); }
 
         private string CompressionLabel(WebGLCompressionState s) { switch (s) { case WebGLCompressionState.Disabled: return "Disabled"; case WebGLCompressionState.Enabled_Brotli: return "Brotli"; case WebGLCompressionState.Enabled_Gzip: return "Gzip"; default: return "Unknown"; } }
-        private string CodeOptLabel(CodeOptimizationState s) { switch (s) { case CodeOptimizationState.DiskSizeLTO: return "Disk Size (LTO)"; case CodeOptimizationState.DiskSize: return "Disk Size"; case CodeOptimizationState.RuntimeSpeedLTO: return "Speed (LTO)"; case CodeOptimizationState.Speed: return "Speed"; case CodeOptimizationState.ShorterBuildTime: return "Shorter Build"; case CodeOptimizationState.None: return "None"; default: return "Unknown"; } }
+        private string CodeOptLabel(CodeOptimizationState s)
+        {
+            switch (s)
+            {
+                case CodeOptimizationState.DiskSizeLTO: return "Disk Size (LTO)";
+                case CodeOptimizationState.DiskSize: return "Disk Size";
+                case CodeOptimizationState.RuntimeSpeedLTO: return "Runtime Speed (LTO)";
+                case CodeOptimizationState.Speed: return "Runtime Speed";
+                case CodeOptimizationState.ShorterBuildTime: return "Shorter Build Time";
+                case CodeOptimizationState.None: return "None";
+                default: return "Unknown";
+            }
+        }
 
         private void ShowCompressionMenu()
         {
@@ -263,11 +275,22 @@ namespace Playgama.Bridge.Tabs
         private void ShowCodeOptMenu()
         {
             var m = new GenericMenu();
-            m.AddItem(new GUIContent("Disk Size (LTO) - Smallest"), _codeOptimizationState == CodeOptimizationState.DiskSizeLTO, () => TrySetCodeOptimization(CodeOptimizationState.DiskSizeLTO));
-            m.AddItem(new GUIContent("Disk Size"), _codeOptimizationState == CodeOptimizationState.DiskSize, () => TrySetCodeOptimization(CodeOptimizationState.DiskSize));
+            m.AddItem(new GUIContent("Disk Size (LTO) - Smallest"), _codeOptimizationState == CodeOptimizationState.DiskSizeLTO, () => SetCodeOpt(CodeOptimizationState.DiskSizeLTO));
+            m.AddItem(new GUIContent("Disk Size"), _codeOptimizationState == CodeOptimizationState.DiskSize, () => SetCodeOpt(CodeOptimizationState.DiskSize));
             m.AddSeparator("");
-            m.AddItem(new GUIContent("Shorter Build Time"), _codeOptimizationState == CodeOptimizationState.ShorterBuildTime, () => TrySetCodeOptimization(CodeOptimizationState.ShorterBuildTime));
+            m.AddItem(new GUIContent("Runtime Speed (LTO)"), _codeOptimizationState == CodeOptimizationState.RuntimeSpeedLTO, () => SetCodeOpt(CodeOptimizationState.RuntimeSpeedLTO));
+            m.AddItem(new GUIContent("Runtime Speed"), _codeOptimizationState == CodeOptimizationState.Speed, () => SetCodeOpt(CodeOptimizationState.Speed));
+            m.AddSeparator("");
+            m.AddItem(new GUIContent("Shorter Build Time - Fastest"), _codeOptimizationState == CodeOptimizationState.ShorterBuildTime, () => SetCodeOpt(CodeOptimizationState.ShorterBuildTime));
             m.ShowAsContext();
+        }
+
+        private void SetCodeOpt(CodeOptimizationState state)
+        {
+            if (TrySetCodeOptimization(state))
+            {
+                _codeOptimizationState = state;
+            }
         }
 
         private static void ReadWebGLCompression(out WebGLCompressionState state)
@@ -284,12 +307,53 @@ namespace Playgama.Bridge.Tabs
         private static void ReadCodeOptimization(out CodeOptimizationState state)
         {
             state = CodeOptimizationState.Unknown;
-            try { var m = typeof(EditorUserBuildSettings).GetMethod("GetPlatformSettings", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string), typeof(string) }, null); if (m != null) { var r = m.Invoke(null, new object[] { "WebGL", "CodeOptimization" })?.ToString().ToLowerInvariant(); if (!string.IsNullOrEmpty(r)) { if (r.Contains("disksizelto") || (r.Contains("disk") && r.Contains("lto"))) state = CodeOptimizationState.DiskSizeLTO; else if (r.Contains("disksize")) state = CodeOptimizationState.DiskSize; else if (r.Contains("shorterbuildtime")) state = CodeOptimizationState.ShorterBuildTime; else if (r.Contains("speed") && r.Contains("lto")) state = CodeOptimizationState.RuntimeSpeedLTO; else if (r.Contains("speed")) state = CodeOptimizationState.Speed; } } } catch { }
+            try
+            {
+                var m = typeof(EditorUserBuildSettings).GetMethod("GetPlatformSettings", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string), typeof(string) }, null);
+                if (m != null)
+                {
+                    var r = m.Invoke(null, new object[] { "WebGL", "CodeOptimization" })?.ToString().ToLowerInvariant();
+                    if (!string.IsNullOrEmpty(r))
+                    {
+                        if (r.Contains("disksizelto") || r == "disksizelto")
+                            state = CodeOptimizationState.DiskSizeLTO;
+                        else if (r.Contains("disksize") || r == "disksize")
+                            state = CodeOptimizationState.DiskSize;
+                        else if (r.Contains("runtimespeedlto") || r == "runtimespeedlto")
+                            state = CodeOptimizationState.RuntimeSpeedLTO;
+                        else if (r.Contains("runtimespeed") || r == "runtimespeed")
+                            state = CodeOptimizationState.Speed;
+                        else if (r.Contains("shorterbuildtime") || r == "shorterbuildtime")
+                            state = CodeOptimizationState.ShorterBuildTime;
+                    }
+                }
+            }
+            catch { }
         }
 
         internal static bool TrySetCodeOptimization(CodeOptimizationState d)
         {
-            try { var m = typeof(EditorUserBuildSettings).GetMethod("SetPlatformSettings", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string), typeof(string), typeof(string) }, null); if (m != null) { string v = d == CodeOptimizationState.DiskSizeLTO ? "diskSizeLto" : d == CodeOptimizationState.DiskSize ? "diskSize" : d == CodeOptimizationState.ShorterBuildTime ? "shorterBuildTime" : d == CodeOptimizationState.RuntimeSpeedLTO ? "runtimeSpeedLto" : "speed"; m.Invoke(null, new object[] { "WebGL", "CodeOptimization", v }); return true; } } catch { } return false;
+            try
+            {
+                var m = typeof(EditorUserBuildSettings).GetMethod("SetPlatformSettings", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string), typeof(string), typeof(string) }, null);
+                if (m != null)
+                {
+                    string v;
+                    switch (d)
+                    {
+                        case CodeOptimizationState.DiskSizeLTO: v = "diskSizeLto"; break;
+                        case CodeOptimizationState.DiskSize: v = "diskSize"; break;
+                        case CodeOptimizationState.RuntimeSpeedLTO: v = "runtimeSpeedLto"; break;
+                        case CodeOptimizationState.Speed: v = "runtimeSpeed"; break;
+                        case CodeOptimizationState.ShorterBuildTime: v = "shorterBuildTime"; break;
+                        default: v = "shorterBuildTime"; break;
+                    }
+                    m.Invoke(null, new object[] { "WebGL", "CodeOptimization", v });
+                    return true;
+                }
+            }
+            catch { }
+            return false;
         }
 
         private static void InvokeBuildAnalyzer(string p)

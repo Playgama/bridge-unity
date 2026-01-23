@@ -26,14 +26,9 @@ namespace Playgama.Bridge.Tabs
         private int _batchCrunchQuality = 50;
         private bool _batchDisableReadWrite = true;
 
-        // Tinify state
-        private bool _tinifyRunning = false;
-        private string _tinifyStatus = "";
-
         // Foldout states
         private bool _foldHeader = true;
         private bool _foldBatch = true;
-        private bool _foldTinify = false;
         private bool _foldList = true;
 
         // Status counts for quick reference
@@ -80,7 +75,7 @@ namespace Playgama.Bridge.Tabs
             public static readonly GUIContent Refresh = new GUIContent(
                 "Refresh",
                 "Rebuild the internal texture list from the latest analysis data.\n" +
-                "Use this if you changed import settings externally or after running Tinify.");
+                "Use this if you changed import settings externally.");
 
             public static readonly GUIContent SearchLabel = new GUIContent(
                 "Search",
@@ -138,11 +133,6 @@ namespace Playgama.Bridge.Tabs
                 "If enabled: turns off 'Read/Write' on selected textures.\n" +
                 "This often saves a lot of memory on WebGL because textures don't need a CPU-readable copy.");
 
-            public static readonly GUIContent TinifyButton = new GUIContent(
-                "Tinify Selected (PNG/JPG)",
-                "Optimize source PNG/JPG/JPEG files using the Tinify (TinyPNG) API.\n" +
-                "WARNING: This overwrites files on disk and reimports assets. Undo is not available.");
-
             public static readonly GUIContent Ping = new GUIContent(
                 "Ping",
                 "Highlights the asset in the Project window so you can locate it quickly.");
@@ -189,14 +179,10 @@ namespace Playgama.Bridge.Tabs
                 EnsureRebuilt();
 
                 DrawBatchPanel();
-                DrawTinifyPanel();
                 DrawList();
 
                 if (!string.IsNullOrEmpty(_status))
                     EditorGUILayout.HelpBox(_status, MessageType.None);
-
-                if (!string.IsNullOrEmpty(_tinifyStatus))
-                    EditorGUILayout.HelpBox(_tinifyStatus, MessageType.None);
             }
         }
 
@@ -389,147 +375,6 @@ namespace Playgama.Bridge.Tabs
                 default:
                     return "Max 1024px, Compressed, Crunch Q50, R/W Off - Good balance";
             }
-        }
-
-        private void DrawTinifyPanel()
-        {
-            _foldTinify = BridgeStyles.DrawSectionHeader("Tinify (TinyPNG)", _foldTinify, "\u26A1");
-            if (_foldTinify)
-            {
-                BridgeStyles.BeginCard();
-                bool hasKey = TinifyUtility.HasKey();
-
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    EditorGUILayout.LabelField("API Key Status:", GUILayout.Width(100));
-
-                    if (hasKey)
-                    {
-                        Color oldColor = GUI.color;
-                        GUI.color = BridgeStyles.StatusGreen;
-                        EditorGUILayout.LabelField("\u2714 Configured", EditorStyles.boldLabel);
-                        GUI.color = oldColor;
-                    }
-                    else
-                    {
-                        Color oldColor = GUI.color;
-                        GUI.color = BridgeStyles.StatusYellow;
-                        EditorGUILayout.LabelField("\u26A0 Not Set", EditorStyles.boldLabel);
-                        GUI.color = oldColor;
-
-                        if (GUILayout.Button("Set up in Settings \u2192", EditorStyles.miniButton, GUILayout.Width(130)))
-                        {
-                            OpenSettingsTab();
-                        }
-                    }
-
-                    GUILayout.FlexibleSpace();
-                }
-
-                GUILayout.Space(4);
-                EditorGUILayout.LabelField("Compresses source PNG/JPG files up to 70%. Files are overwritten on disk.", BridgeStyles.SubtitleStyle);
-
-                GUILayout.Space(6);
-
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    int selectedCount = GetSelectedCount();
-                    GUI.enabled = !_tinifyRunning && hasKey && selectedCount > 0;
-
-                    string btnText = selectedCount > 0
-                        ? $"Tinify {selectedCount} Selected Texture(s)"
-                        : "Select Textures First";
-
-                    if (BridgeStyles.DrawAccentButton(new GUIContent(btnText, UI.TinifyButton.tooltip), GUILayout.Height(28)))
-                        TinifySelected();
-
-                    GUI.enabled = true;
-
-                    GUILayout.FlexibleSpace();
-                }
-
-                if (!hasKey)
-                {
-                    GUILayout.Space(4);
-                    if (GUILayout.Button("Get free API key at tinypng.com/developers \u2197", EditorStyles.linkLabel))
-                    {
-                        Application.OpenURL("https://tinypng.com/developers");
-                    }
-                }
-
-                BridgeStyles.EndCard();
-            }
-        }
-
-        private void OpenSettingsTab()
-        {
-            var window = EditorWindow.GetWindow<BridgeWindow>();
-            if (window != null)
-            {
-                var field = typeof(BridgeWindow).GetField("_selectedTab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (field != null)
-                {
-                    field.SetValue(window, 9); // Settings tab index
-                    EditorPrefs.SetInt("BRIDGE_SELECTED_TAB", 9);
-                    window.Repaint();
-                }
-            }
-        }
-
-        private void TinifySelected()
-        {
-            if (_tinifyRunning) return;
-
-            if (!TinifyUtility.CanUseTinify(out string reason))
-            {
-                _tinifyStatus = reason;
-                return;
-            }
-
-            var paths = CollectSelectedTexturePaths();
-            if (paths.Count == 0)
-            {
-                _tinifyStatus = "No selected textures.";
-                return;
-            }
-
-            _tinifyRunning = true;
-            _tinifyStatus = "Starting Tinify...";
-
-            TinifyUtility.OptimizeAssetsAsync(
-                paths,
-                onProgress: (done, total, msg) =>
-                {
-                    _tinifyStatus = $"{msg} ({done}/{total})";
-                    try { EditorWindow.focusedWindow?.Repaint(); } catch { }
-                },
-                onDone: (res) =>
-                {
-                    _tinifyRunning = false;
-
-                    if (res == null)
-                    {
-                        _tinifyStatus = "Tinify finished (no result).";
-                        return;
-                    }
-
-                    _tinifyStatus =
-                        $"Tinify done. Optimized: {res.Optimized}, Skipped: {res.Skipped}, Failed: {res.Failed}. " +
-                        $"Saved: {SharedTypes.FormatBytes(res.BytesSaved)}";
-
-                    if (res.Errors != null && res.Errors.Count > 0)
-                        _tinifyStatus += $"\nErrors: {Mathf.Min(3, res.Errors.Count)} shown in Console.";
-
-                    if (res.Errors != null)
-                    {
-                        for (int i = 0; i < res.Errors.Count; i++)
-                            UnityEngine.Debug.LogWarning("Bridge Tinify: " + res.Errors[i]);
-                    }
-
-                    RequestRebuild("After Tinify");
-                    try { EditorWindow.focusedWindow?.Repaint(); } catch { }
-                }
-            );
         }
 
         private void DrawList()

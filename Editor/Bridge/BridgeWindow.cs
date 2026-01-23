@@ -39,7 +39,6 @@ namespace Playgama.Bridge
             _tabs.Add(new Tabs.ShadersTab());
             _tabs.Add(new Tabs.FontsTab());
             _tabs.Add(new Tabs.BuildSettingsTab());
-            _tabs.Add(new Tabs.PlatformChecksTab());
             _tabs.Add(new Tabs.SettingsTab());
 
             var savedReport = BuildReportStorage.LoadMostRecentReport();

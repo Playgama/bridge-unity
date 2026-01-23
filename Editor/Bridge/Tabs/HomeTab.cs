@@ -36,7 +36,6 @@ namespace Playgama.Bridge.Tabs
         private int _shaderIssues = 0;
         private int _fontIssues = 0;
         private int _buildSettingsIssues = 0;
-        private int _platformIssues = 0;
         private int _totalWarnings = 0;
         private int _totalSuggestions = 0;
 
@@ -76,7 +75,6 @@ namespace Playgama.Bridge.Tabs
             _shaderIssues = 0;
             _fontIssues = 0;
             _buildSettingsIssues = 0;
-            _platformIssues = 0;
 
             // Reset category sizes
             _textureBytes = 0;
@@ -132,15 +130,11 @@ namespace Playgama.Bridge.Tabs
                 }
             }
 
-            // Check platform rules
-            if (_buildInfo.TotalBuildSizeBytes > 40 * 1024 * 1024)
-                _platformIssues++;
-
             // Check build settings
             if (EditorUserBuildSettings.development)
                 _buildSettingsIssues++;
 
-            _totalWarnings = _textureIssues + _audioIssues + _meshIssues + _shaderIssues + _fontIssues + _platformIssues;
+            _totalWarnings = _textureIssues + _audioIssues + _meshIssues + _shaderIssues + _fontIssues;
             _totalSuggestions = _buildSettingsIssues;
         }
 
@@ -622,7 +616,6 @@ namespace Playgama.Bridge.Tabs
             DrawFeatureRow("\u2726", "Shaders", "View shader sizes and pass counts from build report", 5, _shaderIssues);
             DrawFeatureRow("\u0041", "Fonts", "View font sizes including TextMeshPro assets", 6, _fontIssues);
             DrawFeatureRow("\u2699", "Build Settings", "Control scenes, WebGL compression, and build options", 7, _buildSettingsIssues);
-            DrawFeatureRow("\u2714", "Platform Checks", "Validate build size against platform requirements", 8, _platformIssues);
 
             BridgeStyles.EndCard();
         }
