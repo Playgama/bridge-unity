@@ -5,7 +5,7 @@ namespace Playgama.Bridge.Tabs
 {
     public sealed class SettingsTab : ITab
     {
-        public string TabName { get { return "Settings"; } }
+        public string TabName => "Settings";
 
         private BuildInfo _buildInfo;
         private string _status = "";

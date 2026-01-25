@@ -15,6 +15,17 @@ namespace Playgama.Bridge
         private const float TabColumnWidth = 150f;
         private const string Pref_SelectedTab = "BRIDGE_SELECTED_TAB";
 
+        // Tab indices for external navigation
+        public const int TabHome = 0;
+        public const int TabSummary = 1;
+        public const int TabTextures = 2;
+        public const int TabAudio = 3;
+        public const int TabMeshes = 4;
+        public const int TabShaders = 5;
+        public const int TabFonts = 6;
+        public const int TabBuildSettings = 7;
+        public const int TabSettings = 8;
+
         public static BridgeWindow ShowWindow()
         {
             var w = GetWindow<BridgeWindow>();
@@ -107,6 +118,16 @@ namespace Playgama.Bridge
             for (int i = 0; i < _tabs.Count; i++)
                 _tabs[i].Init(_buildInfo);
 
+            Repaint();
+        }
+        
+        public void SetSelectedTab(int tabIndex)
+        {
+            if (tabIndex < 0 || tabIndex >= _tabs.Count)
+                return;
+
+            _selectedTab = tabIndex;
+            EditorPrefs.SetInt(Pref_SelectedTab, _selectedTab);
             Repaint();
         }
 

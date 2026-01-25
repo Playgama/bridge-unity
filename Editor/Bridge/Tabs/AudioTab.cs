@@ -7,7 +7,7 @@ namespace Playgama.Bridge.Tabs
 {
     public sealed class AudioTab : ITab
     {
-        public string TabName { get { return "Audio"; } }
+        public string TabName => "Audio";
 
         private BuildInfo _buildInfo;
         private readonly List<Row> _rows = new List<Row>(1024);

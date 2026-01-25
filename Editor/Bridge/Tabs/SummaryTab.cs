@@ -8,7 +8,7 @@ namespace Playgama.Bridge.Tabs
 {
     public sealed class SummaryTab : ITab
     {
-        public string TabName { get { return "Summary"; } }
+        public string TabName => "Summary";
 
         private BuildInfo _buildInfo;
         private Vector2 _scroll;

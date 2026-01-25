@@ -541,7 +541,7 @@ namespace Playgama.Bridge.Tabs
                 {
                     if (DrawQuickActionButton("\u2699", "Settings", "Configure Bridge"))
                     {
-                        OpenTab(9);
+                        OpenTab(BridgeWindow.TabSettings);
                     }
                 }
 
@@ -610,12 +610,12 @@ namespace Playgama.Bridge.Tabs
 
             BridgeStyles.BeginCard();
 
-            DrawFeatureRow("\u25B6", "Textures", "Optimize texture compression, max sizes, and crunch settings", 2, _textureIssues);
-            DrawFeatureRow("\u266A", "Audio", "Configure audio compression and load settings for WebGL", 3, _audioIssues);
-            DrawFeatureRow("\u25B2", "Meshes", "Manage mesh compression and read/write settings", 4, _meshIssues);
-            DrawFeatureRow("\u2726", "Shaders", "View shader sizes and pass counts from build report", 5, _shaderIssues);
-            DrawFeatureRow("\u0041", "Fonts", "View font sizes including TextMeshPro assets", 6, _fontIssues);
-            DrawFeatureRow("\u2699", "Build Settings", "Control scenes, WebGL compression, and build options", 7, _buildSettingsIssues);
+            DrawFeatureRow("\u25B6", "Textures", "Optimize texture compression, max sizes, and crunch settings", BridgeWindow.TabTextures, _textureIssues);
+            DrawFeatureRow("\u266A", "Audio", "Configure audio compression and load settings for WebGL", BridgeWindow.TabAudio, _audioIssues);
+            DrawFeatureRow("\u25B2", "Meshes", "Manage mesh compression and read/write settings", BridgeWindow.TabMeshes, _meshIssues);
+            DrawFeatureRow("\u2726", "Shaders", "View shader sizes and pass counts from build report", BridgeWindow.TabShaders, _shaderIssues);
+            DrawFeatureRow("\u0041", "Fonts", "View font sizes including TextMeshPro assets", BridgeWindow.TabFonts, _fontIssues);
+            DrawFeatureRow("\u2699", "Build Settings", "Control scenes, WebGL compression, and build options", BridgeWindow.TabBuildSettings, _buildSettingsIssues);
 
             BridgeStyles.EndCard();
         }
@@ -770,13 +770,7 @@ namespace Playgama.Bridge.Tabs
             var window = EditorWindow.GetWindow<BridgeWindow>();
             if (window != null)
             {
-                var field = typeof(BridgeWindow).GetField("_selectedTab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (field != null)
-                {
-                    field.SetValue(window, index);
-                    EditorPrefs.SetInt("BRIDGE_SELECTED_TAB", index);
-                    window.Repaint();
-                }
+                window.SetSelectedTab(index);
             }
         }
 
@@ -803,10 +797,14 @@ namespace Playgama.Bridge.Tabs
                 sb.AppendLine();
                 sb.AppendLine("Top 5 Largest Assets:");
 
-                var top5 = _buildInfo.Assets.OrderByDescending(a => a.SizeBytes).Take(5);
-                foreach (var asset in top5)
+                if (_buildInfo.Assets != null)
                 {
-                    sb.AppendLine($"  {SharedTypes.FormatBytes(asset.SizeBytes)} - {Path.GetFileName(asset.Path)}");
+                    var top5 = _buildInfo.Assets.OrderByDescending(a => a.SizeBytes).Take(5);
+                    foreach (var asset in top5)
+                    {
+                        if (asset != null)
+                            sb.AppendLine($"  {SharedTypes.FormatBytes(asset.SizeBytes)} - {Path.GetFileName(asset.Path)}");
+                    }
                 }
             }
             else

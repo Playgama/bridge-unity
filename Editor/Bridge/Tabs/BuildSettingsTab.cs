@@ -8,7 +8,7 @@ namespace Playgama.Bridge.Tabs
 {
     public sealed class BuildSettingsTab : ITab
     {
-        public string TabName { get { return "Build Settings"; } }
+        public string TabName => "Build Settings";
 
         private const string Pref_OutputPath = "BRIDGE_BUILD_OUTPUT_PATH";
 
@@ -197,21 +197,33 @@ namespace Playgama.Bridge.Tabs
 
             GUILayout.Space(8);
 
+            // Release Build Section
             BridgeStyles.BeginCard();
-            Rect hr = EditorGUILayout.GetControlRect(false, 22);
-            EditorGUI.DrawRect(hr, new Color(0.15f, 0.4f, 0.15f, 0.5f));
-            GUI.Label(new Rect(hr.x + 8, hr.y, hr.width, hr.height), "Build for Release", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Smallest build with 'Disk Size LTO'. Takes longer.", BridgeStyles.SubtitleStyle);
-            using (new EditorGUILayout.HorizontalScope())
+
+            Rect headerRect = EditorGUILayout.GetControlRect(false, 24);
+            EditorGUI.DrawRect(headerRect, new Color(0.15f, 0.35f, 0.15f));
+            EditorGUI.DrawRect(new Rect(headerRect.x, headerRect.y, 3, headerRect.height), new Color(0.3f, 0.8f, 0.4f));
+            GUI.Label(new Rect(headerRect.x + 10, headerRect.y + 2, headerRect.width, headerRect.height), "Build for Release", EditorStyles.boldLabel);
+
+            GUILayout.Space(4);
+            EditorGUILayout.LabelField("Smallest build with LTO. Takes longer but worth it.", BridgeStyles.SubtitleStyle);
+            GUILayout.Space(6);
+
+            GUI.enabled = HasEnabledScenes();
+            Color oldBg = GUI.backgroundColor;
+            GUI.backgroundColor = new Color(0.25f, 0.7f, 0.35f);
+
+            if (GUILayout.Button("Build for Release", GUILayout.Height(38)))
             {
-                GUI.enabled = HasEnabledScenes();
-                Color ob = GUI.backgroundColor; GUI.backgroundColor = new Color(0.2f, 0.7f, 0.3f);
-                if (GUILayout.Button("Build for Release", GUILayout.Height(30)))
-                    EditorApplication.delayCall += () => { EnsureDir(_outputPath); BuildAnalyzer.BuildForRelease(); };
-                GUI.backgroundColor = ob; GUI.enabled = true;
-                GUILayout.FlexibleSpace();
+                EditorApplication.delayCall += () => { EnsureDir(_outputPath); BuildAnalyzer.BuildForRelease(); };
             }
-            EditorGUILayout.LabelField("⏱ ~5-15 min (LTO)", new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = new Color(1f, 0.8f, 0.4f) } });
+
+            GUI.backgroundColor = oldBg;
+            GUI.enabled = true;
+
+            GUILayout.Space(2);
+            EditorGUILayout.LabelField("~5-15 min", new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = new Color(1f, 0.8f, 0.4f) } });
+
             BridgeStyles.EndCard();
         }
 
@@ -358,7 +370,10 @@ namespace Playgama.Bridge.Tabs
 
         private static void InvokeBuildAnalyzer(string p)
         {
-            try { var t = typeof(BuildSettingsTab).Assembly.GetType("Playgama.Bridge.BuildAnalyzer"); var m = t?.GetMethod("BuildAndAnalyze", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string) }, null) ?? t?.GetMethod("BuildAndAnalyze", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null); m?.Invoke(null, m.GetParameters().Length > 0 ? new object[] { p } : null); } catch (Exception ex) { Debug.LogException(ex); }
+            if (string.IsNullOrEmpty(p))
+                BuildAnalyzer.BuildAndAnalyze();
+            else
+                BuildAnalyzer.BuildAndAnalyze(p);
         }
     }
 }

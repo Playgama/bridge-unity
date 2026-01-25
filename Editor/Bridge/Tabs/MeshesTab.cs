@@ -8,7 +8,7 @@ namespace Playgama.Bridge.Tabs
 {
     public sealed class MeshesTab : ITab
     {
-        public string TabName { get { return "Meshes"; } }
+        public string TabName => "Meshes";
 
         private BuildInfo _buildInfo;
 

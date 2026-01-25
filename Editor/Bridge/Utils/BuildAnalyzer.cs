@@ -250,7 +250,11 @@ namespace Playgama.Bridge
                 {
                     count = info.Assets.Count;
                     for (int i = 0; i < info.Assets.Count; i++)
-                        tracked += info.Assets[i].SizeBytes;
+                    {
+                        var asset = info.Assets[i];
+                        if (asset != null)
+                            tracked += asset.SizeBytes;
+                    }
                 }
 
                 info.TrackedBytes = tracked;
