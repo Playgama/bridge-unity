@@ -6,20 +6,20 @@ namespace Playgama.Editor
     public static class BridgeStyles
     {
         // Brand Colors
-        public static readonly Color BrandPurple = new Color(0.592f, 0.282f, 1f);
-        public static readonly Color BrandPurpleLight = new Color(0.592f, 0.282f, 1f, 0.15f);
-        public static readonly Color BrandPurpleDark = new Color(0.45f, 0.2f, 0.8f);
+        public static readonly Color brandPurple = new Color(0.592f, 0.282f, 1f);
+        public static readonly Color brandPurpleLight = new Color(0.592f, 0.282f, 1f, 0.15f);
+        public static readonly Color brandPurpleDark = new Color(0.45f, 0.2f, 0.8f);
 
         // Status Colors
-        public static readonly Color StatusGreen = new Color(0.2f, 0.5f, 0.3f);
-        public static readonly Color StatusYellow = new Color(0.55f, 0.45f, 0.2f);
-        public static readonly Color StatusRed = new Color(0.55f, 0.25f, 0.25f);
-        public static readonly Color StatusGray = new Color(0.28f, 0.28f, 0.28f);
+        public static readonly Color statusGreen = new Color(0.2f, 0.5f, 0.3f);
+        public static readonly Color statusYellow = new Color(0.55f, 0.45f, 0.2f);
+        public static readonly Color statusRed = new Color(0.55f, 0.25f, 0.25f);
+        public static readonly Color statusGray = new Color(0.28f, 0.28f, 0.28f);
 
         // Background Colors
-        public static readonly Color CardBackground = new Color(0.22f, 0.22f, 0.22f);
-        public static readonly Color DarkBackground = new Color(0.18f, 0.18f, 0.18f);
-        public static readonly Color Divider = new Color(0.35f, 0.35f, 0.35f);
+        public static readonly Color cardBackground = new Color(0.22f, 0.22f, 0.22f);
+        public static readonly Color darkBackground = new Color(0.18f, 0.18f, 0.18f);
+        public static readonly Color divider = new Color(0.35f, 0.35f, 0.35f);
 
         // Cached Styles
         private static GUIStyle _sectionHeader;
@@ -30,7 +30,7 @@ namespace Playgama.Editor
         private static GUIStyle _tabButton;
         private static GUIStyle _tabButtonSelected;
 
-        public static GUIStyle SectionHeader
+        public static GUIStyle sectionHeader
         {
             get
             {
@@ -44,7 +44,7 @@ namespace Playgama.Editor
             }
         }
 
-        public static GUIStyle SectionHeaderLabel
+        public static GUIStyle sectionHeaderLabel
         {
             get
             {
@@ -58,7 +58,7 @@ namespace Playgama.Editor
             }
         }
 
-        public static GUIStyle CardStyle
+        public static GUIStyle cardStyle
         {
             get
             {
@@ -72,7 +72,7 @@ namespace Playgama.Editor
             }
         }
 
-        public static GUIStyle SubtitleStyle
+        public static GUIStyle subtitleStyle
         {
             get
             {
@@ -86,7 +86,7 @@ namespace Playgama.Editor
             }
         }
 
-        public static GUIStyle TagStyle
+        public static GUIStyle tagStyle
         {
             get
             {
@@ -102,7 +102,7 @@ namespace Playgama.Editor
             }
         }
 
-        public static GUIStyle TabButton
+        public static GUIStyle tabButton
         {
             get
             {
@@ -117,15 +117,15 @@ namespace Playgama.Editor
             }
         }
 
-        public static GUIStyle TabButtonSelected
+        public static GUIStyle tabButtonSelected
         {
             get
             {
                 if (_tabButtonSelected == null)
                 {
-                    _tabButtonSelected = new GUIStyle(TabButton);
+                    _tabButtonSelected = new GUIStyle(tabButton);
                     _tabButtonSelected.fontStyle = FontStyle.Bold;
-                    _tabButtonSelected.normal.textColor = BrandPurple;
+                    _tabButtonSelected.normal.textColor = brandPurple;
                 }
                 return _tabButtonSelected;
             }
@@ -137,15 +137,15 @@ namespace Playgama.Editor
             Rect headerRect = EditorGUILayout.GetControlRect(false, 28);
 
             Rect accentRect = new Rect(headerRect.x, headerRect.y + 2, 4, headerRect.height - 4);
-            EditorGUI.DrawRect(accentRect, BrandPurple);
+            EditorGUI.DrawRect(accentRect, brandPurple);
 
             Rect bgRect = new Rect(headerRect.x + 4, headerRect.y, headerRect.width - 4, headerRect.height);
-            EditorGUI.DrawRect(bgRect, CardBackground);
+            EditorGUI.DrawRect(bgRect, cardBackground);
 
             Rect foldoutRect = new Rect(headerRect.x + 8, headerRect.y + 4, headerRect.width - 12, headerRect.height - 8);
             string displayTitle = string.IsNullOrEmpty(icon) ? title : $"{icon}  {title}";
 
-            return EditorGUI.Foldout(foldoutRect, foldout, displayTitle, true, SectionHeader);
+            return EditorGUI.Foldout(foldoutRect, foldout, displayTitle, true, sectionHeader);
         }
 
         public static void DrawSectionTitle(string title, string icon = null)
@@ -153,27 +153,27 @@ namespace Playgama.Editor
             Rect headerRect = EditorGUILayout.GetControlRect(false, 28);
 
             Rect accentRect = new Rect(headerRect.x, headerRect.y + 2, 4, headerRect.height - 4);
-            EditorGUI.DrawRect(accentRect, BrandPurple);
+            EditorGUI.DrawRect(accentRect, brandPurple);
 
             Rect bgRect = new Rect(headerRect.x + 4, headerRect.y, headerRect.width - 4, headerRect.height);
-            EditorGUI.DrawRect(bgRect, CardBackground);
+            EditorGUI.DrawRect(bgRect, cardBackground);
 
             Rect labelRect = new Rect(headerRect.x + 14, headerRect.y + 4, headerRect.width - 18, headerRect.height - 8);
             string displayTitle = string.IsNullOrEmpty(icon) ? title : $"{icon}  {title}";
-            EditorGUI.LabelField(labelRect, displayTitle, SectionHeaderLabel);
+            EditorGUI.LabelField(labelRect, displayTitle, sectionHeaderLabel);
         }
 
         public static void DrawTag(Rect rect, string text, Color bgColor)
         {
             EditorGUI.DrawRect(rect, bgColor);
-            EditorGUI.LabelField(rect, text, TagStyle);
+            EditorGUI.LabelField(rect, text, tagStyle);
         }
 
         public static void DrawDivider()
         {
             GUILayout.Space(4);
             Rect rect = EditorGUILayout.GetControlRect(false, 1);
-            EditorGUI.DrawRect(rect, Divider);
+            EditorGUI.DrawRect(rect, divider);
             GUILayout.Space(4);
         }
 
@@ -184,7 +184,7 @@ namespace Playgama.Editor
 
         public static void BeginCard()
         {
-            GUILayout.BeginVertical(CardStyle);
+            GUILayout.BeginVertical(cardStyle);
         }
 
         public static void EndCard()
@@ -202,17 +202,17 @@ namespace Playgama.Editor
         {
             switch (level)
             {
-                case StatusLevel.Success: return StatusGreen;
-                case StatusLevel.Warning: return StatusYellow;
-                case StatusLevel.Error: return StatusRed;
-                default: return StatusGray;
+                case StatusLevel.Success: return statusGreen;
+                case StatusLevel.Warning: return statusYellow;
+                case StatusLevel.Error: return statusRed;
+                default: return statusGray;
             }
         }
 
         public static bool DrawAccentButton(string text, params GUILayoutOption[] options)
         {
             Color originalBg = GUI.backgroundColor;
-            GUI.backgroundColor = BrandPurple;
+            GUI.backgroundColor = brandPurple;
             bool clicked = GUILayout.Button(text, options);
             GUI.backgroundColor = originalBg;
             return clicked;
@@ -221,7 +221,7 @@ namespace Playgama.Editor
         public static bool DrawAccentButton(GUIContent content, params GUILayoutOption[] options)
         {
             Color originalBg = GUI.backgroundColor;
-            GUI.backgroundColor = BrandPurple;
+            GUI.backgroundColor = brandPurple;
             bool clicked = GUILayout.Button(content, options);
             GUI.backgroundColor = originalBg;
             return clicked;

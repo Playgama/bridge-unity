@@ -24,29 +24,29 @@ namespace Playgama.Editor
 
     public sealed class AssetInfo
     {
-        public string Path;
-        public long SizeBytes;
-        public string TypeName;
-        public AssetCategory Category;
-        public bool IsSizeEstimated;
+        public string path;
+        public long sizeBytes;
+        public string typeName;
+        public AssetCategory category;
+        public bool isSizeEstimated;
     }
 
     public sealed class BuildInfo
     {
-        public long TotalBuildSizeBytes;
-        public BuildDataMode DataMode;
-        public List<AssetInfo> Assets = new List<AssetInfo>();
-        public bool HasData;
-        public int TrackedAssetCount;
-        public long TrackedBytes;
-        public string StatusMessage;
-        public string BuildTargetName;
-        public TimeSpan BuildTime;
-        public bool BuildSucceeded;
-        public bool UsedBuildReport;
-        public int PackedGroupsCount;
-        public int EmptyPathsCount;
-        public string ModeDiagnostics;
+        public long totalBuildSizeBytes;
+        public BuildDataMode dataMode;
+        public List<AssetInfo> assets = new List<AssetInfo>();
+        public bool hasData;
+        public int trackedAssetCount;
+        public long trackedBytes;
+        public string statusMessage;
+        public string buildTargetName;
+        public TimeSpan buildTime;
+        public bool buildSucceeded;
+        public bool usedBuildReport;
+        public int packedGroupsCount;
+        public int emptyPathsCount;
+        public string modeDiagnostics;
     }
 
     public static class SharedTypes

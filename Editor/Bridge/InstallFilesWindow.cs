@@ -178,7 +178,10 @@ namespace Playgama.Editor
 
                 var relativePath = file.Substring(rootPath.Length + 1).Replace("\\", "/");
                 var prefKey = PREFS_PREFIX + relativePath;
-                var enabled = EditorPrefs.GetBool(prefKey, true);
+
+                // Config file defaults to unchecked to protect user customizations during updates
+                bool defaultEnabled = fileName != "playgama-bridge-config.json";
+                var enabled = EditorPrefs.GetBool(prefKey, defaultEnabled);
 
                 string description = "";
                 if (FileDescriptions.TryGetValue(fileName, out string desc))
@@ -243,7 +246,7 @@ namespace Playgama.Editor
             EditorGUILayout.Space(10);
 
             Rect lineRect = EditorGUILayout.GetControlRect(false, 2);
-            EditorGUI.DrawRect(lineRect, BridgeStyles.BrandPurple);
+            EditorGUI.DrawRect(lineRect, BridgeStyles.brandPurple);
 
             EditorGUILayout.Space(10);
 
@@ -341,7 +344,7 @@ namespace Playgama.Editor
 
                 GUI.enabled = selectedCount > 0;
                 Color oldBg = GUI.backgroundColor;
-                GUI.backgroundColor = BridgeStyles.BrandPurple;
+                GUI.backgroundColor = BridgeStyles.brandPurple;
 
                 if (GUILayout.Button("Install Selected", GUILayout.Width(130), GUILayout.Height(30)))
                 {
@@ -369,7 +372,7 @@ namespace Playgama.Editor
             if (file.Enabled)
             {
                 Rect accentRect = new Rect(boxRect.x, boxRect.y, 3, boxRect.height);
-                EditorGUI.DrawRect(accentRect, BridgeStyles.BrandPurple);
+                EditorGUI.DrawRect(accentRect, BridgeStyles.brandPurple);
             }
 
             Rect toggleRect = new Rect(boxRect.x + 10, boxRect.y + 12, 20, 20);

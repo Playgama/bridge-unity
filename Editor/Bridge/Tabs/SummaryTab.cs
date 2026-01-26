@@ -70,7 +70,7 @@ namespace Playgama.Editor.Tabs
 
                 DrawHeaderStatus();
 
-                if (!_buildInfo.HasData || _buildInfo.Assets == null || _buildInfo.Assets.Count == 0)
+                if (!_buildInfo.hasData || _buildInfo.assets == null || _buildInfo.assets.Count == 0)
                 {
                     EditorGUILayout.HelpBox(
                         "No analysis data. Click 'Build & Analyze' or load a saved report below.",
@@ -97,10 +97,10 @@ namespace Playgama.Editor.Tabs
         {
             // Build inline summary for header
             string headerSummary = "";
-            if (_buildInfo.TotalBuildSizeBytes > 0)
+            if (_buildInfo.totalBuildSizeBytes > 0)
             {
-                headerSummary = $" - {SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes)}";
-                if (_buildInfo.BuildSucceeded)
+                headerSummary = $" - {SharedTypes.FormatBytes(_buildInfo.totalBuildSizeBytes)}";
+                if (_buildInfo.buildSucceeded)
                     headerSummary += " \u2714";
             }
 
@@ -109,19 +109,19 @@ namespace Playgama.Editor.Tabs
             {
                 BridgeStyles.BeginCard();
 
-                bool hasBuildData = _buildInfo.TotalBuildSizeBytes > 0 || _buildInfo.HasData;
+                bool hasBuildData = _buildInfo.totalBuildSizeBytes > 0 || _buildInfo.hasData;
 
                 if (!hasBuildData)
                 {
-                    if (!string.IsNullOrEmpty(_buildInfo.StatusMessage) &&
-                        _buildInfo.StatusMessage.Contains("Analyzing"))
+                    if (!string.IsNullOrEmpty(_buildInfo.statusMessage) &&
+                        _buildInfo.statusMessage.Contains("Analyzing"))
                     {
                         EditorGUILayout.LabelField("Build in progress...", EditorStyles.boldLabel);
-                        EditorGUILayout.LabelField(_buildInfo.StatusMessage, BridgeStyles.SubtitleStyle);
+                        EditorGUILayout.LabelField(_buildInfo.statusMessage, BridgeStyles.subtitleStyle);
                     }
                     else
                     {
-                        EditorGUILayout.LabelField("No build has been run yet.", BridgeStyles.SubtitleStyle);
+                        EditorGUILayout.LabelField("No build has been run yet.", BridgeStyles.subtitleStyle);
                         EditorGUILayout.Space(4);
                         EditorGUILayout.LabelField("Click 'Build & Analyze' to create a snapshot.", EditorStyles.miniLabel);
                     }
@@ -134,31 +134,31 @@ namespace Playgama.Editor.Tabs
                         GUILayout.FlexibleSpace();
 
                         Color prevColor = GUI.color;
-                        GUI.color = _buildInfo.BuildSucceeded ? BridgeStyles.StatusGreen : BridgeStyles.StatusRed;
-                        GUILayout.Label(_buildInfo.BuildSucceeded ? "\u2714 Success" : "\u2718 Failed", EditorStyles.boldLabel);
+                        GUI.color = _buildInfo.buildSucceeded ? BridgeStyles.statusGreen : BridgeStyles.statusRed;
+                        GUILayout.Label(_buildInfo.buildSucceeded ? "\u2714 Success" : "\u2718 Failed", EditorStyles.boldLabel);
                         GUI.color = prevColor;
                     }
 
                     DrawKeyValue(
                         "Target",
                         "Build target name captured in the snapshot.",
-                        string.IsNullOrEmpty(_buildInfo.BuildTargetName) ? "—" : _buildInfo.BuildTargetName);
+                        string.IsNullOrEmpty(_buildInfo.buildTargetName) ? "—" : _buildInfo.buildTargetName);
 
                     DrawKeyValue(
                         "Total Build Size",
                         "Total size of the build output.",
-                        SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes));
+                        SharedTypes.FormatBytes(_buildInfo.totalBuildSizeBytes));
 
-                    if (_buildInfo.BuildTime.TotalSeconds > 0)
+                    if (_buildInfo.buildTime.TotalSeconds > 0)
                     {
                         DrawKeyValue(
                             "Build Time",
                             "How long the build took.",
-                            FormatTimeSpan(_buildInfo.BuildTime));
+                            FormatTimeSpan(_buildInfo.buildTime));
                     }
 
-                    if (!string.IsNullOrEmpty(_buildInfo.StatusMessage))
-                        EditorGUILayout.LabelField(_buildInfo.StatusMessage, BridgeStyles.SubtitleStyle);
+                    if (!string.IsNullOrEmpty(_buildInfo.statusMessage))
+                        EditorGUILayout.LabelField(_buildInfo.statusMessage, BridgeStyles.subtitleStyle);
                 }
                 BridgeStyles.EndCard();
             }
@@ -167,7 +167,7 @@ namespace Playgama.Editor.Tabs
         private void DrawTotalsBlock()
         {
             // Inline summary for header
-            string totalsSummary = $" - {SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes)} across {_buildInfo.TrackedAssetCount} assets";
+            string totalsSummary = $" - {SharedTypes.FormatBytes(_buildInfo.totalBuildSizeBytes)} across {_buildInfo.trackedAssetCount} assets";
 
             _foldTotals = BridgeStyles.DrawSectionHeader($"Totals{totalsSummary}", _foldTotals, "\u2139");
             if (_foldTotals)
@@ -176,23 +176,23 @@ namespace Playgama.Editor.Tabs
                 DrawKeyValue(
                     "Total Build Size (real)",
                     "Actual build size reported by Unity BuildReport (summary.totalSize). This is not an estimate.",
-                    SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes),
+                    SharedTypes.FormatBytes(_buildInfo.totalBuildSizeBytes),
                     "Real value from Unity build report.");
 
                 DrawKeyValue(
                     "Analysis Mode",
                     "PackedAssets is preferred if usable mappings exist. DependenciesFallback always works but per-asset sizes are estimated.",
-                    _buildInfo.DataMode.ToString(),
+                    _buildInfo.dataMode.ToString(),
                     "Current analysis mode used for the tracked list.");
 
                 DrawKeyValue(
                     "Tracked Assets",
                     "Count of assets tracked by the selected analysis mode.",
-                    _buildInfo.TrackedAssetCount.ToString(),
+                    _buildInfo.trackedAssetCount.ToString(),
                     "Number of tracked assets.");
 
-                string trackedLabel = SharedTypes.FormatBytes(_buildInfo.TrackedBytes);
-                bool isEstimated = _anyEstimated || _buildInfo.DataMode == BuildDataMode.DependenciesFallback;
+                string trackedLabel = SharedTypes.FormatBytes(_buildInfo.trackedBytes);
+                bool isEstimated = _anyEstimated || _buildInfo.dataMode == BuildDataMode.DependenciesFallback;
                 if (isEstimated) trackedLabel += " (estimated)";
 
                 DrawKeyValue(
@@ -201,12 +201,12 @@ namespace Playgama.Editor.Tabs
                     trackedLabel,
                     isEstimated ? "Estimated total (disk file sizes)." : "Tracked total from packed asset mapping (when available).");
 
-                if (_buildInfo.BuildTime.TotalSeconds > 0)
+                if (_buildInfo.buildTime.TotalSeconds > 0)
                 {
                     DrawKeyValue(
                         "Build Time",
                         "Build duration (if available in the snapshot).",
-                        FormatTimeSpan(_buildInfo.BuildTime),
+                        FormatTimeSpan(_buildInfo.buildTime),
                         "Time spent by Unity building the player.");
                 }
                 BridgeStyles.EndCard();
@@ -217,10 +217,10 @@ namespace Playgama.Editor.Tabs
         {
             _suggestions.Clear();
 
-            if (_buildInfo == null || !_buildInfo.HasData)
+            if (_buildInfo == null || !_buildInfo.hasData)
                 return;
 
-            long totalBytes = _buildInfo.TotalBuildSizeBytes;
+            long totalBytes = _buildInfo.totalBuildSizeBytes;
             if (totalBytes <= 0) totalBytes = 1; // Prevent division by zero
 
             // Check font percentage
@@ -251,11 +251,11 @@ namespace Playgama.Editor.Tabs
             }
 
             // Check for large individual assets
-            if (_top10.Count > 0 && _top10[0].SizeBytes > 2 * 1024 * 1024)
+            if (_top10.Count > 0 && _top10[0].sizeBytes > 2 * 1024 * 1024)
             {
                 var largest = _top10[0];
-                float largestPercent = (largest.SizeBytes * 100f) / totalBytes;
-                _suggestions.Add($"\u26A0 '{System.IO.Path.GetFileName(largest.Path)}' alone is {SharedTypes.FormatBytes(largest.SizeBytes)} ({largestPercent:F0}% of build). Consider optimizing it.");
+                float largestPercent = (largest.sizeBytes * 100f) / totalBytes;
+                _suggestions.Add($"\u26A0 '{System.IO.Path.GetFileName(largest.path)}' alone is {SharedTypes.FormatBytes(largest.sizeBytes)} ({largestPercent:F0}% of build). Consider optimizing it.");
             }
 
             // Check build size against common limits
@@ -348,13 +348,13 @@ namespace Playgama.Editor.Tabs
                 if (_nullAssetCount > 0)
                 {
                     GUILayout.Space(4);
-                    EditorGUILayout.LabelField($"Warning: {_nullAssetCount} AssetInfo entries were null.", BridgeStyles.SubtitleStyle);
+                    EditorGUILayout.LabelField($"Warning: {_nullAssetCount} AssetInfo entries were null.", BridgeStyles.subtitleStyle);
                 }
 
-                if (_anyEstimated || _buildInfo.DataMode == BuildDataMode.DependenciesFallback)
+                if (_anyEstimated || _buildInfo.dataMode == BuildDataMode.DependenciesFallback)
                 {
                     GUILayout.Space(4);
-                    EditorGUILayout.LabelField("Note: Some asset sizes are estimated (~).", BridgeStyles.SubtitleStyle);
+                    EditorGUILayout.LabelField("Note: Some asset sizes are estimated (~).", BridgeStyles.subtitleStyle);
                 }
                 BridgeStyles.EndCard();
             }
@@ -385,7 +385,7 @@ namespace Playgama.Editor.Tabs
             if (fillPercent > 0)
             {
                 Rect barFillRect = new Rect(barStartX, rowRect.y + 6, barWidth * fillPercent, 14);
-                EditorGUI.DrawRect(barFillRect, BridgeStyles.BrandPurple);
+                EditorGUI.DrawRect(barFillRect, BridgeStyles.brandPurple);
             }
 
             // Count
@@ -428,7 +428,7 @@ namespace Playgama.Editor.Tabs
 
             if (_top10.Count == 0)
             {
-                EditorGUILayout.LabelField("Top list is empty.", BridgeStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("Top list is empty.", BridgeStyles.subtitleStyle);
                 BridgeStyles.EndCard();
                 return;
             }
@@ -437,8 +437,8 @@ namespace Playgama.Editor.Tabs
             var sortedList = SortTop10();
 
             // Calculate max size for percentage bar
-            long maxSize = sortedList.Max(a => a.SizeBytes);
-            long totalSize = _buildInfo.TotalBuildSizeBytes > 0 ? _buildInfo.TotalBuildSizeBytes : sortedList.Sum(a => a.SizeBytes);
+            long maxSize = sortedList.Max(a => a.sizeBytes);
+            long totalSize = _buildInfo.totalBuildSizeBytes > 0 ? _buildInfo.totalBuildSizeBytes : sortedList.Sum(a => a.sizeBytes);
 
             for (int i = 0; i < sortedList.Count; i++)
             {
@@ -458,18 +458,18 @@ namespace Playgama.Editor.Tabs
             switch (_sortMode)
             {
                 case SortMode.Size:
-                    sorted.Sort((x, y) => _sortAscending ? x.SizeBytes.CompareTo(y.SizeBytes) : y.SizeBytes.CompareTo(x.SizeBytes));
+                    sorted.Sort((x, y) => _sortAscending ? x.sizeBytes.CompareTo(y.sizeBytes) : y.sizeBytes.CompareTo(x.sizeBytes));
                     break;
                 case SortMode.Name:
                     sorted.Sort((x, y) =>
                     {
-                        string nameX = System.IO.Path.GetFileName(x.Path ?? "");
-                        string nameY = System.IO.Path.GetFileName(y.Path ?? "");
+                        string nameX = System.IO.Path.GetFileName(x.path ?? "");
+                        string nameY = System.IO.Path.GetFileName(y.path ?? "");
                         return _sortAscending ? nameX.CompareTo(nameY) : nameY.CompareTo(nameX);
                     });
                     break;
                 case SortMode.Category:
-                    sorted.Sort((x, y) => _sortAscending ? x.Category.CompareTo(y.Category) : y.Category.CompareTo(x.Category));
+                    sorted.Sort((x, y) => _sortAscending ? x.category.CompareTo(y.category) : y.category.CompareTo(x.category));
                     break;
             }
 
@@ -483,7 +483,7 @@ namespace Playgama.Editor.Tabs
             rect.y += 2;
             rect.height -= 4;
 
-            BridgeStyles.DrawListRowBackground(rect, index, BridgeStyles.CardBackground);
+            BridgeStyles.DrawListRowBackground(rect, index, BridgeStyles.cardBackground);
 
             float x = rect.x + 4;
 
@@ -493,21 +493,21 @@ namespace Playgama.Editor.Tabs
             x += 28;
 
             // File name
-            string fileName = string.IsNullOrEmpty(a.Path) ? "—" : System.IO.Path.GetFileName(a.Path);
+            string fileName = string.IsNullOrEmpty(a.path) ? "—" : System.IO.Path.GetFileName(a.path);
             float nameWidth = 180;
             EditorGUI.LabelField(new Rect(x, rect.y + 2, nameWidth, 16),
-                new GUIContent(Truncate(fileName, 24), a.Path), EditorStyles.miniLabel);
+                new GUIContent(Truncate(fileName, 24), a.path), EditorStyles.miniLabel);
 
             // Size and percentage
-            string size = SharedTypes.FormatBytes(a.SizeBytes);
-            if (a.IsSizeEstimated) size += " ~";
+            string size = SharedTypes.FormatBytes(a.sizeBytes);
+            if (a.isSizeEstimated) size += " ~";
 
-            float percent = totalSize > 0 ? (a.SizeBytes * 100f / totalSize) : 0;
+            float percent = totalSize > 0 ? (a.sizeBytes * 100f / totalSize) : 0;
             string percentStr = $"({percent:F1}%)";
 
             EditorGUI.LabelField(new Rect(x, rect.y + 18, nameWidth, 14),
-                new GUIContent($"{size} {percentStr}", a.IsSizeEstimated ? "Estimated size" : "Actual packed size"),
-                BridgeStyles.SubtitleStyle);
+                new GUIContent($"{size} {percentStr}", a.isSizeEstimated ? "Estimated size" : "Actual packed size"),
+                BridgeStyles.subtitleStyle);
             x += nameWidth + 10;
 
             // Percentage bar
@@ -517,11 +517,11 @@ namespace Playgama.Editor.Tabs
                 Rect barBgRect = new Rect(x, rect.y + 10, barWidth, 12);
                 EditorGUI.DrawRect(barBgRect, new Color(0.2f, 0.2f, 0.22f));
 
-                float fillPercent = maxSize > 0 ? (float)a.SizeBytes / maxSize : 0;
+                float fillPercent = maxSize > 0 ? (float)a.sizeBytes / maxSize : 0;
                 if (fillPercent > 0)
                 {
-                    Color barColor = fillPercent > 0.7f ? BridgeStyles.StatusYellow :
-                                     fillPercent > 0.3f ? BridgeStyles.BrandPurple : BridgeStyles.StatusGreen;
+                    Color barColor = fillPercent > 0.7f ? BridgeStyles.statusYellow :
+                                     fillPercent > 0.3f ? BridgeStyles.brandPurple : BridgeStyles.statusGreen;
                     Rect barFillRect = new Rect(x, rect.y + 10, barWidth * fillPercent, 12);
                     EditorGUI.DrawRect(barFillRect, barColor);
                 }
@@ -533,20 +533,20 @@ namespace Playgama.Editor.Tabs
             EditorGUI.DrawRect(catRect, new Color(0.3f, 0.3f, 0.35f));
             GUIStyle catStyle = new GUIStyle(EditorStyles.miniLabel);
             catStyle.alignment = TextAnchor.MiddleCenter;
-            EditorGUI.LabelField(catRect, a.Category.ToString(), catStyle);
+            EditorGUI.LabelField(catRect, a.category.ToString(), catStyle);
 
             // Buttons
             Rect pingR = new Rect(rect.x + rect.width - 70, rect.y + 8, 32, 18);
             if (GUI.Button(pingR, GC_Ping, EditorStyles.miniButton))
             {
-                var obj = AssetDatabase.LoadMainAssetAtPath(a.Path);
+                var obj = AssetDatabase.LoadMainAssetAtPath(a.path);
                 if (obj != null) EditorGUIUtility.PingObject(obj);
             }
 
             Rect selectR = new Rect(rect.x + rect.width - 35, rect.y + 8, 32, 18);
             if (GUI.Button(selectR, GC_Select, EditorStyles.miniButton))
             {
-                var obj = AssetDatabase.LoadMainAssetAtPath(a.Path);
+                var obj = AssetDatabase.LoadMainAssetAtPath(a.path);
                 if (obj != null) Selection.activeObject = obj;
             }
         }
@@ -586,7 +586,7 @@ namespace Playgama.Editor.Tabs
 
             if (_savedReports.Count == 0)
             {
-                EditorGUILayout.LabelField("No saved reports found.", BridgeStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("No saved reports found.", BridgeStyles.subtitleStyle);
                 EditorGUILayout.LabelField("Reports are auto-saved after each Build & Analyze.", EditorStyles.miniLabel);
             }
             else
@@ -601,7 +601,7 @@ namespace Playgama.Editor.Tabs
                 if (_savedReports.Count > 10)
                 {
                     GUILayout.Space(4);
-                    EditorGUILayout.LabelField($"... and {_savedReports.Count - 10} more", BridgeStyles.SubtitleStyle);
+                    EditorGUILayout.LabelField($"... and {_savedReports.Count - 10} more", BridgeStyles.subtitleStyle);
                 }
             }
 
@@ -611,7 +611,7 @@ namespace Playgama.Editor.Tabs
         private void DrawSavedReportRow(ReportFileInfo report, int index)
         {
             Rect rowRect = EditorGUILayout.GetControlRect(false, 28);
-            BridgeStyles.DrawListRowBackground(rowRect, index, BridgeStyles.CardBackground);
+            BridgeStyles.DrawListRowBackground(rowRect, index, BridgeStyles.cardBackground);
 
             float x = rowRect.x + 4;
 
@@ -656,7 +656,7 @@ namespace Playgama.Editor.Tabs
 
         private void DrawDiagnosticsBlock()
         {
-            string diagSummary = $" - {_buildInfo.DataMode}";
+            string diagSummary = $" - {_buildInfo.dataMode}";
 
             _foldDiagnostics = BridgeStyles.DrawSectionHeader($"Diagnostics{diagSummary}", _foldDiagnostics, "\u2699");
             if (_foldDiagnostics)
@@ -665,27 +665,27 @@ namespace Playgama.Editor.Tabs
                 DrawKeyValue(
                     "Mode",
                     "Active analysis mode used to build the tracked asset list.",
-                    _buildInfo.DataMode.ToString());
+                    _buildInfo.dataMode.ToString());
 
                 DrawKeyValue(
                     "Packed Groups",
                     "How many packed groups were detected in BuildReport data (if available).",
-                    _buildInfo.PackedGroupsCount.ToString());
+                    _buildInfo.packedGroupsCount.ToString());
 
                 DrawKeyValue(
                     "Empty Paths",
                     "How many packed entries lacked usable asset paths (path resolution failures).",
-                    _buildInfo.EmptyPathsCount.ToString());
+                    _buildInfo.emptyPathsCount.ToString());
 
                 DrawKeyValue(
                     "Tracked Assets",
                     "Number of tracked assets currently in the snapshot.",
-                    _buildInfo.TrackedAssetCount.ToString());
+                    _buildInfo.trackedAssetCount.ToString());
 
-                if (!string.IsNullOrEmpty(_buildInfo.ModeDiagnostics))
+                if (!string.IsNullOrEmpty(_buildInfo.modeDiagnostics))
                 {
                     GUILayout.Space(4);
-                    EditorGUILayout.LabelField(_buildInfo.ModeDiagnostics, BridgeStyles.SubtitleStyle);
+                    EditorGUILayout.LabelField(_buildInfo.modeDiagnostics, BridgeStyles.subtitleStyle);
                 }
                 BridgeStyles.EndCard();
             }
@@ -694,10 +694,10 @@ namespace Playgama.Editor.Tabs
         private void EnsureCache()
         {
             string key =
-                (_buildInfo.DataMode.ToString()) + "|" +
-                (_buildInfo.Assets != null ? _buildInfo.Assets.Count : 0) + "|" +
-                _buildInfo.TrackedBytes + "|" +
-                _buildInfo.TotalBuildSizeBytes;
+                (_buildInfo.dataMode.ToString()) + "|" +
+                (_buildInfo.assets != null ? _buildInfo.assets.Count : 0) + "|" +
+                _buildInfo.trackedBytes + "|" +
+                _buildInfo.totalBuildSizeBytes;
 
             if (_cacheKey == key) return;
 
@@ -708,7 +708,7 @@ namespace Playgama.Editor.Tabs
             _anyEstimated = false;
             _nullAssetCount = 0;
 
-            if (_buildInfo.Assets == null) return;
+            if (_buildInfo.assets == null) return;
 
             InitBucket(AssetCategory.Textures);
             InitBucket(AssetCategory.Audio);
@@ -718,19 +718,19 @@ namespace Playgama.Editor.Tabs
             InitBucket(AssetCategory.Fonts);
             InitBucket(AssetCategory.Other);
 
-            for (int i = 0; i < _buildInfo.Assets.Count; i++)
+            for (int i = 0; i < _buildInfo.assets.Count; i++)
             {
-                var a = _buildInfo.Assets[i];
+                var a = _buildInfo.assets[i];
                 if (a == null)
                 {
                     _nullAssetCount++;
                     continue;
                 }
 
-                if (a.IsSizeEstimated) _anyEstimated = true;
+                if (a.isSizeEstimated) _anyEstimated = true;
 
-                var cat = a.Category;
-                _bytesByCat[cat] += a.SizeBytes;
+                var cat = a.category;
+                _bytesByCat[cat] += a.sizeBytes;
                 _countByCat[cat] += 1;
 
                 InsertTop10(a);
@@ -748,7 +748,7 @@ namespace Playgama.Editor.Tabs
             int insert = -1;
             for (int i = 0; i < _top10.Count; i++)
             {
-                if (a.SizeBytes > _top10[i].SizeBytes)
+                if (a.sizeBytes > _top10[i].sizeBytes)
                 {
                     insert = i;
                     break;

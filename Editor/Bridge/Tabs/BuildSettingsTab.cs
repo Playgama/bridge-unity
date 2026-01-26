@@ -67,7 +67,7 @@ namespace Playgama.Editor.Tabs
             if (_foldHeader)
             {
                 BridgeStyles.BeginCard();
-                EditorGUILayout.LabelField("Build-size workflow: scenes, WebGL toggles, Build & Analyze.", BridgeStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("Build-size workflow: scenes, WebGL toggles, Build & Analyze.", BridgeStyles.subtitleStyle);
                 BridgeStyles.EndCard();
             }
         }
@@ -92,7 +92,7 @@ namespace Playgama.Editor.Tabs
                     EditorPrefs.SetString(Pref_OutputPath, _outputPath);
                 }
             }
-            EditorGUILayout.LabelField("Keep build output outside Assets/ to avoid imports.", BridgeStyles.SubtitleStyle);
+            EditorGUILayout.LabelField("Keep build output outside Assets/ to avoid imports.", BridgeStyles.subtitleStyle);
             BridgeStyles.EndCard();
         }
 
@@ -182,7 +182,7 @@ namespace Playgama.Editor.Tabs
 
             BridgeStyles.BeginCard();
             EditorGUILayout.LabelField("Quick Analysis Build", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Fast build for testing. Uses 'Shorter Build Time'.", BridgeStyles.SubtitleStyle);
+            EditorGUILayout.LabelField("Fast build for testing. Uses 'Shorter Build Time'.", BridgeStyles.subtitleStyle);
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUI.enabled = HasEnabledScenes();
@@ -206,7 +206,7 @@ namespace Playgama.Editor.Tabs
             GUI.Label(new Rect(headerRect.x + 10, headerRect.y + 2, headerRect.width, headerRect.height), "Build for Release", EditorStyles.boldLabel);
 
             GUILayout.Space(4);
-            EditorGUILayout.LabelField("Smallest build with LTO. Takes longer but worth it.", BridgeStyles.SubtitleStyle);
+            EditorGUILayout.LabelField("Smallest build with LTO. Takes longer but worth it.", BridgeStyles.subtitleStyle);
             GUILayout.Space(6);
 
             GUI.enabled = HasEnabledScenes();
@@ -229,26 +229,26 @@ namespace Playgama.Editor.Tabs
 
         private void DrawLastBuildBlock()
         {
-            bool has = _buildInfo != null && (_buildInfo.TotalBuildSizeBytes > 0 || _buildInfo.HasData);
-            string hdr = has ? (_buildInfo.BuildSucceeded ? "Last Build ✓" : "Last Build ✗") : "Last Build";
+            bool has = _buildInfo != null && (_buildInfo.totalBuildSizeBytes > 0 || _buildInfo.hasData);
+            string hdr = has ? (_buildInfo.buildSucceeded ? "Last Build ✓" : "Last Build ✗") : "Last Build";
             _foldLastBuild = BridgeStyles.DrawSectionHeader(hdr, _foldLastBuild, "\u2139");
             if (!_foldLastBuild) return;
             BridgeStyles.BeginCard();
-            if (!has) { EditorGUILayout.LabelField("No build analyzed yet.", BridgeStyles.SubtitleStyle); BridgeStyles.EndCard(); return; }
+            if (!has) { EditorGUILayout.LabelField("No build analyzed yet.", BridgeStyles.subtitleStyle); BridgeStyles.EndCard(); return; }
 
             Rect rr = EditorGUILayout.GetControlRect(false, 22);
-            EditorGUI.DrawRect(rr, _buildInfo.BuildSucceeded ? new Color(0.2f, 0.5f, 0.2f, 0.5f) : new Color(0.5f, 0.2f, 0.2f, 0.5f));
-            GUI.Label(rr, _buildInfo.BuildSucceeded ? "  ✓ SUCCESS" : "  ✗ FAILED", EditorStyles.boldLabel);
+            EditorGUI.DrawRect(rr, _buildInfo.buildSucceeded ? new Color(0.2f, 0.5f, 0.2f, 0.5f) : new Color(0.5f, 0.2f, 0.2f, 0.5f));
+            GUI.Label(rr, _buildInfo.buildSucceeded ? "  ✓ SUCCESS" : "  ✗ FAILED", EditorStyles.boldLabel);
 
             GUILayout.Space(4);
-            LV("Total Size", SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes));
-            if (_buildInfo.BuildTime.TotalSeconds > 0)
-                LV("Build Time", _buildInfo.BuildTime.TotalMinutes >= 1 ? $"{(int)_buildInfo.BuildTime.TotalMinutes}m {_buildInfo.BuildTime.Seconds}s" : $"{_buildInfo.BuildTime.TotalSeconds:0.0}s");
-            LV("Assets", _buildInfo.TrackedAssetCount.ToString());
-            LV("Tracked", SharedTypes.FormatBytes(_buildInfo.TrackedBytes));
+            LV("Total Size", SharedTypes.FormatBytes(_buildInfo.totalBuildSizeBytes));
+            if (_buildInfo.buildTime.TotalSeconds > 0)
+                LV("Build Time", _buildInfo.buildTime.TotalMinutes >= 1 ? $"{(int)_buildInfo.buildTime.TotalMinutes}m {_buildInfo.buildTime.Seconds}s" : $"{_buildInfo.buildTime.TotalSeconds:0.0}s");
+            LV("Assets", _buildInfo.trackedAssetCount.ToString());
+            LV("Tracked", SharedTypes.FormatBytes(_buildInfo.trackedBytes));
 
             if (GUILayout.Button("Copy to Clipboard", GUILayout.Width(150)))
-                EditorGUIUtility.systemCopyBuffer = $"Build: {(_buildInfo.BuildSucceeded ? "OK" : "FAIL")}\nSize: {SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes)}\nAssets: {_buildInfo.TrackedAssetCount}";
+                EditorGUIUtility.systemCopyBuffer = $"Build: {(_buildInfo.buildSucceeded ? "OK" : "FAIL")}\nSize: {SharedTypes.FormatBytes(_buildInfo.totalBuildSizeBytes)}\nAssets: {_buildInfo.trackedAssetCount}";
             BridgeStyles.EndCard();
         }
 

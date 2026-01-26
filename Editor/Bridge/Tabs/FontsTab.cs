@@ -92,7 +92,7 @@ namespace Playgama.Editor.Tabs
 
                 DrawHeader();
 
-                if (!_buildInfo.HasData || _buildInfo.Assets == null || _buildInfo.Assets.Count == 0)
+                if (!_buildInfo.hasData || _buildInfo.assets == null || _buildInfo.assets.Count == 0)
                 {
                     EditorGUILayout.HelpBox("No analysis data yet. Run Build & Analyze first.", MessageType.Warning);
                     return;
@@ -135,26 +135,26 @@ namespace Playgama.Editor.Tabs
 
                 if (_largeFontCount > 0)
                 {
-                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_largeFontCount} Large", BridgeStyles.StatusRed);
+                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_largeFontCount} Large", BridgeStyles.statusRed);
                 }
                 if (_tmpFontCount > 0)
                 {
-                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_tmpFontCount} TMP", BridgeStyles.StatusYellow);
+                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_tmpFontCount} TMP", BridgeStyles.statusYellow);
                 }
                 if (_normalFontCount > 0)
                 {
-                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_normalFontCount} OK", BridgeStyles.StatusGreen);
+                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_normalFontCount} OK", BridgeStyles.statusGreen);
                 }
             }
 
             if (_foldHeader)
             {
                 BridgeStyles.BeginCard();
-                EditorGUILayout.LabelField("Analysis Mode", _buildInfo.DataMode.ToString());
-                EditorGUILayout.LabelField("Tracked Assets", _buildInfo.TrackedAssetCount.ToString());
+                EditorGUILayout.LabelField("Analysis Mode", _buildInfo.dataMode.ToString());
+                EditorGUILayout.LabelField("Tracked Assets", _buildInfo.trackedAssetCount.ToString());
 
-                string tb = SharedTypes.FormatBytes(_buildInfo.TrackedBytes);
-                if (_buildInfo.DataMode == BuildDataMode.DependenciesFallback) tb += " (estimated)";
+                string tb = SharedTypes.FormatBytes(_buildInfo.trackedBytes);
+                if (_buildInfo.dataMode == BuildDataMode.DependenciesFallback) tb += " (estimated)";
                 EditorGUILayout.LabelField("Tracked Bytes", tb);
 
                 if (_rows.Count > 0)
@@ -164,7 +164,7 @@ namespace Playgama.Editor.Tabs
                 }
 
                 GUILayout.Space(4);
-                EditorGUILayout.LabelField("Fonts (especially TMP fonts with many characters) can be large.", BridgeStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("Fonts (especially TMP fonts with many characters) can be large.", BridgeStyles.subtitleStyle);
                 BridgeStyles.EndCard();
             }
         }
@@ -369,7 +369,7 @@ namespace Playgama.Editor.Tabs
             rect.height -= 4;
 
             // Background color based on status
-            Color bgColor = BridgeStyles.StatusGray;
+            Color bgColor = BridgeStyles.statusGray;
             if (r.Status == StatusLevel.Critical) bgColor = new Color(0.5f, 0.2f, 0.2f, 0.3f);
             else if (r.Status == StatusLevel.Warning) bgColor = new Color(0.5f, 0.4f, 0.1f, 0.3f);
 
@@ -378,7 +378,7 @@ namespace Playgama.Editor.Tabs
             // Selection highlight
             if (r.Selected)
             {
-                EditorGUI.DrawRect(new Rect(rect.x, rect.y, 3, rect.height), BridgeStyles.BrandPurple);
+                EditorGUI.DrawRect(new Rect(rect.x, rect.y, 3, rect.height), BridgeStyles.brandPurple);
             }
 
             float x = rect.x + 4;
@@ -414,16 +414,16 @@ namespace Playgama.Editor.Tabs
 
             // Status indicator
             string statusText = "OK";
-            Color statusColor = BridgeStyles.StatusGreen;
+            Color statusColor = BridgeStyles.statusGreen;
             if (r.Status == StatusLevel.Critical)
             {
                 statusText = "Too Large";
-                statusColor = BridgeStyles.StatusRed;
+                statusColor = BridgeStyles.statusRed;
             }
             else if (r.Status == StatusLevel.Warning)
             {
                 statusText = "TMP";
-                statusColor = BridgeStyles.StatusYellow;
+                statusColor = BridgeStyles.statusYellow;
             }
 
             Rect statusRect = new Rect(x, rect.y + 4, 65, rect.height - 4);
@@ -475,21 +475,21 @@ namespace Playgama.Editor.Tabs
                     _normalFontCount = 0;
                     _totalFontBytes = 0;
 
-                    for (int i = 0; i < _buildInfo.Assets.Count; i++)
+                    for (int i = 0; i < _buildInfo.assets.Count; i++)
                     {
-                        var a = _buildInfo.Assets[i];
+                        var a = _buildInfo.assets[i];
                         if (a == null) continue;
-                        if (a.Category != AssetCategory.Fonts) continue;
-                        if (string.IsNullOrEmpty(a.Path)) continue;
+                        if (a.category != AssetCategory.Fonts) continue;
+                        if (string.IsNullOrEmpty(a.path)) continue;
 
-                        var mainAsset = AssetDatabase.LoadMainAssetAtPath(a.Path);
-                        string ext = System.IO.Path.GetExtension(a.Path).ToLowerInvariant();
+                        var mainAsset = AssetDatabase.LoadMainAssetAtPath(a.path);
+                        string ext = System.IO.Path.GetExtension(a.path).ToLowerInvariant();
 
                         var row = new Row
                         {
-                            Path = a.Path,
-                            SizeBytes = a.SizeBytes,
-                            IsSizeEstimated = a.IsSizeEstimated,
+                            Path = a.path,
+                            SizeBytes = a.sizeBytes,
+                            IsSizeEstimated = a.isSizeEstimated,
                             Selected = false,
                             FontName = "",
                             FontType = "Unknown",

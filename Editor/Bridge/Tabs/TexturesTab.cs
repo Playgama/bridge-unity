@@ -162,7 +162,7 @@ namespace Playgama.Editor.Tabs
 
                 DrawHeader();
 
-                if (!_buildInfo.HasData || _buildInfo.Assets == null || _buildInfo.Assets.Count == 0)
+                if (!_buildInfo.hasData || _buildInfo.assets == null || _buildInfo.assets.Count == 0)
                 {
                     EditorGUILayout.HelpBox("No analysis data yet. Run Build & Analyze first.", MessageType.Warning);
                     return;
@@ -192,11 +192,11 @@ namespace Playgama.Editor.Tabs
             if (_foldHeader)
             {
                 BridgeStyles.BeginCard();
-                EditorGUILayout.LabelField("Analysis Mode", _buildInfo.DataMode.ToString());
-                EditorGUILayout.LabelField("Tracked Assets", _buildInfo.TrackedAssetCount.ToString());
+                EditorGUILayout.LabelField("Analysis Mode", _buildInfo.dataMode.ToString());
+                EditorGUILayout.LabelField("Tracked Assets", _buildInfo.trackedAssetCount.ToString());
 
-                string tb = SharedTypes.FormatBytes(_buildInfo.TrackedBytes);
-                if (_buildInfo.DataMode == BuildDataMode.DependenciesFallback) tb += " (estimated)";
+                string tb = SharedTypes.FormatBytes(_buildInfo.trackedBytes);
+                if (_buildInfo.dataMode == BuildDataMode.DependenciesFallback) tb += " (estimated)";
                 EditorGUILayout.LabelField("Tracked Bytes", tb);
 
                 GUILayout.Space(8);
@@ -207,17 +207,17 @@ namespace Playgama.Editor.Tabs
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    DrawStatusLegendItem(BridgeStyles.StatusGreen, "Green", "Optimized", _greenCount);
+                    DrawStatusLegendItem(BridgeStyles.statusGreen, "Green", "Optimized", _greenCount);
                     GUILayout.Space(10);
-                    DrawStatusLegendItem(BridgeStyles.StatusYellow, "Yellow", "Could improve", _yellowCount);
+                    DrawStatusLegendItem(BridgeStyles.statusYellow, "Yellow", "Could improve", _yellowCount);
                     GUILayout.Space(10);
-                    DrawStatusLegendItem(BridgeStyles.StatusRed, "Red", "Needs attention", _redCount);
+                    DrawStatusLegendItem(BridgeStyles.statusRed, "Red", "Needs attention", _redCount);
                     GUILayout.FlexibleSpace();
                 }
 
                 GUILayout.Space(4);
 
-                if (_buildInfo.DataMode != BuildDataMode.PackedAssets)
+                if (_buildInfo.dataMode != BuildDataMode.PackedAssets)
                 {
                     EditorGUILayout.HelpBox(
                         "Sizes are estimated from source file sizes. Run 'Build & Analyze' to get actual compressed sizes from the build report.",
@@ -298,7 +298,7 @@ namespace Playgama.Editor.Tabs
                 // Show preset details
                 GUILayout.Space(2);
                 string presetDetails = GetPresetDetails(_preset);
-                EditorGUILayout.LabelField(presetDetails, BridgeStyles.SubtitleStyle);
+                EditorGUILayout.LabelField(presetDetails, BridgeStyles.subtitleStyle);
 
                 GUILayout.Space(8);
 
@@ -347,7 +347,7 @@ namespace Playgama.Editor.Tabs
 
                     Color oldBg = GUI.backgroundColor;
                     if (selectedCount > 0)
-                        GUI.backgroundColor = BridgeStyles.BrandPurple;
+                        GUI.backgroundColor = BridgeStyles.brandPurple;
 
                     string applyText = selectedCount > 0
                         ? $"Apply to {selectedCount} Selected Texture(s)"
@@ -447,7 +447,7 @@ namespace Playgama.Editor.Tabs
             // Selection highlight - more prominent
             if (r.Selected)
             {
-                EditorGUI.DrawRect(new Rect(rect.x, rect.y, 4, rect.height), BridgeStyles.BrandPurple);
+                EditorGUI.DrawRect(new Rect(rect.x, rect.y, 4, rect.height), BridgeStyles.brandPurple);
                 EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, 2), new Color(0.55f, 0.36f, 0.96f, 0.5f));
                 EditorGUI.DrawRect(new Rect(rect.x, rect.y + rect.height - 2, rect.width, 2), new Color(0.55f, 0.36f, 0.96f, 0.5f));
             }
@@ -573,25 +573,25 @@ namespace Playgama.Editor.Tabs
                     _yellowCount = 0;
                     _greenCount = 0;
 
-                    for (int i = 0; i < _buildInfo.Assets.Count; i++)
+                    for (int i = 0; i < _buildInfo.assets.Count; i++)
                     {
-                        var a = _buildInfo.Assets[i];
+                        var a = _buildInfo.assets[i];
                         if (a == null) continue;
-                        if (a.Category != AssetCategory.Textures) continue;
-                        if (string.IsNullOrEmpty(a.Path)) continue;
+                        if (a.category != AssetCategory.Textures) continue;
+                        if (string.IsNullOrEmpty(a.path)) continue;
 
-                        var main = AssetDatabase.LoadMainAssetAtPath(a.Path);
+                        var main = AssetDatabase.LoadMainAssetAtPath(a.path);
                         bool isTex2D = main is Texture2D;
                         Texture2D tex = main as Texture2D;
 
-                        var imp = AssetImporter.GetAtPath(a.Path) as TextureImporter;
+                        var imp = AssetImporter.GetAtPath(a.path) as TextureImporter;
 
                         var row = new Row
                         {
-                            Path = a.Path,
-                            SizeBytes = a.SizeBytes,
-                            SourceSizeBytes = a.SizeBytes,
-                            IsSizeEstimated = a.IsSizeEstimated,
+                            Path = a.path,
+                            SizeBytes = a.sizeBytes,
+                            SourceSizeBytes = a.sizeBytes,
+                            IsSizeEstimated = a.isSizeEstimated,
                             Selected = false,
 
                             ImporterFound = (imp != null),
@@ -892,10 +892,10 @@ namespace Playgama.Editor.Tabs
         {
             switch (s)
             {
-                case StatusLevel.Red: return BridgeStyles.StatusRed;
-                case StatusLevel.Yellow: return BridgeStyles.StatusYellow;
-                case StatusLevel.Green: return BridgeStyles.StatusGreen;
-                default: return BridgeStyles.StatusGray;
+                case StatusLevel.Red: return BridgeStyles.statusRed;
+                case StatusLevel.Yellow: return BridgeStyles.statusYellow;
+                case StatusLevel.Green: return BridgeStyles.statusGreen;
+                default: return BridgeStyles.statusGray;
             }
         }
 

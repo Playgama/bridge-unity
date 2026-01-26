@@ -90,41 +90,41 @@ namespace Playgama.Editor.Tabs
             _fontCount = 0;
             _otherCount = 0;
 
-            if (_buildInfo == null || !_buildInfo.HasData || _buildInfo.Assets == null)
+            if (_buildInfo == null || !_buildInfo.hasData || _buildInfo.assets == null)
                 return;
 
-            foreach (var asset in _buildInfo.Assets)
+            foreach (var asset in _buildInfo.assets)
             {
-                switch (asset.Category)
+                switch (asset.category)
                 {
                     case AssetCategory.Textures:
-                        _textureBytes += asset.SizeBytes;
+                        _textureBytes += asset.sizeBytes;
                         _textureCount++;
-                        if (asset.SizeBytes > 1024 * 1024) _textureIssues++;
+                        if (asset.sizeBytes > 1024 * 1024) _textureIssues++;
                         break;
                     case AssetCategory.Audio:
-                        _audioBytes += asset.SizeBytes;
+                        _audioBytes += asset.sizeBytes;
                         _audioCount++;
-                        if (asset.SizeBytes > 512 * 1024) _audioIssues++;
+                        if (asset.sizeBytes > 512 * 1024) _audioIssues++;
                         break;
                     case AssetCategory.Meshes:
                     case AssetCategory.Models:
-                        _meshBytes += asset.SizeBytes;
+                        _meshBytes += asset.sizeBytes;
                         _meshCount++;
-                        if (asset.SizeBytes > 256 * 1024) _meshIssues++;
+                        if (asset.sizeBytes > 256 * 1024) _meshIssues++;
                         break;
                     case AssetCategory.Shaders:
-                        _shaderBytes += asset.SizeBytes;
+                        _shaderBytes += asset.sizeBytes;
                         _shaderCount++;
-                        if (asset.SizeBytes > 100 * 1024) _shaderIssues++;
+                        if (asset.sizeBytes > 100 * 1024) _shaderIssues++;
                         break;
                     case AssetCategory.Fonts:
-                        _fontBytes += asset.SizeBytes;
+                        _fontBytes += asset.sizeBytes;
                         _fontCount++;
-                        if (asset.SizeBytes > 500 * 1024) _fontIssues++;
+                        if (asset.sizeBytes > 500 * 1024) _fontIssues++;
                         break;
                     default:
-                        _otherBytes += asset.SizeBytes;
+                        _otherBytes += asset.sizeBytes;
                         _otherCount++;
                         break;
                 }
@@ -170,7 +170,7 @@ namespace Playgama.Editor.Tabs
             EditorGUI.DrawRect(headerRect, new Color(0.15f, 0.15f, 0.18f));
 
             Rect accentRect = new Rect(headerRect.x, headerRect.y, headerRect.width, 4);
-            EditorGUI.DrawRect(accentRect, BridgeStyles.BrandPurple);
+            EditorGUI.DrawRect(accentRect, BridgeStyles.brandPurple);
 
             Rect titleRect = new Rect(headerRect.x + 20, headerRect.y + 25, headerRect.width - 40, 40);
             EditorGUI.LabelField(titleRect, "Playgama Bridge", _titleStyle);
@@ -181,7 +181,7 @@ namespace Playgama.Editor.Tabs
             string version = GetPackageVersion();
             float versionWidth = version.Length > 6 ? 70 : 60;
             Rect versionRect = new Rect(headerRect.x + headerRect.width - versionWidth - 20, headerRect.y + 30, versionWidth, 20);
-            EditorGUI.DrawRect(versionRect, BridgeStyles.BrandPurple);
+            EditorGUI.DrawRect(versionRect, BridgeStyles.brandPurple);
             EditorGUI.LabelField(versionRect, "v" + version, _versionStyle);
         }
 
@@ -207,7 +207,7 @@ namespace Playgama.Editor.Tabs
             EditorGUI.DrawRect(warningRect, bgColor);
 
             // Left accent bar
-            Color accentColor = templateInstalled ? BridgeStyles.StatusYellow : BridgeStyles.StatusRed;
+            Color accentColor = templateInstalled ? BridgeStyles.statusYellow : BridgeStyles.statusRed;
             EditorGUI.DrawRect(new Rect(warningRect.x, warningRect.y, 4, warningRect.height), accentColor);
 
             // Warning icon
@@ -250,7 +250,7 @@ namespace Playgama.Editor.Tabs
             Rect buttonRect = new Rect(warningRect.x + warningRect.width - 120, warningRect.y + (warningRect.height - 28) / 2, 105, 28);
 
             Color oldBg = GUI.backgroundColor;
-            GUI.backgroundColor = templateInstalled ? BridgeStyles.StatusYellow : BridgeStyles.BrandPurple;
+            GUI.backgroundColor = templateInstalled ? BridgeStyles.statusYellow : BridgeStyles.brandPurple;
 
             string buttonText = templateInstalled ? "Fix Now" : "Install";
             if (GUI.Button(buttonRect, buttonText))
@@ -279,7 +279,7 @@ namespace Playgama.Editor.Tabs
             EditorGUI.DrawRect(cardRect, new Color(0.18f, 0.18f, 0.21f));
 
             // Left border accent
-            EditorGUI.DrawRect(new Rect(cardRect.x, cardRect.y, 3, cardRect.height), BridgeStyles.BrandPurple);
+            EditorGUI.DrawRect(new Rect(cardRect.x, cardRect.y, 3, cardRect.height), BridgeStyles.brandPurple);
 
             float columnWidth = (cardRect.width - 40) / 4f;
             float startX = cardRect.x + 20;
@@ -287,20 +287,20 @@ namespace Playgama.Editor.Tabs
 
             // Build Size
             DrawStatusColumn(startX, centerY, columnWidth,
-                _buildInfo != null && _buildInfo.HasData ? SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes) : "No build",
+                _buildInfo != null && _buildInfo.hasData ? SharedTypes.FormatBytes(_buildInfo.totalBuildSizeBytes) : "No build",
                 "Last Build");
 
             // Warnings
-            string warningText = _buildInfo != null && _buildInfo.HasData ? _totalWarnings.ToString() : "-";
-            Color warningColor = _totalWarnings > 0 ? BridgeStyles.StatusYellow : BridgeStyles.StatusGreen;
+            string warningText = _buildInfo != null && _buildInfo.hasData ? _totalWarnings.ToString() : "-";
+            Color warningColor = _totalWarnings > 0 ? BridgeStyles.statusYellow : BridgeStyles.statusGreen;
             DrawStatusColumn(startX + columnWidth, centerY, columnWidth, warningText, "Warnings", warningColor);
 
             // Suggestions
-            string suggestionText = _buildInfo != null && _buildInfo.HasData ? _totalSuggestions.ToString() : "-";
+            string suggestionText = _buildInfo != null && _buildInfo.hasData ? _totalSuggestions.ToString() : "-";
             DrawStatusColumn(startX + columnWidth * 2, centerY, columnWidth, suggestionText, "Suggestions");
 
             // Assets Tracked
-            string assetsText = _buildInfo != null && _buildInfo.HasData ? _buildInfo.TrackedAssetCount.ToString() : "-";
+            string assetsText = _buildInfo != null && _buildInfo.hasData ? _buildInfo.trackedAssetCount.ToString() : "-";
             DrawStatusColumn(startX + columnWidth * 3, centerY, columnWidth, assetsText, "Assets");
         }
 
@@ -319,7 +319,7 @@ namespace Playgama.Editor.Tabs
 
         private void DrawBuildBreakdown()
         {
-            if (_buildInfo == null || !_buildInfo.HasData)
+            if (_buildInfo == null || !_buildInfo.hasData)
                 return;
 
             long totalTracked = _textureBytes + _audioBytes + _meshBytes + _shaderBytes + _fontBytes + _otherBytes;
@@ -480,7 +480,7 @@ namespace Playgama.Editor.Tabs
             EditorGUI.DrawRect(wizardRect, bgColor);
 
             // Purple accent on left
-            EditorGUI.DrawRect(new Rect(wizardRect.x, wizardRect.y, 4, wizardRect.height), BridgeStyles.BrandPurple);
+            EditorGUI.DrawRect(new Rect(wizardRect.x, wizardRect.y, 4, wizardRect.height), BridgeStyles.brandPurple);
 
             if (isHover)
                 EditorGUIUtility.AddCursorRect(wizardRect, MouseCursor.Link);
@@ -549,7 +549,7 @@ namespace Playgama.Editor.Tabs
 
                 using (new EditorGUILayout.VerticalScope(GUILayout.Width(145)))
                 {
-                    bool hasData = _buildInfo != null && _buildInfo.HasData;
+                    bool hasData = _buildInfo != null && _buildInfo.hasData;
                     if (DrawQuickActionButton("\u2398", "Export Report", hasData ? "Copy to clipboard" : "Build first", !hasData))
                     {
                         if (hasData)
@@ -574,7 +574,7 @@ namespace Playgama.Editor.Tabs
             EditorGUI.DrawRect(btnRect, bgColor);
 
             Rect accentRect = new Rect(btnRect.x, btnRect.y, 3, btnRect.height);
-            EditorGUI.DrawRect(accentRect, disabled ? new Color(0.3f, 0.3f, 0.35f) : BridgeStyles.BrandPurple);
+            EditorGUI.DrawRect(accentRect, disabled ? new Color(0.3f, 0.3f, 0.35f) : BridgeStyles.brandPurple);
 
             if (isHover)
                 EditorGUIUtility.AddCursorRect(btnRect, MouseCursor.Link);
@@ -638,20 +638,20 @@ namespace Playgama.Editor.Tabs
 
             // Status indicator
             Rect statusRect = new Rect(rowRect.x + 160, rowRect.y + 6, 70, 16);
-            if (_buildInfo != null && _buildInfo.HasData)
+            if (_buildInfo != null && _buildInfo.hasData)
             {
                 if (issueCount > 0)
                 {
                     EditorGUI.DrawRect(statusRect, new Color(0.8f, 0.6f, 0.2f, 0.3f));
                     GUIStyle warningStyle = new GUIStyle(EditorStyles.miniLabel);
-                    warningStyle.normal.textColor = BridgeStyles.StatusYellow;
+                    warningStyle.normal.textColor = BridgeStyles.statusYellow;
                     warningStyle.alignment = TextAnchor.MiddleCenter;
                     EditorGUI.LabelField(statusRect, $"\u26A0 {issueCount} issues", warningStyle);
                 }
                 else
                 {
                     GUIStyle okStyle = new GUIStyle(EditorStyles.miniLabel);
-                    okStyle.normal.textColor = BridgeStyles.StatusGreen;
+                    okStyle.normal.textColor = BridgeStyles.statusGreen;
                     okStyle.alignment = TextAnchor.MiddleCenter;
                     EditorGUI.LabelField(statusRect, "\u2714 OK", okStyle);
                 }
@@ -715,8 +715,8 @@ namespace Playgama.Editor.Tabs
             // Border on hover
             if (isHover)
             {
-                EditorGUI.DrawRect(new Rect(btnRect.x, btnRect.y, btnRect.width, 2), BridgeStyles.BrandPurple);
-                EditorGUI.DrawRect(new Rect(btnRect.x, btnRect.y + btnRect.height - 2, btnRect.width, 2), BridgeStyles.BrandPurple);
+                EditorGUI.DrawRect(new Rect(btnRect.x, btnRect.y, btnRect.width, 2), BridgeStyles.brandPurple);
+                EditorGUI.DrawRect(new Rect(btnRect.x, btnRect.y + btnRect.height - 2, btnRect.width, 2), BridgeStyles.brandPurple);
                 EditorGUIUtility.AddCursorRect(btnRect, MouseCursor.Link);
             }
 
@@ -724,7 +724,7 @@ namespace Playgama.Editor.Tabs
             Rect iconRect = new Rect(btnRect.x + 12, btnRect.y + 10, 24, 24);
             GUIStyle iconStyle = new GUIStyle(EditorStyles.boldLabel);
             iconStyle.fontSize = 16;
-            iconStyle.normal.textColor = BridgeStyles.BrandPurple;
+            iconStyle.normal.textColor = BridgeStyles.brandPurple;
             EditorGUI.LabelField(iconRect, icon, iconStyle);
 
             // Title
@@ -781,12 +781,12 @@ namespace Playgama.Editor.Tabs
             sb.AppendLine("============================");
             sb.AppendLine();
 
-            if (_buildInfo != null && _buildInfo.HasData)
+            if (_buildInfo != null && _buildInfo.hasData)
             {
-                sb.AppendLine($"Total Build Size: {SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes)}");
-                sb.AppendLine($"Analysis Mode: {_buildInfo.DataMode}");
-                sb.AppendLine($"Tracked Assets: {_buildInfo.TrackedAssetCount}");
-                sb.AppendLine($"Build Time: {_buildInfo.BuildTime.TotalSeconds:F1}s");
+                sb.AppendLine($"Total Build Size: {SharedTypes.FormatBytes(_buildInfo.totalBuildSizeBytes)}");
+                sb.AppendLine($"Analysis Mode: {_buildInfo.dataMode}");
+                sb.AppendLine($"Tracked Assets: {_buildInfo.trackedAssetCount}");
+                sb.AppendLine($"Build Time: {_buildInfo.buildTime.TotalSeconds:F1}s");
                 sb.AppendLine();
                 sb.AppendLine("Issues Detected:");
                 sb.AppendLine($"  Textures: {_textureIssues}");
@@ -797,13 +797,13 @@ namespace Playgama.Editor.Tabs
                 sb.AppendLine();
                 sb.AppendLine("Top 5 Largest Assets:");
 
-                if (_buildInfo.Assets != null)
+                if (_buildInfo.assets != null)
                 {
-                    var top5 = _buildInfo.Assets.OrderByDescending(a => a.SizeBytes).Take(5);
+                    var top5 = _buildInfo.assets.OrderByDescending(a => a.sizeBytes).Take(5);
                     foreach (var asset in top5)
                     {
                         if (asset != null)
-                            sb.AppendLine($"  {SharedTypes.FormatBytes(asset.SizeBytes)} - {Path.GetFileName(asset.Path)}");
+                            sb.AppendLine($"  {SharedTypes.FormatBytes(asset.sizeBytes)} - {Path.GetFileName(asset.path)}");
                     }
                 }
             }

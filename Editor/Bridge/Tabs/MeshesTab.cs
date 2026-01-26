@@ -162,7 +162,7 @@ namespace Playgama.Editor.Tabs
 
                 DrawHeader();
 
-                if (!_buildInfo.HasData || _buildInfo.Assets == null || _buildInfo.Assets.Count == 0)
+                if (!_buildInfo.hasData || _buildInfo.assets == null || _buildInfo.assets.Count == 0)
                 {
                     EditorGUILayout.HelpBox("No analysis data yet. Run Build & Analyze first.", MessageType.Warning);
                     return;
@@ -192,11 +192,11 @@ namespace Playgama.Editor.Tabs
             if (_foldHeader)
             {
                 BridgeStyles.BeginCard();
-                EditorGUILayout.LabelField("Analysis Mode", _buildInfo.DataMode.ToString());
-                EditorGUILayout.LabelField("Tracked Assets", _buildInfo.TrackedAssetCount.ToString());
+                EditorGUILayout.LabelField("Analysis Mode", _buildInfo.dataMode.ToString());
+                EditorGUILayout.LabelField("Tracked Assets", _buildInfo.trackedAssetCount.ToString());
 
-                string tracked = SharedTypes.FormatBytes(_buildInfo.TrackedBytes);
-                if (_buildInfo.DataMode == BuildDataMode.DependenciesFallback) tracked += " (estimated)";
+                string tracked = SharedTypes.FormatBytes(_buildInfo.trackedBytes);
+                if (_buildInfo.dataMode == BuildDataMode.DependenciesFallback) tracked += " (estimated)";
                 EditorGUILayout.LabelField("Tracked Bytes", tracked);
 
                 GUILayout.Space(8);
@@ -205,11 +205,11 @@ namespace Playgama.Editor.Tabs
                 EditorGUILayout.LabelField("Mesh Status Summary:", EditorStyles.boldLabel);
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    DrawStatusBadge(BridgeStyles.StatusRed, $"{_uncompressedCount} uncompressed", "No mesh compression applied");
+                    DrawStatusBadge(BridgeStyles.statusRed, $"{_uncompressedCount} uncompressed", "No mesh compression applied");
                     GUILayout.Space(10);
-                    DrawStatusBadge(BridgeStyles.StatusYellow, $"{_readableCount} Read/Write ON", "Using extra memory");
+                    DrawStatusBadge(BridgeStyles.statusYellow, $"{_readableCount} Read/Write ON", "Using extra memory");
                     GUILayout.Space(10);
-                    DrawStatusBadge(BridgeStyles.StatusGreen, $"{_optimizedCount} optimized", "Good settings");
+                    DrawStatusBadge(BridgeStyles.statusGreen, $"{_optimizedCount} optimized", "Good settings");
                     GUILayout.FlexibleSpace();
                 }
 
@@ -282,7 +282,7 @@ namespace Playgama.Editor.Tabs
                 if (_applyCompression && selectedCount > 0)
                 {
                     GUILayout.Space(10);
-                    GUILayout.Label($"Will apply {_compression} to {selectedCount} mesh(es)", BridgeStyles.SubtitleStyle);
+                    GUILayout.Label($"Will apply {_compression} to {selectedCount} mesh(es)", BridgeStyles.subtitleStyle);
                 }
 
                 GUI.enabled = true;
@@ -303,7 +303,7 @@ namespace Playgama.Editor.Tabs
                 {
                     GUILayout.Space(10);
                     string readableInfo = _setReadable ? "(Enables CPU access - uses more memory)" : "(Disables CPU access - saves memory)";
-                    GUILayout.Label(readableInfo, BridgeStyles.SubtitleStyle);
+                    GUILayout.Label(readableInfo, BridgeStyles.subtitleStyle);
                 }
 
                 GUI.enabled = true;
@@ -355,7 +355,7 @@ namespace Playgama.Editor.Tabs
                         GUI.enabled = true;
                     }
 
-                    EditorGUILayout.LabelField("Static flags affect batching, lightmapping, occlusion, and reflection probes.", BridgeStyles.SubtitleStyle);
+                    EditorGUILayout.LabelField("Static flags affect batching, lightmapping, occlusion, and reflection probes.", BridgeStyles.subtitleStyle);
                 }
             }
 
@@ -370,7 +370,7 @@ namespace Playgama.Editor.Tabs
 
                 Color oldBg = GUI.backgroundColor;
                 if (selectedCount > 0 && (_applyCompression || _applyReadable || _applyStaticFlags))
-                    GUI.backgroundColor = BridgeStyles.BrandPurple;
+                    GUI.backgroundColor = BridgeStyles.brandPurple;
 
                 string applyText = selectedCount > 0
                     ? $"Apply to {selectedCount} Selected Mesh(es)"
@@ -563,7 +563,7 @@ namespace Playgama.Editor.Tabs
             // Selection highlight
             if (r.Selected)
             {
-                EditorGUI.DrawRect(new Rect(rect.x, rect.y, 4, rect.height), BridgeStyles.BrandPurple);
+                EditorGUI.DrawRect(new Rect(rect.x, rect.y, 4, rect.height), BridgeStyles.brandPurple);
                 EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, 2), new Color(0.55f, 0.36f, 0.96f, 0.4f));
             }
 
@@ -723,10 +723,10 @@ namespace Playgama.Editor.Tabs
         {
             switch (s)
             {
-                case StatusLevel.Red: return BridgeStyles.StatusRed;
-                case StatusLevel.Yellow: return BridgeStyles.StatusYellow;
-                case StatusLevel.Green: return BridgeStyles.StatusGreen;
-                default: return BridgeStyles.StatusGray;
+                case StatusLevel.Red: return BridgeStyles.statusRed;
+                case StatusLevel.Yellow: return BridgeStyles.statusYellow;
+                case StatusLevel.Green: return BridgeStyles.statusGreen;
+                default: return BridgeStyles.statusGray;
             }
         }
 
@@ -746,24 +746,24 @@ namespace Playgama.Editor.Tabs
                     _readableCount = 0;
                     _optimizedCount = 0;
 
-                    for (int i = 0; i < _buildInfo.Assets.Count; i++)
+                    for (int i = 0; i < _buildInfo.assets.Count; i++)
                     {
-                        var a = _buildInfo.Assets[i];
+                        var a = _buildInfo.assets[i];
                         if (a == null) continue;
-                        if (string.IsNullOrEmpty(a.Path)) continue;
+                        if (string.IsNullOrEmpty(a.path)) continue;
 
-                        string cat = a.Category.ToString();
+                        string cat = a.category.ToString();
                         bool isModel = cat.Equals("Meshes", StringComparison.OrdinalIgnoreCase) ||
                                        cat.Equals("Models", StringComparison.OrdinalIgnoreCase);
                         if (!isModel) continue;
 
-                        var imp = AssetImporter.GetAtPath(a.Path) as ModelImporter;
+                        var imp = AssetImporter.GetAtPath(a.path) as ModelImporter;
 
                         var row = new Row
                         {
-                            Path = a.Path,
-                            SizeBytes = a.SizeBytes,
-                            IsSizeEstimated = a.IsSizeEstimated,
+                            Path = a.path,
+                            SizeBytes = a.sizeBytes,
+                            IsSizeEstimated = a.isSizeEstimated,
                             Selected = false,
 
                             ImporterFound = (imp != null),
@@ -780,7 +780,7 @@ namespace Playgama.Editor.Tabs
                             row.MeshCompression = imp.meshCompression;
                         }
 
-                        var go = AssetDatabase.LoadAssetAtPath<GameObject>(a.Path);
+                        var go = AssetDatabase.LoadAssetAtPath<GameObject>(a.path);
                         if (go != null)
                         {
                             row.RootFound = true;

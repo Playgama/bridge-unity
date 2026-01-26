@@ -168,7 +168,7 @@ namespace Playgama.Editor
                 }
                 else if (i == _currentStep)
                 {
-                    bgColor = BridgeStyles.BrandPurple;
+                    bgColor = BridgeStyles.brandPurple;
                 }
                 else if (i <= _highestStepReached)
                 {
@@ -237,7 +237,7 @@ namespace Playgama.Editor
             Rect nextRect = new Rect(navRect.x + navRect.width - buttonWidth - 20, buttonY, buttonWidth, buttonHeight);
 
             Color oldBg = GUI.backgroundColor;
-            GUI.backgroundColor = BridgeStyles.BrandPurple;
+            GUI.backgroundColor = BridgeStyles.brandPurple;
 
             string nextLabel = _currentStep == _stepNames.Length - 1 ? "Finish ✓" : "Next →";
             if (GUI.Button(nextRect, nextLabel))
@@ -285,7 +285,7 @@ namespace Playgama.Editor
             DrawChecklistItem("5. Build Settings", "Configure optimal WebGL settings");
 
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField("Click 'Next' to begin!", BridgeStyles.SubtitleStyle);
+            EditorGUILayout.LabelField("Click 'Next' to begin!", BridgeStyles.subtitleStyle);
             BridgeStyles.EndCard();
         }
 
@@ -297,7 +297,7 @@ namespace Playgama.Editor
                 using (new EditorGUILayout.VerticalScope())
                 {
                     EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
-                    EditorGUILayout.LabelField(description, BridgeStyles.SubtitleStyle);
+                    EditorGUILayout.LabelField(description, BridgeStyles.subtitleStyle);
                 }
             }
             EditorGUILayout.Space(5);
@@ -316,14 +316,14 @@ namespace Playgama.Editor
 
             BridgeStyles.BeginCard();
 
-            if (_buildInfo != null && _buildInfo.HasData)
+            if (_buildInfo != null && _buildInfo.hasData)
             {
                 EditorGUILayout.LabelField("✓ Build Analysis Available", EditorStyles.boldLabel);
                 EditorGUILayout.Space(10);
 
-                EditorGUILayout.LabelField("Total Build Size:", SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes));
-                EditorGUILayout.LabelField("Tracked Assets:", _buildInfo.TrackedAssetCount.ToString());
-                EditorGUILayout.LabelField("Analysis Mode:", _buildInfo.DataMode.ToString());
+                EditorGUILayout.LabelField("Total Build Size:", SharedTypes.FormatBytes(_buildInfo.totalBuildSizeBytes));
+                EditorGUILayout.LabelField("Tracked Assets:", _buildInfo.trackedAssetCount.ToString());
+                EditorGUILayout.LabelField("Analysis Mode:", _buildInfo.dataMode.ToString());
 
                 EditorGUILayout.Space(10);
                 EditorGUILayout.HelpBox("You can proceed with the existing analysis or run a new build.", MessageType.Info);
@@ -352,7 +352,7 @@ namespace Playgama.Editor
                 EditorGUILayout.Space(10);
 
                 Color oldBg = GUI.backgroundColor;
-                GUI.backgroundColor = BridgeStyles.BrandPurple;
+                GUI.backgroundColor = BridgeStyles.brandPurple;
                 if (GUILayout.Button("Build & Analyze Now", GUILayout.Height(40)))
                 {
                     RunBuildAndAnalyze();
@@ -360,7 +360,7 @@ namespace Playgama.Editor
                 GUI.backgroundColor = oldBg;
 
                 EditorGUILayout.Space(10);
-                EditorGUILayout.LabelField("Or skip this step to continue with manual optimization.", BridgeStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("Or skip this step to continue with manual optimization.", BridgeStyles.subtitleStyle);
             }
 
             BridgeStyles.EndCard();
@@ -381,17 +381,17 @@ namespace Playgama.Editor
 
         private void RefreshAssetLists()
         {
-            if (_buildInfo == null || !_buildInfo.HasData)
+            if (_buildInfo == null || !_buildInfo.hasData)
                 return;
 
             _textures.Clear();
-            foreach (var asset in _buildInfo.Assets.Where(a => a.Category == AssetCategory.Textures))
+            foreach (var asset in _buildInfo.assets.Where(a => a.category == AssetCategory.Textures))
             {
-                var importer = AssetImporter.GetAtPath(asset.Path) as TextureImporter;
+                var importer = AssetImporter.GetAtPath(asset.path) as TextureImporter;
                 _textures.Add(new TextureAssetInfo
                 {
-                    Path = asset.Path,
-                    SizeBytes = asset.SizeBytes,
+                    Path = asset.path,
+                    SizeBytes = asset.sizeBytes,
                     MaxSize = importer?.maxTextureSize ?? 2048,
                     Selected = true
                 });
@@ -399,13 +399,13 @@ namespace Playgama.Editor
             _textures = _textures.OrderByDescending(t => t.SizeBytes).ToList();
 
             _audioClips.Clear();
-            foreach (var asset in _buildInfo.Assets.Where(a => a.Category == AssetCategory.Audio))
+            foreach (var asset in _buildInfo.assets.Where(a => a.category == AssetCategory.Audio))
             {
-                var importer = AssetImporter.GetAtPath(asset.Path) as AudioImporter;
+                var importer = AssetImporter.GetAtPath(asset.path) as AudioImporter;
                 _audioClips.Add(new AudioAssetInfo
                 {
-                    Path = asset.Path,
-                    SizeBytes = asset.SizeBytes,
+                    Path = asset.path,
+                    SizeBytes = asset.sizeBytes,
                     LoadType = importer?.defaultSampleSettings.loadType ?? AudioClipLoadType.DecompressOnLoad,
                     Selected = true
                 });
@@ -413,13 +413,13 @@ namespace Playgama.Editor
             _audioClips = _audioClips.OrderByDescending(a => a.SizeBytes).ToList();
 
             _meshes.Clear();
-            foreach (var asset in _buildInfo.Assets.Where(a => a.Category == AssetCategory.Meshes || a.Category == AssetCategory.Models))
+            foreach (var asset in _buildInfo.assets.Where(a => a.category == AssetCategory.Meshes || a.category == AssetCategory.Models))
             {
-                var importer = AssetImporter.GetAtPath(asset.Path) as ModelImporter;
+                var importer = AssetImporter.GetAtPath(asset.path) as ModelImporter;
                 _meshes.Add(new MeshAssetInfo
                 {
-                    Path = asset.Path,
-                    SizeBytes = asset.SizeBytes,
+                    Path = asset.path,
+                    SizeBytes = asset.sizeBytes,
                     Compression = importer?.meshCompression ?? ModelImporterMeshCompression.Off,
                     Selected = true
                 });
@@ -496,7 +496,7 @@ namespace Playgama.Editor
 
                 GUI.enabled = selectedCount > 0;
                 Color oldBg = GUI.backgroundColor;
-                GUI.backgroundColor = BridgeStyles.BrandPurple;
+                GUI.backgroundColor = BridgeStyles.brandPurple;
                 if (GUILayout.Button($"Apply to {selectedCount} Textures", GUILayout.Height(25), GUILayout.Width(180)))
                 {
                     ApplyTextureOptimization();
@@ -622,7 +622,7 @@ namespace Playgama.Editor
 
                 GUI.enabled = selectedCount > 0;
                 Color oldBg = GUI.backgroundColor;
-                GUI.backgroundColor = BridgeStyles.BrandPurple;
+                GUI.backgroundColor = BridgeStyles.brandPurple;
                 if (GUILayout.Button($"Apply to {selectedCount} Audio Clips", GUILayout.Height(25), GUILayout.Width(180)))
                 {
                     ApplyAudioOptimization();
@@ -756,7 +756,7 @@ namespace Playgama.Editor
 
                 GUI.enabled = selectedCount > 0;
                 Color oldBg = GUI.backgroundColor;
-                GUI.backgroundColor = BridgeStyles.BrandPurple;
+                GUI.backgroundColor = BridgeStyles.brandPurple;
                 if (GUILayout.Button($"Apply to {selectedCount} Models", GUILayout.Height(25), GUILayout.Width(180)))
                 {
                     ApplyMeshOptimization();
@@ -847,7 +847,7 @@ namespace Playgama.Editor
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Development Build:", GUILayout.Width(150));
             bool newDevBuild = EditorGUILayout.Toggle(devBuild, GUILayout.Width(30));
-            EditorGUILayout.LabelField(devBuild ? "ON (larger build)" : "OFF (recommended)", BridgeStyles.SubtitleStyle);
+            EditorGUILayout.LabelField(devBuild ? "ON (larger build)" : "OFF (recommended)", BridgeStyles.subtitleStyle);
             EditorGUILayout.EndHorizontal();
             if (newDevBuild != devBuild)
                 EditorUserBuildSettings.development = newDevBuild;
@@ -859,7 +859,7 @@ namespace Playgama.Editor
             string compression = PlayerSettings.WebGL.compressionFormat.ToString();
             EditorGUILayout.LabelField(compression, EditorStyles.boldLabel);
             if (compression == "Disabled")
-                EditorGUILayout.LabelField("(Enable Brotli for best results)", BridgeStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("(Enable Brotli for best results)", BridgeStyles.subtitleStyle);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space(5);
@@ -868,7 +868,7 @@ namespace Playgama.Editor
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Name Files As Hashes:", GUILayout.Width(150));
             bool newNameAsHashes = EditorGUILayout.Toggle(nameAsHashes, GUILayout.Width(30));
-            EditorGUILayout.LabelField(nameAsHashes ? "ON (better caching)" : "OFF", BridgeStyles.SubtitleStyle);
+            EditorGUILayout.LabelField(nameAsHashes ? "ON (better caching)" : "OFF", BridgeStyles.subtitleStyle);
             EditorGUILayout.EndHorizontal();
             if (newNameAsHashes != nameAsHashes)
                 PlayerSettings.WebGL.nameFilesAsHashes = newNameAsHashes;
@@ -917,9 +917,9 @@ namespace Playgama.Editor
             EditorGUILayout.LabelField("Summary", EditorStyles.boldLabel);
             EditorGUILayout.Space(10);
 
-            if (_buildInfo != null && _buildInfo.HasData)
+            if (_buildInfo != null && _buildInfo.hasData)
             {
-                EditorGUILayout.LabelField($"Build Size: {SharedTypes.FormatBytes(_buildInfo.TotalBuildSizeBytes)}");
+                EditorGUILayout.LabelField($"Build Size: {SharedTypes.FormatBytes(_buildInfo.totalBuildSizeBytes)}");
                 EditorGUILayout.LabelField($"Textures: {_textures.Count} assets");
                 EditorGUILayout.LabelField($"Audio: {_audioClips.Count} assets");
                 EditorGUILayout.LabelField($"Meshes: {_meshes.Count} assets");
@@ -990,7 +990,7 @@ namespace Playgama.Editor
         private void DrawStepTitle(string title, string subtitle)
         {
             EditorGUILayout.LabelField(title, EditorStyles.whiteLargeLabel);
-            EditorGUILayout.LabelField(subtitle, BridgeStyles.SubtitleStyle);
+            EditorGUILayout.LabelField(subtitle, BridgeStyles.subtitleStyle);
         }
 
         private void DrawAssetRow(string path, long sizeBytes, ref bool selected, string info)

@@ -164,24 +164,24 @@ namespace Playgama.Editor
 
         public BuildReportData(BuildInfo info)
         {
-            TotalBuildSizeBytes = info.TotalBuildSizeBytes;
-            DataMode = info.DataMode.ToString();
-            HasData = info.HasData;
-            TrackedAssetCount = info.TrackedAssetCount;
-            TrackedBytes = info.TrackedBytes;
-            StatusMessage = info.StatusMessage;
-            BuildTargetName = info.BuildTargetName;
-            BuildTimeSeconds = info.BuildTime.TotalSeconds;
-            BuildSucceeded = info.BuildSucceeded;
-            UsedBuildReport = info.UsedBuildReport;
-            PackedGroupsCount = info.PackedGroupsCount;
-            EmptyPathsCount = info.EmptyPathsCount;
-            ModeDiagnostics = info.ModeDiagnostics;
+            TotalBuildSizeBytes = info.totalBuildSizeBytes;
+            DataMode = info.dataMode.ToString();
+            HasData = info.hasData;
+            TrackedAssetCount = info.trackedAssetCount;
+            TrackedBytes = info.trackedBytes;
+            StatusMessage = info.statusMessage;
+            BuildTargetName = info.buildTargetName;
+            BuildTimeSeconds = info.buildTime.TotalSeconds;
+            BuildSucceeded = info.buildSucceeded;
+            UsedBuildReport = info.usedBuildReport;
+            PackedGroupsCount = info.packedGroupsCount;
+            EmptyPathsCount = info.emptyPathsCount;
+            ModeDiagnostics = info.modeDiagnostics;
             SavedAt = DateTime.Now.ToString("o");
 
-            if (info.Assets != null)
+            if (info.assets != null)
             {
-                foreach (var asset in info.Assets)
+                foreach (var asset in info.assets)
                 {
                     if (asset != null)
                     {
@@ -195,25 +195,25 @@ namespace Playgama.Editor
         {
             var info = new BuildInfo
             {
-                TotalBuildSizeBytes = TotalBuildSizeBytes,
-                DataMode = (BuildDataMode)Enum.Parse(typeof(BuildDataMode), DataMode),
-                HasData = HasData,
-                TrackedAssetCount = TrackedAssetCount,
-                TrackedBytes = TrackedBytes,
-                StatusMessage = StatusMessage,
-                BuildTargetName = BuildTargetName,
-                BuildTime = TimeSpan.FromSeconds(BuildTimeSeconds),
-                BuildSucceeded = BuildSucceeded,
-                UsedBuildReport = UsedBuildReport,
-                PackedGroupsCount = PackedGroupsCount,
-                EmptyPathsCount = EmptyPathsCount,
-                ModeDiagnostics = ModeDiagnostics,
-                Assets = new List<AssetInfo>()
+                totalBuildSizeBytes = TotalBuildSizeBytes,
+                dataMode = (BuildDataMode)Enum.Parse(typeof(BuildDataMode), DataMode),
+                hasData = HasData,
+                trackedAssetCount = TrackedAssetCount,
+                trackedBytes = TrackedBytes,
+                statusMessage = StatusMessage,
+                buildTargetName = BuildTargetName,
+                buildTime = TimeSpan.FromSeconds(BuildTimeSeconds),
+                buildSucceeded = BuildSucceeded,
+                usedBuildReport = UsedBuildReport,
+                packedGroupsCount = PackedGroupsCount,
+                emptyPathsCount = EmptyPathsCount,
+                modeDiagnostics = ModeDiagnostics,
+                assets = new List<AssetInfo>()
             };
 
             foreach (var assetData in Assets)
             {
-                info.Assets.Add(assetData.ToAssetInfo());
+                info.assets.Add(assetData.ToAssetInfo());
             }
 
             return info;
@@ -233,22 +233,22 @@ namespace Playgama.Editor
 
         public AssetInfoData(AssetInfo asset)
         {
-            Path = asset.Path;
-            SizeBytes = asset.SizeBytes;
-            TypeName = asset.TypeName;
-            Category = asset.Category.ToString();
-            IsSizeEstimated = asset.IsSizeEstimated;
+            Path = asset.path;
+            SizeBytes = asset.sizeBytes;
+            TypeName = asset.typeName;
+            Category = asset.category.ToString();
+            IsSizeEstimated = asset.isSizeEstimated;
         }
 
         public AssetInfo ToAssetInfo()
         {
             return new AssetInfo
             {
-                Path = Path,
-                SizeBytes = SizeBytes,
-                TypeName = TypeName,
-                Category = (AssetCategory)Enum.Parse(typeof(AssetCategory), Category),
-                IsSizeEstimated = IsSizeEstimated
+                path = Path,
+                sizeBytes = SizeBytes,
+                typeName = TypeName,
+                category = (AssetCategory)Enum.Parse(typeof(AssetCategory), Category),
+                isSizeEstimated = IsSizeEstimated
             };
         }
     }

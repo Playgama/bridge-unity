@@ -97,7 +97,7 @@ namespace Playgama.Editor.Tabs
 
                 DrawHeader();
 
-                if (!_buildInfo.HasData || _buildInfo.Assets == null || _buildInfo.Assets.Count == 0)
+                if (!_buildInfo.hasData || _buildInfo.assets == null || _buildInfo.assets.Count == 0)
                 {
                     EditorGUILayout.HelpBox("No analysis data yet. Run Build & Analyze first.", MessageType.Warning);
                     return;
@@ -139,30 +139,30 @@ namespace Playgama.Editor.Tabs
 
                 if (_highPassCount > 0)
                 {
-                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_highPassCount} High", BridgeStyles.StatusRed);
+                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_highPassCount} High", BridgeStyles.statusRed);
                 }
                 if (_multiPassCount > 0)
                 {
-                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_multiPassCount} Multi", BridgeStyles.StatusYellow);
+                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_multiPassCount} Multi", BridgeStyles.statusYellow);
                 }
                 if (_optimizedCount > 0)
                 {
-                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_optimizedCount} OK", BridgeStyles.StatusGreen);
+                    DrawStatusBadge(ref badgeX, lastRect.y + 4, $"{_optimizedCount} OK", BridgeStyles.statusGreen);
                 }
             }
 
             if (_foldHeader)
             {
                 BridgeStyles.BeginCard();
-                EditorGUILayout.LabelField("Analysis Mode", _buildInfo.DataMode.ToString());
-                EditorGUILayout.LabelField("Tracked Assets", _buildInfo.TrackedAssetCount.ToString());
+                EditorGUILayout.LabelField("Analysis Mode", _buildInfo.dataMode.ToString());
+                EditorGUILayout.LabelField("Tracked Assets", _buildInfo.trackedAssetCount.ToString());
 
-                string tb = SharedTypes.FormatBytes(_buildInfo.TrackedBytes);
-                if (_buildInfo.DataMode == BuildDataMode.DependenciesFallback) tb += " (estimated)";
+                string tb = SharedTypes.FormatBytes(_buildInfo.trackedBytes);
+                if (_buildInfo.dataMode == BuildDataMode.DependenciesFallback) tb += " (estimated)";
                 EditorGUILayout.LabelField("Tracked Bytes", tb);
 
                 GUILayout.Space(4);
-                EditorGUILayout.LabelField("Shaders are read-only in this view. Use tips below to optimize.", BridgeStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("Shaders are read-only in this view. Use tips below to optimize.", BridgeStyles.subtitleStyle);
                 BridgeStyles.EndCard();
             }
         }
@@ -348,7 +348,7 @@ namespace Playgama.Editor.Tabs
             rect.height -= 4;
 
             // Background color based on status
-            Color bgColor = BridgeStyles.StatusGray;
+            Color bgColor = BridgeStyles.statusGray;
             if (r.Status == StatusLevel.Critical) bgColor = new Color(0.5f, 0.2f, 0.2f, 0.3f);
             else if (r.Status == StatusLevel.Warning) bgColor = new Color(0.5f, 0.4f, 0.1f, 0.3f);
 
@@ -357,7 +357,7 @@ namespace Playgama.Editor.Tabs
             // Selection highlight
             if (r.Selected)
             {
-                EditorGUI.DrawRect(new Rect(rect.x, rect.y, 3, rect.height), BridgeStyles.BrandPurple);
+                EditorGUI.DrawRect(new Rect(rect.x, rect.y, 3, rect.height), BridgeStyles.brandPurple);
             }
 
             float x = rect.x + 4;
@@ -402,16 +402,16 @@ namespace Playgama.Editor.Tabs
 
             // Status indicator
             string statusText = "OK";
-            Color statusColor = BridgeStyles.StatusGreen;
+            Color statusColor = BridgeStyles.statusGreen;
             if (r.Status == StatusLevel.Critical)
             {
                 statusText = "High Impact";
-                statusColor = BridgeStyles.StatusRed;
+                statusColor = BridgeStyles.statusRed;
             }
             else if (r.Status == StatusLevel.Warning)
             {
                 statusText = "Multi-Pass";
-                statusColor = BridgeStyles.StatusYellow;
+                statusColor = BridgeStyles.statusYellow;
             }
 
             Rect statusRect = new Rect(x, rect.y + 4, 70, rect.height - 4);
@@ -462,20 +462,20 @@ namespace Playgama.Editor.Tabs
                     _highPassCount = 0;
                     _optimizedCount = 0;
 
-                    for (int i = 0; i < _buildInfo.Assets.Count; i++)
+                    for (int i = 0; i < _buildInfo.assets.Count; i++)
                     {
-                        var a = _buildInfo.Assets[i];
+                        var a = _buildInfo.assets[i];
                         if (a == null) continue;
-                        if (a.Category != AssetCategory.Shaders) continue;
-                        if (string.IsNullOrEmpty(a.Path)) continue;
+                        if (a.category != AssetCategory.Shaders) continue;
+                        if (string.IsNullOrEmpty(a.path)) continue;
 
-                        var shader = AssetDatabase.LoadAssetAtPath<Shader>(a.Path);
+                        var shader = AssetDatabase.LoadAssetAtPath<Shader>(a.path);
 
                         var row = new Row
                         {
-                            Path = a.Path,
-                            SizeBytes = a.SizeBytes,
-                            IsSizeEstimated = a.IsSizeEstimated,
+                            Path = a.path,
+                            SizeBytes = a.sizeBytes,
+                            IsSizeEstimated = a.isSizeEstimated,
                             Selected = false,
                             ShaderName = shader != null ? shader.name : "",
                             PassCount = 0,

@@ -196,26 +196,26 @@ namespace Playgama.Editor
         private static void AnalyzeReport(BuildReport report, TimeSpan buildTime)
         {
             var info = new BuildInfo();
-            info.StatusMessage = "Analyzing build...";
+            info.statusMessage = "Analyzing build...";
             Raise(info);
 
             try
             {
-                info.BuildTargetName = "WebGL";
-                info.BuildTime = buildTime;
+                info.buildTargetName = "WebGL";
+                info.buildTime = buildTime;
 
                 if (report == null)
                 {
-                    info.BuildSucceeded = false;
-                    info.HasData = false;
-                    info.StatusMessage = "BuildReport is null. Cannot analyze.";
+                    info.buildSucceeded = false;
+                    info.hasData = false;
+                    info.statusMessage = "BuildReport is null. Cannot analyze.";
                     Raise(info);
                     return;
                 }
 
-                info.UsedBuildReport = true;
-                info.BuildSucceeded = report.summary.result == BuildResult.Succeeded;
-                info.TotalBuildSizeBytes = SafeLong(report.summary.totalSize);
+                info.usedBuildReport = true;
+                info.buildSucceeded = report.summary.result == BuildResult.Succeeded;
+                info.totalBuildSizeBytes = SafeLong(report.summary.totalSize);
 
                 bool packedOk = TryAnalyzePackedAssets(
                     report,
@@ -226,19 +226,19 @@ namespace Playgama.Editor
 
                 if (packedOk)
                 {
-                    info.DataMode = BuildDataMode.PackedAssets;
-                    info.Assets = packedAssets;
-                    info.PackedGroupsCount = packedGroups;
-                    info.EmptyPathsCount = emptyPaths;
-                    info.ModeDiagnostics = diag;
+                    info.dataMode = BuildDataMode.PackedAssets;
+                    info.assets = packedAssets;
+                    info.packedGroupsCount = packedGroups;
+                    info.emptyPathsCount = emptyPaths;
+                    info.modeDiagnostics = diag;
                 }
                 else
                 {
-                    info.DataMode = BuildDataMode.DependenciesFallback;
-                    info.Assets = AnalyzeDependenciesFallback();
-                    info.PackedGroupsCount = 0;
-                    info.EmptyPathsCount = 0;
-                    info.ModeDiagnostics = string.IsNullOrEmpty(diag)
+                    info.dataMode = BuildDataMode.DependenciesFallback;
+                    info.assets = AnalyzeDependenciesFallback();
+                    info.packedGroupsCount = 0;
+                    info.emptyPathsCount = 0;
+                    info.modeDiagnostics = string.IsNullOrEmpty(diag)
                         ? "PackedAssets unavailable/insufficient. Used DependenciesFallback."
                         : ("PackedAssets rejected: " + diag + " | Used DependenciesFallback.");
                 }
@@ -246,27 +246,27 @@ namespace Playgama.Editor
                 long tracked = 0;
                 int count = 0;
 
-                if (info.Assets != null)
+                if (info.assets != null)
                 {
-                    count = info.Assets.Count;
-                    for (int i = 0; i < info.Assets.Count; i++)
+                    count = info.assets.Count;
+                    for (int i = 0; i < info.assets.Count; i++)
                     {
-                        var asset = info.Assets[i];
+                        var asset = info.assets[i];
                         if (asset != null)
-                            tracked += asset.SizeBytes;
+                            tracked += asset.sizeBytes;
                     }
                 }
 
-                info.TrackedBytes = tracked;
-                info.TrackedAssetCount = count;
-                info.HasData = count > 0;
+                info.trackedBytes = tracked;
+                info.trackedAssetCount = count;
+                info.hasData = count > 0;
 
-                info.StatusMessage =
-                    $"Build: {(info.BuildSucceeded ? "Succeeded" : report.summary.result.ToString())} | " +
-                    $"Total: {SharedTypes.FormatBytes(info.TotalBuildSizeBytes)} | " +
-                    $"Mode: {info.DataMode} | Tracked: {count}";
+                info.statusMessage =
+                    $"Build: {(info.buildSucceeded ? "Succeeded" : report.summary.result.ToString())} | " +
+                    $"Total: {SharedTypes.FormatBytes(info.totalBuildSizeBytes)} | " +
+                    $"Mode: {info.dataMode} | Tracked: {count}";
 
-                if (info.HasData)
+                if (info.hasData)
                 {
                     BuildReportStorage.SaveReport(info);
                 }
@@ -276,9 +276,9 @@ namespace Playgama.Editor
             catch (Exception ex)
             {
                 UnityEngine.Debug.LogException(ex);
-                info.BuildSucceeded = false;
-                info.HasData = false;
-                info.StatusMessage = "Analyze exception: " + ex.Message;
+                info.buildSucceeded = false;
+                info.hasData = false;
+                info.statusMessage = "Analyze exception: " + ex.Message;
                 Raise(info);
             }
         }
@@ -363,15 +363,15 @@ namespace Playgama.Editor
                             var t = AssetDatabase.GetMainAssetTypeAtPath(kv.Key);
                             assets.Add(new AssetInfo
                             {
-                                Path = kv.Key,
-                                SizeBytes = kv.Value,
-                                TypeName = (t != null) ? t.Name : "Unknown",
-                                Category = CategorizeAsset(kv.Key, t),
-                                IsSizeEstimated = false
+                                path = kv.Key,
+                                sizeBytes = kv.Value,
+                                typeName = (t != null) ? t.Name : "Unknown",
+                                category = CategorizeAsset(kv.Key, t),
+                                isSizeEstimated = false
                             });
                         }
 
-                        assets.Sort((a, b) => b.SizeBytes.CompareTo(a.SizeBytes));
+                        assets.Sort((a, b) => b.sizeBytes.CompareTo(a.sizeBytes));
                         diagnostics = $"PackedAssets OK | Groups={groups} | Contents={totalContents} | Mapped={assets.Count}";
                         Debug.Log("[Bridge] " + diagnostics);
                         return true;
@@ -448,17 +448,17 @@ namespace Playgama.Editor
 
                 result.Add(new AssetInfo
                 {
-                    Path = p,
-                    SizeBytes = size,
-                    TypeName = (t != null) ? t.Name : "Unknown",
-                    Category = CategorizeAsset(p, t),
-                    IsSizeEstimated = true
+                    path = p,
+                    sizeBytes = size,
+                    typeName = (t != null) ? t.Name : "Unknown",
+                    category = CategorizeAsset(p, t),
+                    isSizeEstimated = true
                 });
             }
 
             EditorUtility.ClearProgressBar();
 
-            result.Sort((a, b) => b.SizeBytes.CompareTo(a.SizeBytes));
+            result.Sort((a, b) => b.sizeBytes.CompareTo(a.sizeBytes));
             return result;
         }
 
@@ -481,9 +481,9 @@ namespace Playgama.Editor
         {
             var info = new BuildInfo
             {
-                BuildSucceeded = false,
-                HasData = false,
-                StatusMessage = msg
+                buildSucceeded = false,
+                hasData = false,
+                statusMessage = msg
             };
             Raise(info);
         }

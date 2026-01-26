@@ -44,7 +44,7 @@ namespace Playgama.Editor.Tabs
             if (_foldHeader)
             {
                 BridgeStyles.BeginCard();
-                EditorGUILayout.LabelField("Configure Playgama Bridge and optimization settings.", BridgeStyles.SubtitleStyle);
+                EditorGUILayout.LabelField("Configure Playgama Bridge and optimization settings.", BridgeStyles.subtitleStyle);
                 BridgeStyles.EndCard();
             }
         }
@@ -69,7 +69,7 @@ namespace Playgama.Editor.Tabs
 
                 // Status indicator
                 string statusIcon = _showEditorDebugWindows ? "ON" : "OFF";
-                Color statusColor = _showEditorDebugWindows ? BridgeStyles.StatusGreen : BridgeStyles.StatusGray;
+                Color statusColor = _showEditorDebugWindows ? BridgeStyles.statusGreen : BridgeStyles.statusGray;
                 GUIStyle statusStyle = new GUIStyle(EditorStyles.miniLabel)
                 {
                     alignment = TextAnchor.MiddleCenter,

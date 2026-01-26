@@ -93,20 +93,20 @@ namespace Playgama.Editor
 
         private static void CopyBuildInfo(BuildInfo source, BuildInfo dest)
         {
-            dest.TotalBuildSizeBytes = source.TotalBuildSizeBytes;
-            dest.DataMode = source.DataMode;
-            dest.Assets = source.Assets;
-            dest.HasData = source.HasData;
-            dest.TrackedAssetCount = source.TrackedAssetCount;
-            dest.TrackedBytes = source.TrackedBytes;
-            dest.StatusMessage = source.StatusMessage;
-            dest.BuildTargetName = source.BuildTargetName;
-            dest.BuildTime = source.BuildTime;
-            dest.BuildSucceeded = source.BuildSucceeded;
-            dest.UsedBuildReport = source.UsedBuildReport;
-            dest.PackedGroupsCount = source.PackedGroupsCount;
-            dest.EmptyPathsCount = source.EmptyPathsCount;
-            dest.ModeDiagnostics = source.ModeDiagnostics;
+            dest.totalBuildSizeBytes = source.totalBuildSizeBytes;
+            dest.dataMode = source.dataMode;
+            dest.assets = source.assets;
+            dest.hasData = source.hasData;
+            dest.trackedAssetCount = source.trackedAssetCount;
+            dest.trackedBytes = source.trackedBytes;
+            dest.statusMessage = source.statusMessage;
+            dest.buildTargetName = source.buildTargetName;
+            dest.buildTime = source.buildTime;
+            dest.buildSucceeded = source.buildSucceeded;
+            dest.usedBuildReport = source.usedBuildReport;
+            dest.packedGroupsCount = source.packedGroupsCount;
+            dest.emptyPathsCount = source.emptyPathsCount;
+            dest.modeDiagnostics = source.modeDiagnostics;
         }
 
         public void LoadSavedReport(BuildInfo info)
@@ -160,7 +160,7 @@ namespace Playgama.Editor
                     for (int i = 0; i < _tabs.Count; i++)
                     {
                         bool selected = (i == _selectedTab);
-                        GUIStyle style = selected ? BridgeStyles.TabButtonSelected : BridgeStyles.TabButton;
+                        GUIStyle style = selected ? BridgeStyles.tabButtonSelected : BridgeStyles.tabButton;
 
                         if (GUILayout.Button(_tabs[i].TabName, style, GUILayout.Height(28)))
                         {

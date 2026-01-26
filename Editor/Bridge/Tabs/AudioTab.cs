@@ -143,7 +143,7 @@ namespace Playgama.Editor.Tabs
 
                 DrawHeader();
 
-                if (!_buildInfo.HasData || _buildInfo.Assets == null || _buildInfo.Assets.Count == 0)
+                if (!_buildInfo.hasData || _buildInfo.assets == null || _buildInfo.assets.Count == 0)
                 {
                     EditorGUILayout.HelpBox("No analysis data yet. Run Build & Analyze first.", MessageType.Warning);
                     return;
@@ -174,11 +174,11 @@ namespace Playgama.Editor.Tabs
             if (_foldHeader)
             {
                 BridgeStyles.BeginCard();
-                EditorGUILayout.LabelField("Analysis Mode", _buildInfo.DataMode.ToString());
-                EditorGUILayout.LabelField("Tracked Assets", _buildInfo.TrackedAssetCount.ToString());
+                EditorGUILayout.LabelField("Analysis Mode", _buildInfo.dataMode.ToString());
+                EditorGUILayout.LabelField("Tracked Assets", _buildInfo.trackedAssetCount.ToString());
 
-                string tb = SharedTypes.FormatBytes(_buildInfo.TrackedBytes);
-                if (_buildInfo.DataMode == BuildDataMode.DependenciesFallback) tb += " (estimated)";
+                string tb = SharedTypes.FormatBytes(_buildInfo.trackedBytes);
+                if (_buildInfo.dataMode == BuildDataMode.DependenciesFallback) tb += " (estimated)";
                 EditorGUILayout.LabelField("Tracked Bytes", tb);
 
                 GUILayout.Space(8);
@@ -187,11 +187,11 @@ namespace Playgama.Editor.Tabs
                 EditorGUILayout.LabelField("Audio Status Summary:", EditorStyles.boldLabel);
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    DrawStatusBadge(BridgeStyles.StatusRed, $"{_lowQualityCount} very low quality", "Audio with quality < 0.3");
+                    DrawStatusBadge(BridgeStyles.statusRed, $"{_lowQualityCount} very low quality", "Audio with quality < 0.3");
                     GUILayout.Space(10);
-                    DrawStatusBadge(BridgeStyles.StatusYellow, $"{_stereoCount} stereo (could be mono)", "Consider mono for SFX");
+                    DrawStatusBadge(BridgeStyles.statusYellow, $"{_stereoCount} stereo (could be mono)", "Consider mono for SFX");
                     GUILayout.Space(10);
-                    DrawStatusBadge(BridgeStyles.StatusGreen, $"{_optimalCount} optimal", "Well-configured audio");
+                    DrawStatusBadge(BridgeStyles.statusGreen, $"{_optimalCount} optimal", "Well-configured audio");
                     GUILayout.FlexibleSpace();
                 }
 
@@ -241,13 +241,13 @@ namespace Playgama.Editor.Tabs
             using (new EditorGUILayout.HorizontalScope())
             {
                 Color oldColor = GUI.color;
-                GUI.color = BridgeStyles.StatusGreen;
+                GUI.color = BridgeStyles.statusGreen;
                 GUILayout.Label(icon, GUILayout.Width(18));
                 GUI.color = oldColor;
 
                 GUILayout.Label(setting, EditorStyles.boldLabel, GUILayout.Width(100));
                 GUILayout.Label(value, GUILayout.Width(140));
-                GUILayout.Label(reason, BridgeStyles.SubtitleStyle);
+                GUILayout.Label(reason, BridgeStyles.subtitleStyle);
                 GUILayout.FlexibleSpace();
             }
         }
@@ -306,7 +306,7 @@ namespace Playgama.Editor.Tabs
                 string loadTypeInfo = _loadType == AudioClipLoadType.DecompressOnLoad ? "(More memory, faster start)" :
                                      _loadType == AudioClipLoadType.CompressedInMemory ? "(Recommended for WebGL)" :
                                      "(Best for large files)";
-                GUILayout.Label(loadTypeInfo, BridgeStyles.SubtitleStyle);
+                GUILayout.Label(loadTypeInfo, BridgeStyles.subtitleStyle);
                 GUILayout.FlexibleSpace();
             }
 
@@ -360,7 +360,7 @@ namespace Playgama.Editor.Tabs
 
                 Color oldBg = GUI.backgroundColor;
                 if (selectedCount > 0)
-                    GUI.backgroundColor = BridgeStyles.BrandPurple;
+                    GUI.backgroundColor = BridgeStyles.brandPurple;
 
                 string applyText = selectedCount > 0
                     ? $"Apply to {selectedCount} Selected Audio Clip(s)"
@@ -437,7 +437,7 @@ namespace Playgama.Editor.Tabs
             // Selection highlight
             if (r.Selected)
             {
-                EditorGUI.DrawRect(new Rect(rect.x, rect.y, 4, rect.height), BridgeStyles.BrandPurple);
+                EditorGUI.DrawRect(new Rect(rect.x, rect.y, 4, rect.height), BridgeStyles.brandPurple);
                 EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, 2), new Color(0.55f, 0.36f, 0.96f, 0.4f));
             }
 
@@ -584,10 +584,10 @@ namespace Playgama.Editor.Tabs
         {
             switch (s)
             {
-                case StatusLevel.Red: return BridgeStyles.StatusRed;
-                case StatusLevel.Yellow: return BridgeStyles.StatusYellow;
-                case StatusLevel.Green: return BridgeStyles.StatusGreen;
-                default: return BridgeStyles.StatusGray;
+                case StatusLevel.Red: return BridgeStyles.statusRed;
+                case StatusLevel.Yellow: return BridgeStyles.statusYellow;
+                case StatusLevel.Green: return BridgeStyles.statusGreen;
+                default: return BridgeStyles.statusGray;
             }
         }
 
@@ -607,20 +607,20 @@ namespace Playgama.Editor.Tabs
                     _stereoCount = 0;
                     _optimalCount = 0;
 
-                    for (int i = 0; i < _buildInfo.Assets.Count; i++)
+                    for (int i = 0; i < _buildInfo.assets.Count; i++)
                     {
-                        var a = _buildInfo.Assets[i];
+                        var a = _buildInfo.assets[i];
                         if (a == null) continue;
-                        if (a.Category != AssetCategory.Audio) continue;
-                        if (string.IsNullOrEmpty(a.Path)) continue;
+                        if (a.category != AssetCategory.Audio) continue;
+                        if (string.IsNullOrEmpty(a.path)) continue;
 
-                        var imp = AssetImporter.GetAtPath(a.Path) as AudioImporter;
+                        var imp = AssetImporter.GetAtPath(a.path) as AudioImporter;
 
                         var row = new Row
                         {
-                            Path = a.Path,
-                            SizeBytes = a.SizeBytes,
-                            IsSizeEstimated = a.IsSizeEstimated,
+                            Path = a.path,
+                            SizeBytes = a.sizeBytes,
+                            IsSizeEstimated = a.isSizeEstimated,
                             Selected = false,
                             ImporterFound = (imp != null),
                             LoadType = AudioClipLoadType.DecompressOnLoad,
