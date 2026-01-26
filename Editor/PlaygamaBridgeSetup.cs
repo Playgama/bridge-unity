@@ -15,7 +15,7 @@ namespace Playgama.Editor
         [MenuItem("Playgama/Bridge", priority = 0)]
         public static void ShowBridge()
         {
-            Bridge.BridgeWindow.ShowWindow();
+            BridgeWindow.ShowWindow();
         }
 
         /// <summary>
@@ -24,7 +24,7 @@ namespace Playgama.Editor
         [MenuItem("Playgama/Install Template Files", priority = 100)]
         public static void ShowBridgeSetup()
         {
-            Bridge.InstallFilesWindow.Show();
+            InstallFilesWindow.Show();
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace Playgama.Editor
         public static void TriggerFreshInstall()
         {
             Debug.Log("[Playgama Bridge] Manually triggering fresh install...");
-            Bridge.InstallFilesWindow.InstallAllSilently();
+            InstallFilesWindow.InstallAllSilently();
 
             // Set WebGL template
             try
@@ -62,7 +62,7 @@ namespace Playgama.Editor
                 Debug.LogWarning($"[Playgama Bridge] Failed to set template: {ex.Message}");
             }
 
-            Bridge.BridgeWindow.ShowWindow();
+            BridgeWindow.ShowWindow();
         }
     }
 
@@ -164,7 +164,7 @@ namespace Playgama.Editor
         private static void OnFreshInstall()
         {
             // Auto-install template files silently
-            Bridge.InstallFilesWindow.InstallAllSilently();
+            InstallFilesWindow.InstallAllSilently();
 
             // Set WebGL template to Bridge
             EditorApplication.delayCall += () =>
@@ -174,7 +174,7 @@ namespace Playgama.Editor
                 // Show Bridge window
                 EditorApplication.delayCall += () =>
                 {
-                    Bridge.BridgeWindow.ShowWindow();
+                    BridgeWindow.ShowWindow();
                 };
             };
         }
@@ -207,11 +207,11 @@ namespace Playgama.Editor
             // Show Bridge window and InstallFilesWindow on update
             EditorApplication.delayCall += () =>
             {
-                Bridge.BridgeWindow.ShowWindow();
+                BridgeWindow.ShowWindow();
 
                 EditorApplication.delayCall += () =>
                 {
-                    Bridge.InstallFilesWindow.Show();
+                    InstallFilesWindow.Show();
                 };
             };
         }
