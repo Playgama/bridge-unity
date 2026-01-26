@@ -1,4 +1,4 @@
-namespace Playgama.Bridge
+namespace Playgama.Editor
 {
     public interface ITab
     {

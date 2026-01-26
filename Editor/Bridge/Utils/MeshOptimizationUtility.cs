@@ -5,7 +5,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Playgama.Bridge
+namespace Playgama.Editor
 {
     public static class MeshOptimizationUtility
     {

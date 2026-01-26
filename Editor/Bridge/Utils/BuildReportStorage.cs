@@ -4,7 +4,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Bridge
+namespace Playgama.Editor
 {
     public static class BuildReportStorage
     {

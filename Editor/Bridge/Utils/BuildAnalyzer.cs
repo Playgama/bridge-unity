@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
-namespace Playgama.Bridge
+namespace Playgama.Editor
 {
     public static class BuildAnalyzer
     {

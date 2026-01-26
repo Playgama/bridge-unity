@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Bridge
+namespace Playgama.Editor
 {
     public enum RowQuality
     {

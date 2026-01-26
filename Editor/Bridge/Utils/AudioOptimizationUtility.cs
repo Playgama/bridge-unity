@@ -3,7 +3,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Bridge
+namespace Playgama.Editor
 {
     // Applies AudioImporter settings to reduce WebGL build size using reflection for cross-version compatibility
     public static class AudioOptimizationUtility

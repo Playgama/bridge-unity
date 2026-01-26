@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace Playgama.Bridge
+namespace Playgama.Editor
 {
     public static class BridgeStyles
     {

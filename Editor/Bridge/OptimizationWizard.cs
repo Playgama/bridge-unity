@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Bridge
+namespace Playgama.Editor
 {
     public class OptimizationWizard : EditorWindow
     {

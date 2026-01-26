@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace Playgama.Bridge.Tabs
+namespace Playgama.Editor.Tabs
 {
     public sealed class TexturesTab : ITab
     {

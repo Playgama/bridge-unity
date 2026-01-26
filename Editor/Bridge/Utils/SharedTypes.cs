@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Playgama.Bridge
+namespace Playgama.Editor
 {
     public enum BuildDataMode
     {
