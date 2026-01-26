@@ -259,7 +259,6 @@ namespace Playgama.Editor.Tabs
                 {
                     // Set the template
                     PlayerSettings.WebGL.template = "PROJECT:Bridge";
-                    Debug.Log("[Playgama Bridge] WebGL template set to 'Bridge'");
                 }
                 else
                 {
@@ -556,7 +555,6 @@ namespace Playgama.Editor.Tabs
                         {
                             string report = GenerateReport();
                             EditorGUIUtility.systemCopyBuffer = report;
-                            Debug.Log("[Bridge] Report copied to clipboard");
                         }
                     }
                 }

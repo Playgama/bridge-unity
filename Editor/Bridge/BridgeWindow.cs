@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -13,7 +14,9 @@ namespace Playgama.Editor
         private BuildInfo _buildInfo;
 
         private const float TabColumnWidth = 150f;
-        private const string Pref_SelectedTab = "BRIDGE_SELECTED_TAB";
+
+        // Project-specific settings file
+        private static readonly string SettingsFilePath = Path.Combine(Application.dataPath, "../Library/PlaygamaBridge.settings");
 
         // Tab indices for external navigation
         public const int TabHome = 0;
@@ -61,7 +64,7 @@ namespace Playgama.Editor
             for (int i = 0; i < _tabs.Count; i++)
                 _tabs[i].Init(_buildInfo);
 
-            _selectedTab = EditorPrefs.GetInt(Pref_SelectedTab, 0);
+            _selectedTab = LoadSelectedTab();
             if (_selectedTab < 0 || _selectedTab >= _tabs.Count)
                 _selectedTab = 0;
 
@@ -127,7 +130,7 @@ namespace Playgama.Editor
                 return;
 
             _selectedTab = tabIndex;
-            EditorPrefs.SetInt(Pref_SelectedTab, _selectedTab);
+            SaveSelectedTab(_selectedTab);
             Repaint();
         }
 
@@ -165,7 +168,7 @@ namespace Playgama.Editor
                         if (GUILayout.Button(_tabs[i].TabName, style, GUILayout.Height(28)))
                         {
                             _selectedTab = i;
-                            EditorPrefs.SetInt(Pref_SelectedTab, _selectedTab);
+                            SaveSelectedTab(_selectedTab);
                         }
                     }
                 }
@@ -187,6 +190,38 @@ namespace Playgama.Editor
             {
                 if (_selectedTab >= 0 && _selectedTab < _tabs.Count)
                     _tabs[_selectedTab].OnGUI();
+            }
+        }
+
+        private static int LoadSelectedTab()
+        {
+            try
+            {
+                string fullPath = Path.GetFullPath(SettingsFilePath);
+                if (File.Exists(fullPath))
+                {
+                    string content = File.ReadAllText(fullPath).Trim();
+                    if (int.TryParse(content, out int tab))
+                        return tab;
+                }
+            }
+            catch
+            {
+                // Ignore errors, return default
+            }
+            return 0; // Default to Home tab
+        }
+
+        private static void SaveSelectedTab(int tab)
+        {
+            try
+            {
+                string fullPath = Path.GetFullPath(SettingsFilePath);
+                File.WriteAllText(fullPath, tab.ToString());
+            }
+            catch
+            {
+                // Ignore errors
             }
         }
     }

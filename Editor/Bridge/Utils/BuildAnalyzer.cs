@@ -12,19 +12,56 @@ namespace Playgama.Editor
     public static class BuildAnalyzer
     {
         public static event Action<BuildInfo> OnBuildInfoChanged;
-
-        private const string Pref_LastBuildFolder = "SUIT.Build.LastFolder";
+        
+        private static readonly string BUILD_SETTINGS_FILE = Path.Combine(Application.dataPath, "../Library/PlaygamaBridge.buildsettings");
+        
+        public static bool IsUnity6OrNewer
+        {
+            get
+            {
+#if UNITY_6000_0_OR_NEWER
+                return true;
+#else
+                return false;
+#endif
+            }
+        }
 
         public static string GetLastBuildFolder()
         {
-            var p = EditorPrefs.GetString(Pref_LastBuildFolder, "");
-            return string.IsNullOrEmpty(p) ? GetDefaultBuildFolder() : p;
+            // Try to read from project-specific file
+            try
+            {
+                string fullPath = Path.GetFullPath(BUILD_SETTINGS_FILE);
+                if (File.Exists(fullPath))
+                {
+                    string savedPath = File.ReadAllText(fullPath).Trim();
+                    if (!string.IsNullOrEmpty(savedPath))
+                        return savedPath;
+                }
+            }
+            catch
+            {
+                // Ignore errors, use default
+            }
+
+            return GetDefaultBuildFolder();
         }
 
         public static void SetLastBuildFolder(string folder)
         {
-            if (!string.IsNullOrEmpty(folder))
-                EditorPrefs.SetString(Pref_LastBuildFolder, folder);
+            if (string.IsNullOrEmpty(folder))
+                return;
+
+            try
+            {
+                string fullPath = Path.GetFullPath(BUILD_SETTINGS_FILE);
+                File.WriteAllText(fullPath, folder);
+            }
+            catch
+            {
+                // Ignore errors
+            }
         }
 
         public static string GetDefaultBuildFolder()
@@ -32,18 +69,101 @@ namespace Playgama.Editor
             string root = Directory.GetCurrentDirectory();
             return Path.Combine(root, "Builds", "WebGL");
         }
+        
+        public static void AnalyzeOnly()
+        {
+            EditorApplication.delayCall += () =>
+            {
+                try
+                {
+                    var scenes = GetEnabledBuildScenes();
+                    if (scenes.Length == 0)
+                    {
+                        PublishError("No enabled scenes in Build Settings.");
+                        return;
+                    }
 
+
+                    var start = DateTime.UtcNow;
+                    var assets = AnalyzeDependenciesFallback();
+                    var elapsed = DateTime.UtcNow - start;
+
+                    long tracked = 0;
+                    if (assets != null)
+                    {
+                        foreach (var asset in assets)
+                        {
+                            if (asset != null)
+                                tracked += asset.sizeBytes;
+                        }
+                    }
+
+                    var info = new BuildInfo
+                    {
+                        buildTargetName = "WebGL",
+                        buildTime = elapsed,
+                        buildSucceeded = true,
+                        hasData = assets != null && assets.Count > 0,
+                        usedBuildReport = false,
+                        dataMode = BuildDataMode.DependenciesFallback,
+                        assets = assets,
+                        trackedBytes = tracked,
+                        trackedAssetCount = assets?.Count ?? 0,
+                        totalBuildSizeBytes = tracked,
+                        modeDiagnostics = "Analysis only (no build). Showing source file sizes.",
+                        statusMessage = $"Analysis complete | Assets: {assets?.Count ?? 0} | Estimated size: {SharedTypes.FormatBytes(tracked)}"
+                    };
+
+                    if (info.hasData)
+                    {
+                        BuildReportStorage.SaveReport(info);
+                    }
+
+                    Raise(info);
+                }
+                catch (Exception ex)
+                {
+                    UnityEngine.Debug.LogException(ex);
+                    PublishError("Analysis exception: " + ex.Message);
+                }
+                finally
+                {
+                    EditorUtility.ClearProgressBar();
+                }
+            };
+        }
+
+        /// <summary>
+        /// Build and analyze. On Unity 6+, uses DetailedBuildReport for accurate sizes.
+        /// On older Unity, falls back to analysis-only (no build) to avoid crashes.
+        /// </summary>
         public static void BuildAndAnalyze()
         {
-            BuildAndAnalyze(GetLastBuildFolder(), useReleaseOptimization: false);
+            if (IsUnity6OrNewer)
+            {
+                // Unity 6+: Safe to use DetailedBuildReport
+                BuildWithReport(GetLastBuildFolder(), useReleaseOptimization: false);
+            }
+            else
+            {
+                // Unity < 6: DetailedBuildReport can crash, use analysis-only
+                AnalyzeOnly();
+            }
         }
 
+        /// <summary>
+        /// Build for release. On Unity 6+, uses DetailedBuildReport.
+        /// On older Unity, builds without DetailedBuildReport (no per-asset tracking but stable).
+        /// </summary>
         public static void BuildForRelease()
         {
-            BuildAndAnalyze(GetLastBuildFolder(), useReleaseOptimization: true);
+            BuildWithReport(GetLastBuildFolder(), useReleaseOptimization: true);
         }
 
-        public static void BuildAndAnalyze(string buildFolder, bool useReleaseOptimization = false)
+        /// <summary>
+        /// Internal: Performs actual build with optional DetailedBuildReport.
+        /// </summary>
+        private static void BuildWithReport(string buildFolder, bool useReleaseOptimization)
         {
             EditorApplication.delayCall += () =>
             {
@@ -90,35 +210,32 @@ namespace Playgama.Editor
                     }
 
                     if (useReleaseOptimization)
-                    {
                         Tabs.BuildSettingsTab.TrySetCodeOptimization(Tabs.BuildSettingsTab.CodeOptimizationState.DiskSizeLTO);
-                        Debug.Log("[Bridge] Using 'Disk Size with LTO' optimization for release build (smallest size, longer build time)");
-                    }
                     else
-                    {
                         Tabs.BuildSettingsTab.TrySetCodeOptimization(Tabs.BuildSettingsTab.CodeOptimizationState.ShorterBuildTime);
-                        Debug.Log("[Bridge] Using 'Shorter Build Time' optimization for faster analysis");
-                    }
+
+                    // Build options: Only use DetailedBuildReport on Unity 6+ where it's stable
+                    BuildOptions buildOptions = BuildOptions.None;
+
+                    if (IsUnity6OrNewer)
+                        buildOptions |= BuildOptions.DetailedBuildReport;
+
+                    if (EditorUserBuildSettings.development)
+                        buildOptions |= BuildOptions.Development;
 
                     var opts = new BuildPlayerOptions
                     {
                         scenes = scenes,
                         locationPathName = buildFolder,
                         target = BuildTarget.WebGL,
-                        options = BuildOptions.DetailedBuildReport | BuildOptions.CleanBuildCache
+                        options = buildOptions
                     };
-
-                    if (EditorUserBuildSettings.development)
-                        opts.options |= BuildOptions.Development;
-
-                    string buildType = useReleaseOptimization ? "Release (Disk Size with LTO)" : "Analysis (Shorter Build Time)";
-                    Debug.Log($"[Bridge] Starting clean WebGL build - {buildType} with options: {opts.options}");
 
                     var start = DateTime.UtcNow;
 
                     string progressMessage = useReleaseOptimization
                         ? "Building WebGL for Release (this may take a while)..."
-                        : "Building WebGL for Analysis...";
+                        : "Building WebGL...";
                     EditorUtility.DisplayProgressBar("Playgama Bridge", progressMessage, 0.05f);
                     BuildReport report = null;
                     try
@@ -132,7 +249,7 @@ namespace Playgama.Editor
 
                     var elapsed = DateTime.UtcNow - start;
 
-                    AnalyzeReport(report, elapsed);
+                    AnalyzeReport(report, elapsed, useDetailedReport: IsUnity6OrNewer);
 
                     if (report != null && report.summary.result == BuildResult.Succeeded)
                     {
@@ -142,7 +259,7 @@ namespace Playgama.Editor
                 catch (Exception ex)
                 {
                     UnityEngine.Debug.LogException(ex);
-                    PublishError("Build&Analyze exception: " + ex.Message);
+                    PublishError("Build exception: " + ex.Message);
                 }
                 finally
                 {
@@ -151,15 +268,29 @@ namespace Playgama.Editor
             };
         }
 
+        /// <summary>
+        /// Legacy method for backwards compatibility.
+        /// </summary>
+        public static void BuildAndAnalyze(string buildFolder, bool useReleaseOptimization = false)
+        {
+            if (useReleaseOptimization)
+            {
+                SetLastBuildFolder(buildFolder);
+                BuildForRelease();
+            }
+            else
+            {
+                SetLastBuildFolder(buildFolder);
+                BuildAndAnalyze();
+            }
+        }
+
         private static void CreateBuildArchive(string buildFolder)
         {
             try
             {
                 if (!Directory.Exists(buildFolder))
-                {
-                    Debug.LogWarning("[Bridge] Cannot create archive: build folder does not exist.");
                     return;
-                }
 
                 EditorUtility.DisplayProgressBar("Playgama Bridge", "Creating ZIP archive...", 0.5f);
 
@@ -170,22 +301,14 @@ namespace Playgama.Editor
                 string archivePath = Path.Combine(parentFolder, archiveName);
 
                 if (File.Exists(archivePath))
-                {
                     File.Delete(archivePath);
-                }
 
                 ZipFile.CreateFromDirectory(buildFolder, archivePath, System.IO.Compression.CompressionLevel.Optimal, false);
-
-                var archiveInfo = new FileInfo(archivePath);
-                string sizeStr = SharedTypes.FormatBytes(archiveInfo.Length);
-
-                Debug.Log($"[Bridge] Build archive created: {archivePath} ({sizeStr})");
-
                 EditorUtility.RevealInFinder(archivePath);
             }
-            catch (Exception ex)
+            catch
             {
-                Debug.LogError($"[Bridge] Failed to create build archive: {ex.Message}");
+                // Ignore errors
             }
             finally
             {
@@ -193,7 +316,7 @@ namespace Playgama.Editor
             }
         }
 
-        private static void AnalyzeReport(BuildReport report, TimeSpan buildTime)
+        private static void AnalyzeReport(BuildReport report, TimeSpan buildTime, bool useDetailedReport = true)
         {
             var info = new BuildInfo();
             info.statusMessage = "Analyzing build...";
@@ -217,12 +340,27 @@ namespace Playgama.Editor
                 info.buildSucceeded = report.summary.result == BuildResult.Succeeded;
                 info.totalBuildSizeBytes = SafeLong(report.summary.totalSize);
 
-                bool packedOk = TryAnalyzePackedAssets(
-                    report,
-                    out var packedAssets,
-                    out int packedGroups,
-                    out int emptyPaths,
-                    out string diag);
+                // Only try PackedAssets analysis if DetailedBuildReport was used (Unity 6+)
+                // On older Unity, DetailedBuildReport causes crashes, so we skip directly to fallback
+                bool packedOk = false;
+                List<AssetInfo> packedAssets = null;
+                int packedGroups = 0;
+                int emptyPaths = 0;
+                string diag = "";
+
+                if (useDetailedReport)
+                {
+                    packedOk = TryAnalyzePackedAssets(
+                        report,
+                        out packedAssets,
+                        out packedGroups,
+                        out emptyPaths,
+                        out diag);
+                }
+                else
+                {
+                    diag = "DetailedBuildReport skipped (Unity < 6 compatibility mode).";
+                }
 
                 if (packedOk)
                 {
@@ -297,14 +435,10 @@ namespace Playgama.Editor
 
             try
             {
-                Debug.Log($"[Bridge] BuildReport summary: result={report.summary.result}, totalSize={report.summary.totalSize}, totalTime={report.summary.totalTime}");
-
                 var packedAssetsArray = report.packedAssets;
 
                 if (packedAssetsArray != null && packedAssetsArray.Length > 0)
                 {
-                    Debug.Log($"[Bridge] Found {packedAssetsArray.Length} packed asset groups");
-
                     var map = new Dictionary<string, long>(4096);
                     int groups = 0;
                     int empty = 0;
@@ -351,8 +485,6 @@ namespace Playgama.Editor
                         }
                     }
 
-                    Debug.Log($"[Bridge] PackedAssets analysis: Groups={groups}, TotalContents={totalContents}, EmptyPaths={empty}, ZeroSize={zeroSize}, Mapped={map.Count}");
-
                     if (map.Count > 0)
                     {
                         packedGroupsCount = groups;
@@ -373,38 +505,16 @@ namespace Playgama.Editor
 
                         assets.Sort((a, b) => b.sizeBytes.CompareTo(a.sizeBytes));
                         diagnostics = $"PackedAssets OK | Groups={groups} | Contents={totalContents} | Mapped={assets.Count}";
-                        Debug.Log("[Bridge] " + diagnostics);
                         return true;
                     }
                 }
 
-                Debug.Log("[Bridge] packedAssets empty, trying GetFiles() fallback...");
-
-#if UNITY_2020_1_OR_NEWER
-                var files = report.GetFiles();
-                if (files != null && files.Length > 0)
-                {
-                    Debug.Log($"[Bridge] Found {files.Length} files in build report");
-
-                    for (int i = 0; i < Mathf.Min(5, files.Length); i++)
-                    {
-                        Debug.Log($"[Bridge] File[{i}]: path={files[i].path}, role={files[i].role}, size={files[i].size}");
-                    }
-                }
-                else
-                {
-                    Debug.Log("[Bridge] GetFiles() returned null or empty");
-                }
-#endif
-
                 diagnostics = $"BuildReport.packedAssets is null or empty (Length={packedAssetsArray?.Length ?? 0}). WebGL builds may not provide per-asset packed sizes.";
-                Debug.Log("[Bridge] " + diagnostics);
                 return false;
             }
             catch (Exception ex)
             {
                 diagnostics = "PackedAssets exception: " + ex.Message;
-                Debug.LogError("[Bridge] " + diagnostics + "\n" + ex.StackTrace);
                 return false;
             }
         }

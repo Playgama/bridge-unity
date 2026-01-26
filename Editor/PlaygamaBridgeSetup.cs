@@ -27,57 +27,29 @@ namespace Playgama.Editor
             InstallFilesWindow.Show();
         }
 
-        /// <summary>
-        /// Resets the first-run state for testing purposes.
-        /// </summary>
-        [MenuItem("Playgama/Debug/Reset First-Run State", priority = 1000)]
-        public static void ResetFirstRunState()
-        {
-            EditorPrefs.DeleteKey("PlaygamaBridge_InstalledVersion");
-            SessionState.SetBool("PlaygamaBridge_SessionChecked", false);
-            Debug.Log("[Playgama Bridge] First-run state reset. Restart Unity or recompile to trigger fresh install.");
-        }
-
-        /// <summary>
-        /// Manually triggers fresh install behavior.
-        /// </summary>
-        [MenuItem("Playgama/Debug/Trigger Fresh Install", priority = 1001)]
-        public static void TriggerFreshInstall()
-        {
-            Debug.Log("[Playgama Bridge] Manually triggering fresh install...");
-            InstallFilesWindow.InstallAllSilently();
-
-            // Set WebGL template
-            try
-            {
-                string templatePath = System.IO.Path.Combine(Application.dataPath, "WebGLTemplates/Bridge/index.html");
-                if (System.IO.File.Exists(templatePath))
-                {
-                    PlayerSettings.WebGL.template = "PROJECT:Bridge";
-                    Debug.Log("[Playgama Bridge] WebGL template set to 'Bridge'");
-                }
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning($"[Playgama Bridge] Failed to set template: {ex.Message}");
-            }
-
-            BridgeWindow.ShowWindow();
-        }
     }
 
     /// <summary>
     /// Shows the Bridge window and Install Files popup on new install or update.
-    /// Tracks package version in EditorPrefs to detect changes.
+    /// Tracks package version per-project using a file in Library folder.
+    /// Cleans up when package is removed.
     /// </summary>
     [InitializeOnLoad]
     public static class PlaygamaBridgeFirstRun
     {
-        private const string VERSION_PREF_KEY = "PlaygamaBridge_InstalledVersion";
         private const string SESSION_KEY = "PlaygamaBridge_SessionChecked";
+        private const string PACKAGE_NAME = "com.playgama.bridge";
+
+        // Project-specific version tracking file (Library folder is per-project and not in version control)
+        private static readonly string VERSION_FILE_PATH = Path.Combine(Application.dataPath, "../Library/PlaygamaBridge.version");
+
+        private static bool _eventsSubscribed = false;
 
         static PlaygamaBridgeFirstRun()
         {
+            // Defer event subscription to avoid ScriptableSingleton errors
+            EditorApplication.delayCall += SubscribeToPackageEvents;
+
             // Only check once per editor session
             if (SessionState.GetBool(SESSION_KEY, false))
                 return;
@@ -87,15 +59,10 @@ namespace Playgama.Editor
             // Get current package version
             string currentVersion = GetPackageVersion();
             if (string.IsNullOrEmpty(currentVersion))
-            {
-                Debug.Log("[Playgama Bridge] Could not determine package version.");
                 return;
-            }
 
-            // Get previously installed version
-            string installedVersion = EditorPrefs.GetString(VERSION_PREF_KEY, "");
-
-            Debug.Log($"[Playgama Bridge] Current version: {currentVersion}, Installed version: {(string.IsNullOrEmpty(installedVersion) ? "(none)" : installedVersion)}");
+            // Get previously installed version (project-specific)
+            string installedVersion = GetInstalledVersion();
 
             // Check if new install or update
             if (currentVersion == installedVersion)
@@ -104,26 +71,135 @@ namespace Playgama.Editor
             // Detect fresh install (no previous version)
             bool isFreshInstall = string.IsNullOrEmpty(installedVersion);
 
-            // Save current version
-            EditorPrefs.SetString(VERSION_PREF_KEY, currentVersion);
+            // Save current version (project-specific)
+            SaveInstalledVersion(currentVersion);
 
             if (isFreshInstall)
             {
-                Debug.Log("[Playgama Bridge] Fresh install detected, auto-installing templates...");
                 // Fresh install: auto-install files silently and show Bridge window
                 EditorApplication.delayCall += OnFreshInstall;
             }
             else
             {
-                Debug.Log("[Playgama Bridge] Update detected, showing install window...");
                 // Update: show Bridge window and InstallFilesWindow
                 EditorApplication.delayCall += OnUpdate;
             }
         }
 
+        private static string GetInstalledVersion()
+        {
+            try
+            {
+                string fullPath = Path.GetFullPath(VERSION_FILE_PATH);
+                if (File.Exists(fullPath))
+                {
+                    return File.ReadAllText(fullPath).Trim();
+                }
+            }
+            catch
+            {
+                // Ignore errors
+            }
+            return null;
+        }
+
+        private static void SaveInstalledVersion(string version)
+        {
+            try
+            {
+                string fullPath = Path.GetFullPath(VERSION_FILE_PATH);
+                File.WriteAllText(fullPath, version);
+            }
+            catch
+            {
+                // Ignore errors
+            }
+        }
+
+        private static void DeleteVersionFile()
+        {
+            try
+            {
+                string fullPath = Path.GetFullPath(VERSION_FILE_PATH);
+                if (File.Exists(fullPath))
+                {
+                    File.Delete(fullPath);
+                }
+            }
+            catch
+            {
+                // Ignore errors
+            }
+        }
+
+        private static void SubscribeToPackageEvents()
+        {
+            if (_eventsSubscribed)
+                return;
+
+            _eventsSubscribed = true;
+
+            try
+            {
+                UnityEditor.PackageManager.Events.registeringPackages += OnPackagesChanging;
+            }
+            catch
+            {
+                // Ignore errors
+            }
+        }
+
+        private static void OnPackagesChanging(UnityEditor.PackageManager.PackageRegistrationEventArgs args)
+        {
+            // Check if our package is being removed
+            foreach (var packageInfo in args.removed)
+            {
+                if (packageInfo.name == PACKAGE_NAME)
+                {
+                    CleanupOnUninstall();
+                    break;
+                }
+            }
+        }
+
+        private static void CleanupOnUninstall()
+        {
+            // Remove project-specific version file
+            DeleteVersionFile();
+
+            // Remove install file preferences (they start with this prefix)
+            // Note: EditorPrefs doesn't have a way to enumerate keys with a prefix,
+            // so we delete the known keys
+            string[] knownFiles = new[]
+            {
+                "index.html",
+                "playgama-bridge-config.json",
+                "playgama-bridge-unity.js",
+                "playgama-bridge.js",
+                "thumbnail.png"
+            };
+
+            foreach (var file in knownFiles)
+            {
+                EditorPrefs.DeleteKey("PlaygamaBridge_InstallFile_" + file);
+            }
+        }
+
         private static string GetPackageVersion()
         {
-            // Try to read version from package.json
+            // Method 1: Use Unity's PackageInfo API (most reliable)
+            try
+            {
+                var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath("Packages/com.playgama.bridge/package.json");
+                if (packageInfo != null && !string.IsNullOrEmpty(packageInfo.version))
+                    return packageInfo.version;
+            }
+            catch
+            {
+                // PackageManager API might not be available
+            }
+
+            // Method 2: Try known file paths
             string[] possiblePaths = new[]
             {
                 "Packages/com.playgama.bridge/package.json",
@@ -132,32 +208,74 @@ namespace Playgama.Editor
 
             foreach (var path in possiblePaths)
             {
-                try
+                string version = TryReadVersionFromPath(path);
+                if (!string.IsNullOrEmpty(version))
+                    return version;
+            }
+
+            // Method 3: Find package.json relative to this script's location
+            // This handles local development setups
+            try
+            {
+                var scriptPath = GetScriptPath();
+                if (!string.IsNullOrEmpty(scriptPath))
                 {
-                    string fullPath = Path.GetFullPath(path);
-                    if (File.Exists(fullPath))
+                    string editorDir = Path.GetDirectoryName(scriptPath);
+                    string packageRoot = Path.GetDirectoryName(editorDir);
+                    string packageJsonPath = Path.Combine(packageRoot, "package.json");
+
+                    string version = TryReadVersionFromPath(packageJsonPath);
+                    if (!string.IsNullOrEmpty(version))
+                        return version;
+                }
+            }
+            catch
+            {
+                // Ignore errors
+            }
+
+            return null;
+        }
+
+        private static string GetScriptPath()
+        {
+            // Find this script's path using the MonoScript API
+            var guids = AssetDatabase.FindAssets("t:MonoScript PlaygamaBridgeSetup");
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (path.EndsWith("PlaygamaBridgeSetup.cs"))
+                    return Path.GetFullPath(path);
+            }
+            return null;
+        }
+
+        private static string TryReadVersionFromPath(string path)
+        {
+            try
+            {
+                string fullPath = Path.GetFullPath(path);
+                if (File.Exists(fullPath))
+                {
+                    string json = File.ReadAllText(fullPath);
+                    // Simple parsing - find "version": "x.x.x"
+                    int versionIndex = json.IndexOf("\"version\"");
+                    if (versionIndex >= 0)
                     {
-                        string json = File.ReadAllText(fullPath);
-                        // Simple parsing - find "version": "x.x.x"
-                        int versionIndex = json.IndexOf("\"version\"");
-                        if (versionIndex >= 0)
+                        int colonIndex = json.IndexOf(":", versionIndex);
+                        int startQuote = json.IndexOf("\"", colonIndex + 1);
+                        int endQuote = json.IndexOf("\"", startQuote + 1);
+                        if (startQuote >= 0 && endQuote > startQuote)
                         {
-                            int colonIndex = json.IndexOf(":", versionIndex);
-                            int startQuote = json.IndexOf("\"", colonIndex + 1);
-                            int endQuote = json.IndexOf("\"", startQuote + 1);
-                            if (startQuote >= 0 && endQuote > startQuote)
-                            {
-                                return json.Substring(startQuote + 1, endQuote - startQuote - 1);
-                            }
+                            return json.Substring(startQuote + 1, endQuote - startQuote - 1);
                         }
                     }
                 }
-                catch
-                {
-                    // Ignore errors, try next path
-                }
             }
-
+            catch
+            {
+                // Ignore errors
+            }
             return null;
         }
 
@@ -186,19 +304,14 @@ namespace Playgama.Editor
                 // Check if Bridge template was installed
                 string templatePath = Path.Combine(Application.dataPath, "WebGLTemplates/Bridge/index.html");
                 if (!File.Exists(templatePath))
-                {
-                    Debug.LogWarning("[Playgama Bridge] Bridge template not found, skipping template selection.");
                     return;
-                }
 
                 // Set the WebGL template to Bridge
-                // Format is "PROJECT:TemplateName" for templates in Assets/WebGLTemplates/
                 PlayerSettings.WebGL.template = "PROJECT:Bridge";
-                Debug.Log("[Playgama Bridge] WebGL template set to 'Bridge'");
             }
-            catch (System.Exception ex)
+            catch
             {
-                Debug.LogWarning($"[Playgama Bridge] Failed to set WebGL template: {ex.Message}");
+                // Ignore errors
             }
         }
 

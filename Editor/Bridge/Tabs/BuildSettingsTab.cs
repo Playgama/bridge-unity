@@ -10,8 +10,6 @@ namespace Playgama.Editor.Tabs
     {
         public string TabName => "Build Settings";
 
-        private const string Pref_OutputPath = "BRIDGE_BUILD_OUTPUT_PATH";
-
         private BuildInfo _buildInfo;
 
         private Vector2 _scroll;
@@ -36,9 +34,8 @@ namespace Playgama.Editor.Tabs
         public void Init(BuildInfo buildInfo)
         {
             _buildInfo = buildInfo;
-            _outputPath = EditorPrefs.GetString(Pref_OutputPath, "");
-            if (string.IsNullOrEmpty(_outputPath))
-                _outputPath = Path.Combine(GetProjectRoot(), "Builds", "WebGL").Replace('\\', '/');
+            // Use BuildAnalyzer's project-specific storage
+            _outputPath = BuildAnalyzer.GetLastBuildFolder().Replace('\\', '/');
             _devBuild = EditorUserBuildSettings.development;
             _nameFilesAsHashes = PlayerSettings.WebGL.nameFilesAsHashes;
             ReadWebGLCompression(out _compressionState);
@@ -84,12 +81,12 @@ namespace Playgama.Editor.Tabs
                 if (GUILayout.Button("Browse", GUILayout.Width(80)))
                 {
                     string c = EditorUtility.SaveFolderPanel("Choose Build Output", _outputPath, "");
-                    if (!string.IsNullOrEmpty(c)) { _outputPath = c.Replace('\\', '/'); EditorPrefs.SetString(Pref_OutputPath, _outputPath); }
+                    if (!string.IsNullOrEmpty(c)) { _outputPath = c.Replace('\\', '/'); BuildAnalyzer.SetLastBuildFolder(_outputPath); }
                 }
                 if (GUILayout.Button("Reset", GUILayout.Width(70)))
                 {
-                    _outputPath = Path.Combine(GetProjectRoot(), "Builds", "WebGL").Replace('\\', '/');
-                    EditorPrefs.SetString(Pref_OutputPath, _outputPath);
+                    _outputPath = BuildAnalyzer.GetDefaultBuildFolder().Replace('\\', '/');
+                    BuildAnalyzer.SetLastBuildFolder(_outputPath);
                 }
             }
             EditorGUILayout.LabelField("Keep build output outside Assets/ to avoid imports.", BridgeStyles.subtitleStyle);
@@ -187,7 +184,10 @@ namespace Playgama.Editor.Tabs
             {
                 GUI.enabled = HasEnabledScenes();
                 if (BridgeStyles.DrawAccentButton(new GUIContent("Build & Analyze (WebGL)"), GUILayout.Height(30)))
-                    EditorApplication.delayCall += () => { EnsureDir(_outputPath); InvokeBuildAnalyzer(_outputPath); };
+                {
+                    string path = _outputPath;
+                    EditorApplication.delayCall += () => { EnsureDir(path); BuildAnalyzer.SetLastBuildFolder(path); InvokeBuildAnalyzer(path); };
+                }
                 GUI.enabled = true;
                 if (GUILayout.Button("Open Folder", GUILayout.Height(30), GUILayout.Width(100)))
                     if (Directory.Exists(_outputPath)) EditorUtility.RevealInFinder(_outputPath);
@@ -215,7 +215,8 @@ namespace Playgama.Editor.Tabs
 
             if (GUILayout.Button("Build for Release", GUILayout.Height(38)))
             {
-                EditorApplication.delayCall += () => { EnsureDir(_outputPath); BuildAnalyzer.BuildForRelease(); };
+                string path = _outputPath;
+                EditorApplication.delayCall += () => { EnsureDir(path); BuildAnalyzer.SetLastBuildFolder(path); BuildAnalyzer.BuildForRelease(); };
             }
 
             GUI.backgroundColor = oldBg;

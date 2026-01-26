@@ -39,13 +39,10 @@ namespace Playgama.Editor
                 string json = JsonUtility.ToJson(data, true);
 
                 File.WriteAllText(filePath, json);
-
-                Debug.Log($"[Playgama Bridge] Build report saved: {filePath}");
                 return filePath;
             }
-            catch (Exception ex)
+            catch
             {
-                Debug.LogError($"[Playgama Bridge] Failed to save build report: {ex.Message}");
                 return null;
             }
         }
@@ -61,9 +58,8 @@ namespace Playgama.Editor
                 var data = JsonUtility.FromJson<BuildReportData>(json);
                 return data?.ToBuildInfo();
             }
-            catch (Exception ex)
+            catch
             {
-                Debug.LogError($"[Playgama Bridge] Failed to load build report: {ex.Message}");
                 return null;
             }
         }
@@ -91,9 +87,9 @@ namespace Playgama.Editor
 
                 reports.Sort((a, b) => b.CreatedTime.CompareTo(a.CreatedTime));
             }
-            catch (Exception ex)
+            catch
             {
-                Debug.LogError($"[Playgama Bridge] Failed to get saved reports: {ex.Message}");
+                // Ignore errors
             }
 
             return reports;
@@ -106,13 +102,12 @@ namespace Playgama.Editor
                 if (File.Exists(filePath))
                 {
                     File.Delete(filePath);
-                    Debug.Log($"[Playgama Bridge] Build report deleted: {filePath}");
                     return true;
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                Debug.LogError($"[Playgama Bridge] Failed to delete build report: {ex.Message}");
+                // Ignore errors
             }
             return false;
         }

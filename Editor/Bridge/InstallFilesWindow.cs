@@ -59,10 +59,7 @@ namespace Playgama.Editor
         {
             var sourcePath = GetSourcePathStatic();
             if (string.IsNullOrEmpty(sourcePath) || !Directory.Exists(sourcePath))
-            {
-                Debug.LogWarning("[Playgama Bridge] Template source path not found, skipping silent install.");
                 return;
-            }
 
             var destinationPath = Path.GetFullPath(DESTINATION_TEMPLATE_PATH);
 
@@ -77,15 +74,10 @@ namespace Playgama.Editor
                 InstallFilesRecursive(sourcePath, sourcePath, destinationPath, ref successCount);
 
                 AssetDatabase.Refresh();
-
-                if (successCount > 0)
-                {
-                    Debug.Log($"[Playgama Bridge] Auto-installed {successCount} template file(s) to {DESTINATION_TEMPLATE_PATH}");
-                }
             }
-            catch (Exception ex)
+            catch
             {
-                Debug.LogError($"[Playgama Bridge] Silent installation failed: {ex.Message}");
+                // Ignore errors
             }
         }
 
@@ -135,9 +127,9 @@ namespace Playgama.Editor
                         successCount++;
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    Debug.LogWarning($"[Playgama Bridge] Failed to install {relativePath}: {ex.Message}");
+                    // Ignore errors for individual files
                 }
             }
 
@@ -160,7 +152,6 @@ namespace Playgama.Editor
             var sourcePath = GetSourcePath();
             if (string.IsNullOrEmpty(sourcePath) || !Directory.Exists(sourcePath))
             {
-                Debug.LogWarning($"[Playgama Bridge] Template source path not found: {sourcePath}");
                 return;
             }
 
@@ -448,7 +439,6 @@ namespace Playgama.Editor
                             }
 
                             File.Move(destFile, backupFile);
-                            Debug.Log($"[Playgama Bridge] Backed up existing config to: playgama-bridge-config_backup.json");
                         }
                         else if (File.Exists(destFile))
                         {
@@ -457,12 +447,10 @@ namespace Playgama.Editor
 
                         File.Copy(file.FullPath, destFile);
                         successCount++;
-
-                        Debug.Log($"[Playgama Bridge] Installed: {file.RelativePath}");
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        Debug.LogError($"[Playgama Bridge] Failed to install {file.RelativePath}: {ex.Message}");
+                        // Error will be reflected in the count
                     }
                 }
 
@@ -492,7 +480,6 @@ namespace Playgama.Editor
             catch (Exception ex)
             {
                 EditorUtility.ClearProgressBar();
-                Debug.LogError($"[Playgama Bridge] Installation failed: {ex.Message}");
                 EditorUtility.DisplayDialog(
                     "Installation Error",
                     $"An error occurred during installation:\n\n{ex.Message}",
