@@ -1,0 +1,250 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using UnityEditor;
+using UnityEngine;
+
+namespace Playgama.Editor
+{
+    public static class BuildReportStorage
+    {
+        private const string ReportsFolderName = "BuildReports";
+        private const string ReportFileExtension = ".buildreport";
+
+        public static string GetReportsFolderPath()
+        {
+            string projectRoot = Directory.GetCurrentDirectory();
+            string folderPath = Path.Combine(projectRoot, ReportsFolderName);
+
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+
+            return folderPath;
+        }
+
+        public static string SaveReport(BuildInfo info)
+        {
+            if (info == null) return null;
+
+            try
+            {
+                string folderPath = GetReportsFolderPath();
+                string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+                string fileName = $"BuildReport_{timestamp}{ReportFileExtension}";
+                string filePath = Path.Combine(folderPath, fileName);
+
+                var data = new BuildReportData(info);
+                string json = JsonUtility.ToJson(data, true);
+
+                File.WriteAllText(filePath, json);
+                return filePath;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public static BuildInfo LoadReport(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+                return null;
+
+            try
+            {
+                string json = File.ReadAllText(filePath);
+                var data = JsonUtility.FromJson<BuildReportData>(json);
+                return data?.ToBuildInfo();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public static List<ReportFileInfo> GetSavedReports()
+        {
+            var reports = new List<ReportFileInfo>();
+
+            try
+            {
+                string folderPath = GetReportsFolderPath();
+                var files = Directory.GetFiles(folderPath, $"*{ReportFileExtension}");
+
+                foreach (var file in files)
+                {
+                    var fileInfo = new FileInfo(file);
+                    reports.Add(new ReportFileInfo
+                    {
+                        FilePath = file,
+                        FileName = Path.GetFileNameWithoutExtension(file),
+                        CreatedTime = fileInfo.CreationTime,
+                        FileSize = fileInfo.Length
+                    });
+                }
+
+                reports.Sort((a, b) => b.CreatedTime.CompareTo(a.CreatedTime));
+            }
+            catch
+            {
+                // Ignore errors
+            }
+
+            return reports;
+        }
+
+        public static bool DeleteReport(string filePath)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                    return true;
+                }
+            }
+            catch
+            {
+                // Ignore errors
+            }
+            return false;
+        }
+
+        public static BuildInfo LoadMostRecentReport()
+        {
+            var reports = GetSavedReports();
+            if (reports.Count > 0)
+            {
+                return LoadReport(reports[0].FilePath);
+            }
+            return null;
+        }
+    }
+
+    public class ReportFileInfo
+    {
+        public string FilePath;
+        public string FileName;
+        public DateTime CreatedTime;
+        public long FileSize;
+
+        public string GetDisplayName()
+        {
+            return CreatedTime.ToString("yyyy-MM-dd HH:mm:ss");
+        }
+    }
+
+    [Serializable]
+    public class BuildReportData
+    {
+        public long TotalBuildSizeBytes;
+        public string DataMode;
+        public bool HasData;
+        public int TrackedAssetCount;
+        public long TrackedBytes;
+        public string StatusMessage;
+        public string BuildTargetName;
+        public double BuildTimeSeconds;
+        public bool BuildSucceeded;
+        public bool UsedBuildReport;
+        public int PackedGroupsCount;
+        public int EmptyPathsCount;
+        public string ModeDiagnostics;
+        public string SavedAt;
+        public List<AssetInfoData> Assets = new List<AssetInfoData>();
+
+        public BuildReportData() { }
+
+        public BuildReportData(BuildInfo info)
+        {
+            TotalBuildSizeBytes = info.totalBuildSizeBytes;
+            DataMode = info.dataMode.ToString();
+            HasData = info.hasData;
+            TrackedAssetCount = info.trackedAssetCount;
+            TrackedBytes = info.trackedBytes;
+            StatusMessage = info.statusMessage;
+            BuildTargetName = info.buildTargetName;
+            BuildTimeSeconds = info.buildTime.TotalSeconds;
+            BuildSucceeded = info.buildSucceeded;
+            UsedBuildReport = info.usedBuildReport;
+            PackedGroupsCount = info.packedGroupsCount;
+            EmptyPathsCount = info.emptyPathsCount;
+            ModeDiagnostics = info.modeDiagnostics;
+            SavedAt = DateTime.Now.ToString("o");
+
+            if (info.assets != null)
+            {
+                foreach (var asset in info.assets)
+                {
+                    if (asset != null)
+                    {
+                        Assets.Add(new AssetInfoData(asset));
+                    }
+                }
+            }
+        }
+
+        public BuildInfo ToBuildInfo()
+        {
+            var info = new BuildInfo
+            {
+                totalBuildSizeBytes = TotalBuildSizeBytes,
+                dataMode = (BuildDataMode)Enum.Parse(typeof(BuildDataMode), DataMode),
+                hasData = HasData,
+                trackedAssetCount = TrackedAssetCount,
+                trackedBytes = TrackedBytes,
+                statusMessage = StatusMessage,
+                buildTargetName = BuildTargetName,
+                buildTime = TimeSpan.FromSeconds(BuildTimeSeconds),
+                buildSucceeded = BuildSucceeded,
+                usedBuildReport = UsedBuildReport,
+                packedGroupsCount = PackedGroupsCount,
+                emptyPathsCount = EmptyPathsCount,
+                modeDiagnostics = ModeDiagnostics,
+                assets = new List<AssetInfo>()
+            };
+
+            foreach (var assetData in Assets)
+            {
+                info.assets.Add(assetData.ToAssetInfo());
+            }
+
+            return info;
+        }
+    }
+
+    [Serializable]
+    public class AssetInfoData
+    {
+        public string Path;
+        public long SizeBytes;
+        public string TypeName;
+        public string Category;
+        public bool IsSizeEstimated;
+
+        public AssetInfoData() { }
+
+        public AssetInfoData(AssetInfo asset)
+        {
+            Path = asset.path;
+            SizeBytes = asset.sizeBytes;
+            TypeName = asset.typeName;
+            Category = asset.category.ToString();
+            IsSizeEstimated = asset.isSizeEstimated;
+        }
+
+        public AssetInfo ToAssetInfo()
+        {
+            return new AssetInfo
+            {
+                path = Path,
+                sizeBytes = SizeBytes,
+                typeName = TypeName,
+                category = (AssetCategory)Enum.Parse(typeof(AssetCategory), Category),
+                isSizeEstimated = IsSizeEstimated
+            };
+        }
+    }
+}
