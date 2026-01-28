@@ -13,8 +13,9 @@ const STORAGE_VALUES_SEPARATOR = '{bridge_values_separator}'
 // utils
 window.unityInstance = null
 const messageQueue = []
-let progressBarFillingInterval = null
-let progressBarCompleteFillingStarted = false
+let progressBarInterval = null
+let currentPercent = 0
+let gameFullyLoaded = false
 
 function sendMessageToUnity(name, value) {
     if (window.unityInstance !== null) {
@@ -33,50 +34,81 @@ function flushMessageQueue() {
     }
 }
 
-function onUnityLoadingProgressChanged(progress) {
-    if (progress >= 1) {
-        if (progressBarFillingInterval !== null) {
-            clearInterval(progressBarFillingInterval)
-            progressBarFillingInterval = null
-        }
-        bridge.game.setLoadingProgress(100)
-        return
+function setProgressWithTransition(value, useTransition, callback) {
+    const fillRect = document.getElementById('fillRect')
+    if (fillRect && !useTransition) {
+        fillRect.style.transition = 'none'
+        fillRect.offsetHeight
     }
-
-    if (progressBarCompleteFillingStarted) {
-        return
+    bridge.game.setLoadingProgress(value)
+    if (fillRect && !useTransition) {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                fillRect.style.transition = ''
+                if (callback) callback()
+            })
+        })
+    } else if (callback) {
+        callback()
     }
-
-    if (progress >= 0.9) {
-        progressBarCompleteFillingStarted = true
-        completeProgressBarFilling()
-        return
-    }
-
-    bridge.game.setLoadingProgress(progress * 100)
 }
 
-function completeProgressBarFilling() {
-    if (progressBarFillingInterval !== null) {
-        return
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+function runLoadingLoop() {
+    if (progressBarInterval !== null) {
+        clearInterval(progressBarInterval)
     }
 
-    let currentPercent = 90
-    bridge.game.setLoadingProgress(currentPercent)
-    progressBarFillingInterval = setInterval(() => {
-        currentPercent++
+    console.log('[Loader] Starting new loop')
+
+    progressBarInterval = setInterval(() => {
+        const increment = getRandomInt(1, 8)
+        currentPercent += increment
         if (currentPercent > 99) {
             currentPercent = 99
         }
 
+        console.log('[Loader] Progress:', currentPercent, '(+' + increment + ')')
         bridge.game.setLoadingProgress(currentPercent)
 
         if (currentPercent >= 99) {
-            clearInterval(progressBarFillingInterval)
-            progressBarFillingInterval = null
-            return
+            console.log('[Loader] Reached end of cycle')
+            clearInterval(progressBarInterval)
+            progressBarInterval = null
+
+            if (gameFullyLoaded) {
+                console.log('[Loader] Game loaded, finishing with 100')
+                bridge.game.setLoadingProgress(100)
+                return
+            }
+
+            const waitTime = getRandomInt(1000, 3000)
+            console.log('[Loader] Waiting', waitTime, 'ms before reset')
+            setTimeout(() => {
+                console.log('[Loader] Resetting to 0')
+                currentPercent = 0
+                setProgressWithTransition(0, false, () => {
+                    runLoadingLoop()
+                })
+            }, waitTime)
         }
-    }, 500)
+    }, 20)
+}
+
+function startFakeLoadingProgress() {
+    currentPercent = 0
+    gameFullyLoaded = false
+    bridge.game.setLoadingProgress(0)
+    runLoadingLoop()
+}
+
+function onUnityLoadingProgressChanged(progress) {
+    if (progress >= 1) {
+        gameFullyLoaded = true
+    }
 }
 
 window.addEventListener('pointerdown', () => {
@@ -126,7 +158,7 @@ function initializeBridge() {
     bridge
         .initialize()
         .then(() => {
-            bridge.game.setLoadingProgress(0)
+            startFakeLoadingProgress()
             bridge.advertisement.on('banner_state_changed', state => sendMessageToUnity('OnBannerStateChanged', state))
             bridge.advertisement.on('interstitial_state_changed', state => sendMessageToUnity('OnInterstitialStateChanged', state))
             bridge.advertisement.on('rewarded_state_changed', state => sendMessageToUnity('OnRewardedStateChanged', state))
