@@ -586,6 +586,56 @@ namespace Playgama.Editor
             }
             return list.ToArray();
         }
+        
+        public static bool HasEnabledScenes()
+        {
+            var scenes = EditorBuildSettings.scenes;
+            if (scenes == null) return false;
+
+            for (int i = 0; i < scenes.Length; i++)
+            {
+                var s = scenes[i];
+                if (s != null && s.enabled && !string.IsNullOrEmpty(s.path))
+                    return true;
+            }
+            return false;
+        }
+        
+        public static bool ShowNoScenesDialog()
+        {
+            int choice = EditorUtility.DisplayDialogComplex(
+                "No Scenes in Build Settings",
+                "There are no enabled scenes in Build Settings.\n\n" +
+                "To build your game, you need to add at least one scene to the build.",
+                "Open Build Settings",
+                "Cancel",
+                "Open Bridge Build Settings");
+
+            if (choice == 0)
+            {
+                // Open Unity's Build Settings window
+                EditorWindow.GetWindow(Type.GetType("UnityEditor.BuildPlayerWindow,UnityEditor"));
+                return true;
+            }
+            else if (choice == 2)
+            {
+                // Open Bridge window and go to Build Settings tab
+                var window = BridgeWindow.ShowWindow();
+                window.SetSelectedTab(BridgeWindow.TabBuildSettings);
+                return true;
+            }
+
+            return false;
+        }
+        
+        public static bool ValidateScenesForBuild()
+        {
+            if (HasEnabledScenes())
+                return true;
+
+            ShowNoScenesDialog();
+            return false;
+        }
 
         private static void PublishError(string msg)
         {

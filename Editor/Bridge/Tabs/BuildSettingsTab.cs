@@ -182,13 +182,14 @@ namespace Playgama.Editor.Tabs
             EditorGUILayout.LabelField("Fast build for testing. Uses 'Shorter Build Time'.", BridgeStyles.subtitleStyle);
             using (new EditorGUILayout.HorizontalScope())
             {
-                GUI.enabled = HasEnabledScenes();
                 if (BridgeStyles.DrawAccentButton(new GUIContent("Build & Analyze (WebGL)"), GUILayout.Height(30)))
                 {
-                    string path = _outputPath;
-                    EditorApplication.delayCall += () => { EnsureDir(path); BuildAnalyzer.SetLastBuildFolder(path); InvokeBuildAnalyzer(path); };
+                    if (BuildAnalyzer.ValidateScenesForBuild())
+                    {
+                        string path = _outputPath;
+                        EditorApplication.delayCall += () => { EnsureDir(path); BuildAnalyzer.SetLastBuildFolder(path); InvokeBuildAnalyzer(path); };
+                    }
                 }
-                GUI.enabled = true;
                 if (GUILayout.Button("Open Folder", GUILayout.Height(30), GUILayout.Width(100)))
                     if (Directory.Exists(_outputPath)) EditorUtility.RevealInFinder(_outputPath);
             }
@@ -209,18 +210,19 @@ namespace Playgama.Editor.Tabs
             EditorGUILayout.LabelField("Smallest build with LTO. Takes longer but worth it.", BridgeStyles.subtitleStyle);
             GUILayout.Space(6);
 
-            GUI.enabled = HasEnabledScenes();
             Color oldBg = GUI.backgroundColor;
             GUI.backgroundColor = new Color(0.25f, 0.7f, 0.35f);
 
             if (GUILayout.Button("Build for Release", GUILayout.Height(38)))
             {
-                string path = _outputPath;
-                EditorApplication.delayCall += () => { EnsureDir(path); BuildAnalyzer.SetLastBuildFolder(path); BuildAnalyzer.BuildForRelease(); };
+                if (BuildAnalyzer.ValidateScenesForBuild())
+                {
+                    string path = _outputPath;
+                    EditorApplication.delayCall += () => { EnsureDir(path); BuildAnalyzer.SetLastBuildFolder(path); BuildAnalyzer.BuildForRelease(); };
+                }
             }
 
             GUI.backgroundColor = oldBg;
-            GUI.enabled = true;
 
             GUILayout.Space(2);
             EditorGUILayout.LabelField("~5-15 min", new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = new Color(1f, 0.8f, 0.4f) } });
@@ -255,7 +257,6 @@ namespace Playgama.Editor.Tabs
 
         private void LV(string l, string v) { using (new EditorGUILayout.HorizontalScope()) { GUILayout.Label(l, GUILayout.Width(100)); GUILayout.FlexibleSpace(); GUILayout.Label(v); } }
 
-        private bool HasEnabledScenes() { foreach (var s in EditorBuildSettings.scenes) if (s != null && s.enabled) return true; return false; }
         private void SetAllScenes(bool e) { var sc = EditorBuildSettings.scenes; for (int i = 0; i < sc.Length; i++) if (sc[i] != null) sc[i].enabled = e; EditorBuildSettings.scenes = sc; }
         private void AddOpenScenes() { var l = new System.Collections.Generic.List<EditorBuildSettingsScene>(EditorBuildSettings.scenes); for (int i = 0; i < UnityEditor.SceneManagement.EditorSceneManager.sceneCount; i++) { var s = UnityEditor.SceneManagement.EditorSceneManager.GetSceneAt(i); if (s.IsValid() && !string.IsNullOrEmpty(s.path) && s.path.StartsWith("Assets/")) { bool ex = false; foreach (var x in l) if (x.path == s.path) { ex = true; break; } if (!ex) l.Add(new EditorBuildSettingsScene(s.path, true)); } } EditorBuildSettings.scenes = l.ToArray(); }
         private static string GetProjectRoot() { var a = Application.dataPath.Replace('\\', '/'); return a.EndsWith("/Assets") ? a.Substring(0, a.Length - 7) : Directory.GetParent(Application.dataPath).FullName; }

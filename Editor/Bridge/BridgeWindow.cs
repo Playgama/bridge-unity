@@ -177,7 +177,10 @@ namespace Playgama.Editor
 
                 if (BridgeStyles.DrawAccentButton(new GUIContent("Build & Analyze", "Build WebGL and run analysis."), GUILayout.Height(32)))
                 {
-                    EditorApplication.delayCall += () => BuildAnalyzer.BuildAndAnalyze();
+                    if (BuildAnalyzer.ValidateScenesForBuild())
+                    {
+                        EditorApplication.delayCall += () => BuildAnalyzer.BuildAndAnalyze();
+                    }
                 }
 
                 GUILayout.Space(6);
