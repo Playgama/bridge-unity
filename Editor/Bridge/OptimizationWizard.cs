@@ -368,6 +368,9 @@ namespace Playgama.Editor
 
         private void RunBuildAndAnalyze()
         {
+            if (!BuildAnalyzer.ValidateScenesForBuild())
+                return;
+
             BuildAnalyzer.OnBuildInfoChanged += OnBuildInfoChanged;
             BuildAnalyzer.BuildAndAnalyze();
         }
@@ -949,7 +952,10 @@ namespace Playgama.Editor
             GUI.backgroundColor = new Color(0.2f, 0.7f, 0.3f);
             if (GUILayout.Button(new GUIContent("  Build for Release  ", "Creates smallest possible WebGL build using Disk Size with LTO optimization"), GUILayout.Height(40)))
             {
-                EditorApplication.delayCall += () => BuildAnalyzer.BuildForRelease();
+                if (BuildAnalyzer.ValidateScenesForBuild())
+                {
+                    EditorApplication.delayCall += () => BuildAnalyzer.BuildForRelease();
+                }
             }
             GUI.backgroundColor = oldBg;
 
