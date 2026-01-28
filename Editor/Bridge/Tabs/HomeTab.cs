@@ -530,7 +530,10 @@ namespace Playgama.Editor.Tabs
                 {
                     if (DrawQuickActionButton("\u26A1", "Build & Analyze", "Build and analyze sizes"))
                     {
-                        EditorApplication.delayCall += () => BuildAnalyzer.BuildAndAnalyze();
+                        if (BuildAnalyzer.ValidateScenesForBuild())
+                        {
+                            EditorApplication.delayCall += () => BuildAnalyzer.BuildAndAnalyze();
+                        }
                     }
                 }
 
