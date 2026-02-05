@@ -80,6 +80,14 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
+    PlaygamaBridgeGetSafeArea: function() {
+        var safeArea = window.getSafeArea()
+        var bufferSize = lengthBytesUTF8(safeArea) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(safeArea, buffer, bufferSize)
+        return buffer
+    },
+
 
     PlaygamaBridgeIsPlayerAuthorizationSupported: function() {
         var isPlayerAuthorizationSupported = window.getIsPlayerAuthorizationSupported()
