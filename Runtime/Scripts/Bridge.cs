@@ -64,7 +64,8 @@ namespace Playgama
         }
 
 #if UNITY_EDITOR
-        private void OnDestroy()
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticFields()
         {
             _instance = null;
             _isApplicationQuitting = false;

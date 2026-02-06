@@ -255,6 +255,10 @@ window.getDeviceType = function() {
     return bridge.device.type
 }
 
+window.getSafeArea = function() {
+    return JSON.stringify(bridge.device.safeArea)
+}
+
 
 // player
 window.getIsPlayerAuthorizationSupported = function() {
