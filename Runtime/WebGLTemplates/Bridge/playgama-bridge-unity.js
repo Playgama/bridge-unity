@@ -485,8 +485,8 @@ window.getIsAddToHomeScreenSupported = function() {
     return bridge.social.isAddToHomeScreenSupported.toString()
 }
 
-window.getIsHomeScreenShortcutRewardSupported = function() {
-    return bridge.social.isHomeScreenShortcutRewardSupported.toString()
+window.getIsAddToHomeScreenRewardSupported = function() {
+    return bridge.social.isAddToHomeScreenRewardSupported.toString()
 }
 
 window.getIsAddToFavoritesSupported = function() {
@@ -587,13 +587,13 @@ window.rate = function() {
         })
 }
 
-window.getHomeScreenShortcutMissionReward = function() {
-    bridge.social.getHomeScreenShortcutMissionReward()
-        .then(canReceiveReward => {
-            sendMessageToUnity('OnGetHomeScreenShortcutMissionRewardCompleted', canReceiveReward ? 'true' : 'false')
+window.getAddToHomeScreenReward = function() {
+    bridge.social.getAddToHomeScreenReward()
+        .then(() => {
+            sendMessageToUnity('OnGetAddToHomeScreenRewardCompleted', 'true')
         })
         .catch(error => {
-            sendMessageToUnity('OnGetHomeScreenShortcutMissionRewardCompleted', 'false')
+            sendMessageToUnity('OnGetAddToHomeScreenRewardCompleted', 'false')
         })
 }
 

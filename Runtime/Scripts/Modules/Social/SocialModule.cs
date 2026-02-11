@@ -71,12 +71,12 @@ namespace Playgama.Modules.Social
             }
         }
 
-        public bool isHomeScreenShortcutRewardSupported
+        public bool isAddToHomeScreenRewardSupported
         {
             get
             {
 #if !UNITY_EDITOR
-                return PlaygamaBridgeIsHomeScreenShortcutRewardSupported() == "true";
+                return PlaygamaBridgeIsAddToHomeScreenRewardSupported() == "true";
 #else
                 return false;
 #endif
@@ -136,7 +136,7 @@ namespace Playgama.Modules.Social
         private static extern string PlaygamaBridgeIsAddToHomeScreenSupported();
 
         [DllImport("__Internal")]
-        private static extern string PlaygamaBridgeIsHomeScreenShortcutRewardSupported();
+        private static extern string PlaygamaBridgeIsAddToHomeScreenRewardSupported();
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsAddToFavoritesSupported();
@@ -169,7 +169,7 @@ namespace Playgama.Modules.Social
         private static extern void PlaygamaBridgeRate();
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeGetHomeScreenShortcutMissionReward();
+        private static extern void PlaygamaBridgeGetAddToHomeScreenReward();
 #endif
 
         private Action<bool> _shareCallback;
@@ -179,7 +179,7 @@ namespace Playgama.Modules.Social
         private Action<bool> _addToHomeScreenCallback;
         private Action<bool> _addToFavoritesCallback;
         private Action<bool> _rateCallback;
-        private Action<bool> _getHomeScreenShortcutMissionRewardCallback;
+        private Action<bool> _getAddToHomeScreenRewardCallback;
 
 
         public void Share(Dictionary<string, object> options, Action<bool> onComplete = null)
@@ -252,13 +252,13 @@ namespace Playgama.Modules.Social
 #endif
         }
 
-        public void GetHomeScreenShortcutMissionReward(Action<bool> onComplete = null)
+        public void GetAddToHomeScreenReward(Action<bool> onComplete = null)
         {
-            _getHomeScreenShortcutMissionRewardCallback = onComplete;
+            _getAddToHomeScreenRewardCallback = onComplete;
 #if !UNITY_EDITOR
-            PlaygamaBridgeGetHomeScreenShortcutMissionReward();
+            PlaygamaBridgeGetAddToHomeScreenReward();
 #else
-            OnGetHomeScreenShortcutMissionRewardCompleted("false");
+            OnGetAddToHomeScreenRewardCompleted("false");
 #endif
         }
 
@@ -313,11 +313,11 @@ namespace Playgama.Modules.Social
             _rateCallback = null;
         }
 
-        private void OnGetHomeScreenShortcutMissionRewardCompleted(string result)
+        private void OnGetAddToHomeScreenRewardCompleted(string result)
         {
             var canReceiveReward = result == "true";
-            _getHomeScreenShortcutMissionRewardCallback?.Invoke(canReceiveReward);
-            _getHomeScreenShortcutMissionRewardCallback = null;
+            _getAddToHomeScreenRewardCallback?.Invoke(canReceiveReward);
+            _getAddToHomeScreenRewardCallback = null;
         }
     }
 }

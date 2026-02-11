@@ -301,11 +301,11 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
-    PlaygamaBridgeIsHomeScreenShortcutRewardSupported: function() {
-        var isHomeScreenShortcutRewardSupported = window.getIsHomeScreenShortcutRewardSupported()
-        var bufferSize = lengthBytesUTF8(isHomeScreenShortcutRewardSupported) + 1
+    PlaygamaBridgeIsAddToHomeScreenRewardSupported: function() {
+        var isAddToHomeScreenRewardSupported = window.getIsAddToHomeScreenRewardSupported()
+        var bufferSize = lengthBytesUTF8(isAddToHomeScreenRewardSupported) + 1
         var buffer = _malloc(bufferSize)
-        stringToUTF8(isHomeScreenShortcutRewardSupported, buffer, bufferSize)
+        stringToUTF8(isAddToHomeScreenRewardSupported, buffer, bufferSize)
         return buffer
     },
 
@@ -361,8 +361,8 @@ mergeInto(LibraryManager.library, {
         window.rate()
     },
 
-    PlaygamaBridgeGetHomeScreenShortcutMissionReward: function() {
-        window.getHomeScreenShortcutMissionReward()
+    PlaygamaBridgeGetAddToHomeScreenReward: function() {
+        window.getAddToHomeScreenReward()
     },
 
 
