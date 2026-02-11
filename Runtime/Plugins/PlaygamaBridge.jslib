@@ -301,6 +301,14 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
+    PlaygamaBridgeIsHomeScreenShortcutRewardSupported: function() {
+        var isHomeScreenShortcutRewardSupported = window.getIsHomeScreenShortcutRewardSupported()
+        var bufferSize = lengthBytesUTF8(isHomeScreenShortcutRewardSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isHomeScreenShortcutRewardSupported, buffer, bufferSize)
+        return buffer
+    },
+
     PlaygamaBridgeIsAddToFavoritesSupported: function() {
         var isAddToFavoritesSupported = window.getIsAddToFavoritesSupported()
         var bufferSize = lengthBytesUTF8(isAddToFavoritesSupported) + 1
@@ -351,6 +359,10 @@ mergeInto(LibraryManager.library, {
 
     PlaygamaBridgeRate: function() {
         window.rate()
+    },
+
+    PlaygamaBridgeGetHomeScreenShortcutMissionReward: function() {
+        window.getHomeScreenShortcutMissionReward()
     },
 
 

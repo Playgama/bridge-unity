@@ -485,6 +485,10 @@ window.getIsAddToHomeScreenSupported = function() {
     return bridge.social.isAddToHomeScreenSupported.toString()
 }
 
+window.getIsHomeScreenShortcutRewardSupported = function() {
+    return bridge.social.isHomeScreenShortcutRewardSupported.toString()
+}
+
 window.getIsAddToFavoritesSupported = function() {
     return bridge.social.isAddToFavoritesSupported.toString()
 }
@@ -580,6 +584,16 @@ window.rate = function() {
         })
         .catch(error => {
             sendMessageToUnity('OnRateCompleted', 'false')
+        })
+}
+
+window.getHomeScreenShortcutMissionReward = function() {
+    bridge.social.getHomeScreenShortcutMissionReward()
+        .then(canReceiveReward => {
+            sendMessageToUnity('OnGetHomeScreenShortcutMissionRewardCompleted', canReceiveReward ? 'true' : 'false')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnGetHomeScreenShortcutMissionRewardCompleted', 'false')
         })
 }
 

@@ -71,6 +71,18 @@ namespace Playgama.Modules.Social
             }
         }
 
+        public bool isHomeScreenShortcutRewardSupported
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return PlaygamaBridgeIsHomeScreenShortcutRewardSupported() == "true";
+#else
+                return false;
+#endif
+            }
+        }
+
         public bool isAddToFavoritesSupported
         {
             get
@@ -124,6 +136,9 @@ namespace Playgama.Modules.Social
         private static extern string PlaygamaBridgeIsAddToHomeScreenSupported();
 
         [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsHomeScreenShortcutRewardSupported();
+
+        [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsAddToFavoritesSupported();
 
         [DllImport("__Internal")]
@@ -152,6 +167,9 @@ namespace Playgama.Modules.Social
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeRate();
+
+        [DllImport("__Internal")]
+        private static extern void PlaygamaBridgeGetHomeScreenShortcutMissionReward();
 #endif
 
         private Action<bool> _shareCallback;
@@ -161,6 +179,7 @@ namespace Playgama.Modules.Social
         private Action<bool> _addToHomeScreenCallback;
         private Action<bool> _addToFavoritesCallback;
         private Action<bool> _rateCallback;
+        private Action<bool> _getHomeScreenShortcutMissionRewardCallback;
 
 
         public void Share(Dictionary<string, object> options, Action<bool> onComplete = null)
@@ -233,6 +252,16 @@ namespace Playgama.Modules.Social
 #endif
         }
 
+        public void GetHomeScreenShortcutMissionReward(Action<bool> onComplete = null)
+        {
+            _getHomeScreenShortcutMissionRewardCallback = onComplete;
+#if !UNITY_EDITOR
+            PlaygamaBridgeGetHomeScreenShortcutMissionReward();
+#else
+            OnGetHomeScreenShortcutMissionRewardCompleted("false");
+#endif
+        }
+
 
         // Called from JS
         private void OnShareCompleted(string result)
@@ -282,6 +311,13 @@ namespace Playgama.Modules.Social
             var isSuccess = result == "true";
             _rateCallback?.Invoke(isSuccess);
             _rateCallback = null;
+        }
+
+        private void OnGetHomeScreenShortcutMissionRewardCompleted(string result)
+        {
+            var canReceiveReward = result == "true";
+            _getHomeScreenShortcutMissionRewardCallback?.Invoke(canReceiveReward);
+            _getHomeScreenShortcutMissionRewardCallback = null;
         }
     }
 }
