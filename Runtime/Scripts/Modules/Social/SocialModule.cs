@@ -95,6 +95,18 @@ namespace Playgama.Modules.Social
             }
         }
 
+        public bool isAddToFavoritesRewardSupported
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return PlaygamaBridgeIsAddToFavoritesRewardSupported() == "true";
+#else
+                return false;
+#endif
+            }
+        }
+
         public bool isRateSupported
         {
             get
@@ -142,6 +154,9 @@ namespace Playgama.Modules.Social
         private static extern string PlaygamaBridgeIsAddToFavoritesSupported();
 
         [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsAddToFavoritesRewardSupported();
+
+        [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsRateSupported();
 
         [DllImport("__Internal")]
@@ -170,6 +185,9 @@ namespace Playgama.Modules.Social
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeGetAddToHomeScreenReward();
+
+        [DllImport("__Internal")]
+        private static extern void PlaygamaBridgeGetAddToFavoritesReward();
 #endif
 
         private Action<bool> _shareCallback;
@@ -180,6 +198,7 @@ namespace Playgama.Modules.Social
         private Action<bool> _addToFavoritesCallback;
         private Action<bool> _rateCallback;
         private Action<bool> _getAddToHomeScreenRewardCallback;
+        private Action<bool> _getAddToFavoritesRewardCallback;
 
 
         public void Share(Dictionary<string, object> options, Action<bool> onComplete = null)
@@ -262,6 +281,16 @@ namespace Playgama.Modules.Social
 #endif
         }
 
+        public void GetAddToFavoritesReward(Action<bool> onComplete = null)
+        {
+            _getAddToFavoritesRewardCallback = onComplete;
+#if !UNITY_EDITOR
+            PlaygamaBridgeGetAddToFavoritesReward();
+#else
+            OnGetAddToFavoritesRewardCompleted("false");
+#endif
+        }
+
 
         // Called from JS
         private void OnShareCompleted(string result)
@@ -318,6 +347,13 @@ namespace Playgama.Modules.Social
             var canReceiveReward = result == "true";
             _getAddToHomeScreenRewardCallback?.Invoke(canReceiveReward);
             _getAddToHomeScreenRewardCallback = null;
+        }
+
+        private void OnGetAddToFavoritesRewardCompleted(string result)
+        {
+            var canReceiveReward = result == "true";
+            _getAddToFavoritesRewardCallback?.Invoke(canReceiveReward);
+            _getAddToFavoritesRewardCallback = null;
         }
     }
 }
