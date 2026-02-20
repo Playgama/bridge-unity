@@ -493,6 +493,10 @@ window.getIsAddToFavoritesSupported = function() {
     return bridge.social.isAddToFavoritesSupported.toString()
 }
 
+window.getIsAddToFavoritesRewardSupported = function() {
+    return bridge.social.isAddToFavoritesRewardSupported.toString()
+}
+
 window.getIsRateSupported = function() {
     return bridge.social.isRateSupported.toString()
 }
@@ -594,6 +598,16 @@ window.getAddToHomeScreenReward = function() {
         })
         .catch(error => {
             sendMessageToUnity('OnGetAddToHomeScreenRewardCompleted', 'false')
+        })
+}
+
+window.getAddToFavoritesReward = function() {
+    bridge.social.getAddToFavoritesReward()
+        .then(() => {
+            sendMessageToUnity('OnGetAddToFavoritesRewardCompleted', 'true')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnGetAddToFavoritesRewardCompleted', 'false')
         })
 }
 
