@@ -58,6 +58,7 @@ namespace Playgama.Editor.Tabs
 
         private SortColumn _sortBy = SortColumn.Key;
         private bool _sortAscending = true;
+        private bool _hideUnityPrefs = true;
 
         private const long MaxImportFileSizeBytes = 10 * 1024 * 1024;
         private const int MaxImportEntryCount = 10000;
@@ -148,8 +149,6 @@ namespace Playgama.Editor.Tabs
                     _status = $"Refreshed. Found {_entries.Count} entries.";
                 }
 
-                GUILayout.Space(4);
-
                 if (GUILayout.Button("Export", EditorStyles.toolbarButton, GUILayout.Width(50)))
                     ExportEntries();
 
@@ -162,6 +161,9 @@ namespace Playgama.Editor.Tabs
 
                 if (GUILayout.Button("X", EditorStyles.toolbarButton, GUILayout.Width(20)))
                     _search = "";
+
+                GUILayout.Space(8);
+                _hideUnityPrefs = GUILayout.Toggle(_hideUnityPrefs, "Hide Unity Prefs", EditorStyles.toolbarButton, GUILayout.Width(110));
 
                 GUILayout.FlexibleSpace();
 
@@ -202,14 +204,18 @@ namespace Playgama.Editor.Tabs
         private void DrawList()
         {
             int visibleCount = 0;
+            int totalCount = 0;
             for (int i = 0; i < _entries.Count; i++)
             {
-                if (PassSearch(_entries[i].Key, _search))
+                if (_hideUnityPrefs && IsUnityInternalKey(_entries[i].Key))
+                    continue;
+                totalCount++;
+                if (PassFilter(_entries[i].Key, _search))
                     visibleCount++;
             }
 
-            var title = _entries.Count > 0
-                ? $"PlayerPrefs ({visibleCount}/{_entries.Count})"
+            var title = totalCount > 0
+                ? $"PlayerPrefs ({visibleCount}/{totalCount})"
                 : "PlayerPrefs";
 
             _foldList = BridgeStyles.DrawSectionHeader(title, _foldList, "\u2630");
@@ -232,7 +238,7 @@ namespace Playgama.Editor.Tabs
                 int rowIndex = 0;
                 for (int i = 0; i < _entries.Count; i++)
                 {
-                    if (!PassSearch(_entries[i].Key, _search))
+                    if (!PassFilter(_entries[i].Key, _search))
                         continue;
 
                     DrawRow(_entries[i], rowIndex);
@@ -436,7 +442,7 @@ namespace Playgama.Editor.Tabs
             var toExport = new List<Entry>();
             for (int i = 0; i < _entries.Count; i++)
             {
-                if (PassSearch(_entries[i].Key, _search))
+                if (PassFilter(_entries[i].Key, _search))
                     toExport.Add(_entries[i]);
             }
 
@@ -717,11 +723,20 @@ namespace Playgama.Editor.Tabs
             _newValue = "";
         }
 
-        private static bool PassSearch(string key, string search)
+        private bool PassFilter(string key, string search)
         {
+            if (_hideUnityPrefs && IsUnityInternalKey(key))
+                return false;
             if (string.IsNullOrEmpty(search))
                 return true;
             return key.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool IsUnityInternalKey(string key)
+        {
+            return key.StartsWith("unity.", StringComparison.OrdinalIgnoreCase)
+                || key.StartsWith("unity_", StringComparison.OrdinalIgnoreCase)
+                || key.StartsWith("UnityGraphicsQuality", StringComparison.Ordinal);
         }
 
         private static string GetDisplayValue(Entry entry)
