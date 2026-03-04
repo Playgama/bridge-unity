@@ -27,7 +27,8 @@ namespace Playgama.Editor
         public const int TabShaders = 5;
         public const int TabFonts = 6;
         public const int TabBuildSettings = 7;
-        public const int TabSettings = 8;
+        public const int TabPlayerPrefs = 8;
+        public const int TabSettings = 9;
 
         public static BridgeWindow ShowWindow()
         {
@@ -53,6 +54,7 @@ namespace Playgama.Editor
             _tabs.Add(new Tabs.ShadersTab());
             _tabs.Add(new Tabs.FontsTab());
             _tabs.Add(new Tabs.BuildSettingsTab());
+            _tabs.Add(new Tabs.PlayerPrefsTab());
             _tabs.Add(new Tabs.SettingsTab());
 
             var savedReport = BuildReportStorage.LoadMostRecentReport();
