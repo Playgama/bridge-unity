@@ -8,7 +8,13 @@ namespace Playgama.Modules.Platform
         InGameLoadingStopped,
         GameplayStarted,
         GameplayStopped,
-        PlayerGotAchievement
+        PlayerGotAchievement,
+        LevelStarted,
+        LevelCompleted,
+        LevelFailed,
+        LevelPaused,
+        LevelResumed,
+        GameOver
     }
 }
 #endif
