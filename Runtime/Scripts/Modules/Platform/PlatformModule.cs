@@ -161,6 +161,7 @@ namespace Playgama.Modules.Platform
                     messageString = "in_game_loading_stopped";
                     break;
 
+#pragma warning disable 0612, 0618
                 case PlatformMessage.GameplayStarted:
                     messageString = "gameplay_started";
                     break;
@@ -168,6 +169,7 @@ namespace Playgama.Modules.Platform
                 case PlatformMessage.GameplayStopped:
                     messageString = "gameplay_stopped";
                     break;
+#pragma warning restore 0612, 0618
 
                 case PlatformMessage.PlayerGotAchievement:
                     messageString = "player_got_achievement";
@@ -191,10 +193,6 @@ namespace Playgama.Modules.Platform
 
                 case PlatformMessage.LevelResumed:
                     messageString = "level_resumed";
-                    break;
-
-                case PlatformMessage.GameOver:
-                    messageString = "game_over";
                     break;
 
                 default:
@@ -224,6 +222,7 @@ namespace Playgama.Modules.Platform
                     messageString = "in_game_loading_stopped";
                     break;
 
+#pragma warning disable 0612, 0618
                 case PlatformMessage.GameplayStarted:
                     messageString = "gameplay_started";
                     break;
@@ -231,6 +230,7 @@ namespace Playgama.Modules.Platform
                 case PlatformMessage.GameplayStopped:
                     messageString = "gameplay_stopped";
                     break;
+#pragma warning restore 0612, 0618
 
                 case PlatformMessage.PlayerGotAchievement:
                     messageString = "player_got_achievement";
@@ -254,10 +254,6 @@ namespace Playgama.Modules.Platform
 
                 case PlatformMessage.LevelResumed:
                     messageString = "level_resumed";
-                    break;
-
-                case PlatformMessage.GameOver:
-                    messageString = "game_over";
                     break;
 
                 default:
