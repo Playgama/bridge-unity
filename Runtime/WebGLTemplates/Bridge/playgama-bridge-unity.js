@@ -211,6 +211,10 @@ window.getIsPlatformGetGameByIdSupported = function() {
 }
 
 window.sendMessageToPlatform = function(message, options) {
+    if (options) {
+        options = JSON.parse(options)
+    }
+
     bridge.platform.sendMessage(message, options)
 }
 
