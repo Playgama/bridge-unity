@@ -6,9 +6,16 @@ namespace Playgama.Modules.Platform
         GameReady,
         InGameLoadingStarted,
         InGameLoadingStopped,
+        [System.Obsolete("Use LevelStarted or LevelResumed instead")]
         GameplayStarted,
+        [System.Obsolete("Use LevelPaused, LevelCompleted or LevelFailed instead")]
         GameplayStopped,
-        PlayerGotAchievement
+        PlayerGotAchievement,
+        LevelStarted,
+        LevelCompleted,
+        LevelFailed,
+        LevelPaused,
+        LevelResumed
     }
 }
 #endif

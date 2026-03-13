@@ -210,8 +210,12 @@ window.getIsPlatformGetGameByIdSupported = function() {
     return bridge.platform.isGetGameByIdSupported.toString()
 }
 
-window.sendMessageToPlatform = function(message) {
-    bridge.platform.sendMessage(message)
+window.sendMessageToPlatform = function(message, options) {
+    if (options) {
+        options = JSON.parse(options)
+    }
+
+    bridge.platform.sendMessage(message, options)
 }
 
 window.getServerTime = function() {
