@@ -71,12 +71,36 @@ namespace Playgama.Modules.Social
             }
         }
 
+        public bool isAddToHomeScreenRewardSupported
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return PlaygamaBridgeIsAddToHomeScreenRewardSupported() == "true";
+#else
+                return false;
+#endif
+            }
+        }
+
         public bool isAddToFavoritesSupported
         {
             get
             {
 #if !UNITY_EDITOR
                 return PlaygamaBridgeIsAddToFavoritesSupported() == "true";
+#else
+                return false;
+#endif
+            }
+        }
+
+        public bool isAddToFavoritesRewardSupported
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return PlaygamaBridgeIsAddToFavoritesRewardSupported() == "true";
 #else
                 return false;
 #endif
@@ -124,7 +148,13 @@ namespace Playgama.Modules.Social
         private static extern string PlaygamaBridgeIsAddToHomeScreenSupported();
 
         [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsAddToHomeScreenRewardSupported();
+
+        [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsAddToFavoritesSupported();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsAddToFavoritesRewardSupported();
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsRateSupported();
@@ -152,6 +182,12 @@ namespace Playgama.Modules.Social
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeRate();
+
+        [DllImport("__Internal")]
+        private static extern void PlaygamaBridgeGetAddToHomeScreenReward();
+
+        [DllImport("__Internal")]
+        private static extern void PlaygamaBridgeGetAddToFavoritesReward();
 #endif
 
         private Action<bool> _shareCallback;
@@ -161,6 +197,8 @@ namespace Playgama.Modules.Social
         private Action<bool> _addToHomeScreenCallback;
         private Action<bool> _addToFavoritesCallback;
         private Action<bool> _rateCallback;
+        private Action<bool> _getAddToHomeScreenRewardCallback;
+        private Action<bool> _getAddToFavoritesRewardCallback;
 
 
         public void Share(Dictionary<string, object> options, Action<bool> onComplete = null)
@@ -233,6 +271,26 @@ namespace Playgama.Modules.Social
 #endif
         }
 
+        public void GetAddToHomeScreenReward(Action<bool> onComplete = null)
+        {
+            _getAddToHomeScreenRewardCallback = onComplete;
+#if !UNITY_EDITOR
+            PlaygamaBridgeGetAddToHomeScreenReward();
+#else
+            OnGetAddToHomeScreenRewardCompleted("false");
+#endif
+        }
+
+        public void GetAddToFavoritesReward(Action<bool> onComplete = null)
+        {
+            _getAddToFavoritesRewardCallback = onComplete;
+#if !UNITY_EDITOR
+            PlaygamaBridgeGetAddToFavoritesReward();
+#else
+            OnGetAddToFavoritesRewardCompleted("false");
+#endif
+        }
+
 
         // Called from JS
         private void OnShareCompleted(string result)
@@ -282,6 +340,20 @@ namespace Playgama.Modules.Social
             var isSuccess = result == "true";
             _rateCallback?.Invoke(isSuccess);
             _rateCallback = null;
+        }
+
+        private void OnGetAddToHomeScreenRewardCompleted(string result)
+        {
+            var canReceiveReward = result == "true";
+            _getAddToHomeScreenRewardCallback?.Invoke(canReceiveReward);
+            _getAddToHomeScreenRewardCallback = null;
+        }
+
+        private void OnGetAddToFavoritesRewardCompleted(string result)
+        {
+            var canReceiveReward = result == "true";
+            _getAddToFavoritesRewardCallback?.Invoke(canReceiveReward);
+            _getAddToFavoritesRewardCallback = null;
         }
     }
 }

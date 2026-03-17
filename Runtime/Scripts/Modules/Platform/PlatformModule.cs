@@ -123,8 +123,8 @@ namespace Playgama.Modules.Platform
         private static extern string PlaygamaBridgeIsPlatformGetGameByIdSupported();
         
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeSendMessageToPlatform(string message);
-        
+        private static extern void PlaygamaBridgeSendMessageToPlatform(string message, string options);
+
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeGetServerTime();
 
@@ -139,7 +139,7 @@ namespace Playgama.Modules.Platform
         private Action<bool, List<Dictionary<string, string>>> _getAllGamesCallback;
         private Action<bool, Dictionary<string, string>> _getGamesByIdCallback;
         
-        public void SendMessage(PlatformMessage message)
+        public void SendMessage(PlatformMessage message, Dictionary<string, object> options = null)
         {
 #if !UNITY_EDITOR
             var messageString = "";
@@ -149,7 +149,7 @@ namespace Playgama.Modules.Platform
                 case PlatformMessage.GameReady:
                     messageString = "game_ready";
                     break;
-                
+
                 case PlatformMessage.InGameLoadingStarted:
                     messageString = "in_game_loading_started";
                     break;
@@ -158,6 +158,7 @@ namespace Playgama.Modules.Platform
                     messageString = "in_game_loading_stopped";
                     break;
 
+#pragma warning disable 0612, 0618
                 case PlatformMessage.GameplayStarted:
                     messageString = "gameplay_started";
                     break;
@@ -165,16 +166,37 @@ namespace Playgama.Modules.Platform
                 case PlatformMessage.GameplayStopped:
                     messageString = "gameplay_stopped";
                     break;
+#pragma warning restore 0612, 0618
 
                 case PlatformMessage.PlayerGotAchievement:
                     messageString = "player_got_achievement";
+                    break;
+
+                case PlatformMessage.LevelStarted:
+                    messageString = "level_started";
+                    break;
+
+                case PlatformMessage.LevelCompleted:
+                    messageString = "level_completed";
+                    break;
+
+                case PlatformMessage.LevelFailed:
+                    messageString = "level_failed";
+                    break;
+
+                case PlatformMessage.LevelPaused:
+                    messageString = "level_paused";
+                    break;
+
+                case PlatformMessage.LevelResumed:
+                    messageString = "level_resumed";
                     break;
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(message), message, null);
             }
 
-            PlaygamaBridgeSendMessageToPlatform(messageString);
+            PlaygamaBridgeSendMessageToPlatform(messageString, options != null ? options.ToJson() : null);
 #endif
         }
 

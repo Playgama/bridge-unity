@@ -56,8 +56,8 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
     
-    PlaygamaBridgeSendMessageToPlatform: function(message) {
-        window.sendMessageToPlatform(UTF8ToString(message))
+    PlaygamaBridgeSendMessageToPlatform: function(message, options) {
+        window.sendMessageToPlatform(UTF8ToString(message), options ? UTF8ToString(options) : undefined)
     },
     
     PlaygamaBridgeGetServerTime: function() {
@@ -301,11 +301,27 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
+    PlaygamaBridgeIsAddToHomeScreenRewardSupported: function() {
+        var isAddToHomeScreenRewardSupported = window.getIsAddToHomeScreenRewardSupported()
+        var bufferSize = lengthBytesUTF8(isAddToHomeScreenRewardSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isAddToHomeScreenRewardSupported, buffer, bufferSize)
+        return buffer
+    },
+
     PlaygamaBridgeIsAddToFavoritesSupported: function() {
         var isAddToFavoritesSupported = window.getIsAddToFavoritesSupported()
         var bufferSize = lengthBytesUTF8(isAddToFavoritesSupported) + 1
         var buffer = _malloc(bufferSize)
         stringToUTF8(isAddToFavoritesSupported, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeIsAddToFavoritesRewardSupported: function() {
+        var isAddToFavoritesRewardSupported = window.getIsAddToFavoritesRewardSupported()
+        var bufferSize = lengthBytesUTF8(isAddToFavoritesRewardSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isAddToFavoritesRewardSupported, buffer, bufferSize)
         return buffer
     },
 
@@ -351,6 +367,14 @@ mergeInto(LibraryManager.library, {
 
     PlaygamaBridgeRate: function() {
         window.rate()
+    },
+
+    PlaygamaBridgeGetAddToHomeScreenReward: function() {
+        window.getAddToHomeScreenReward()
+    },
+
+    PlaygamaBridgeGetAddToFavoritesReward: function() {
+        window.getAddToFavoritesReward()
     },
 
 

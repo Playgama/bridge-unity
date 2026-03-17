@@ -210,8 +210,12 @@ window.getIsPlatformGetGameByIdSupported = function() {
     return bridge.platform.isGetGameByIdSupported.toString()
 }
 
-window.sendMessageToPlatform = function(message) {
-    bridge.platform.sendMessage(message)
+window.sendMessageToPlatform = function(message, options) {
+    if (options) {
+        options = JSON.parse(options)
+    }
+
+    bridge.platform.sendMessage(message, options)
 }
 
 window.getServerTime = function() {
@@ -485,8 +489,16 @@ window.getIsAddToHomeScreenSupported = function() {
     return bridge.social.isAddToHomeScreenSupported.toString()
 }
 
+window.getIsAddToHomeScreenRewardSupported = function() {
+    return bridge.social.isAddToHomeScreenRewardSupported.toString()
+}
+
 window.getIsAddToFavoritesSupported = function() {
     return bridge.social.isAddToFavoritesSupported.toString()
+}
+
+window.getIsAddToFavoritesRewardSupported = function() {
+    return bridge.social.isAddToFavoritesRewardSupported.toString()
 }
 
 window.getIsRateSupported = function() {
@@ -580,6 +592,26 @@ window.rate = function() {
         })
         .catch(error => {
             sendMessageToUnity('OnRateCompleted', 'false')
+        })
+}
+
+window.getAddToHomeScreenReward = function() {
+    bridge.social.getAddToHomeScreenReward()
+        .then(() => {
+            sendMessageToUnity('OnGetAddToHomeScreenRewardCompleted', 'true')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnGetAddToHomeScreenRewardCompleted', 'false')
+        })
+}
+
+window.getAddToFavoritesReward = function() {
+    bridge.social.getAddToFavoritesReward()
+        .then(() => {
+            sendMessageToUnity('OnGetAddToFavoritesRewardCompleted', 'true')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnGetAddToFavoritesRewardCompleted', 'false')
         })
 }
 
