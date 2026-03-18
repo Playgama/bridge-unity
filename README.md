@@ -23,6 +23,8 @@ One SDK for cross-platform publishing HTML5 games.
 + [YouTube](https://www.youtube.com/playables)
 + [Reddit](https://www.reddit.com/r/GamesOnReddit/)
 + [Microsoft Store](https://apps.microsoft.com)
++ [GameSnacks](https://gamesnacks.com/)
++ [Dlightek/Aha Games](https://aha.game/)
 + Other [Work In Progress]
 
 ## Plugins for game engines
