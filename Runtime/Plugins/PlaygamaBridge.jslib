@@ -59,7 +59,11 @@ mergeInto(LibraryManager.library, {
     PlaygamaBridgeSendMessageToPlatform: function(message, options) {
         window.sendMessageToPlatform(UTF8ToString(message), options ? UTF8ToString(options) : undefined)
     },
-    
+
+    PlaygamaBridgeSendCustomMessageToPlatform: function(id, options) {
+        window.sendCustomMessageToPlatform(UTF8ToString(id), options ? UTF8ToString(options) : undefined)
+    },
+
     PlaygamaBridgeGetServerTime: function() {
         window.getServerTime()
     },

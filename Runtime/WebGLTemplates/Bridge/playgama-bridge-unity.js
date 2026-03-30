@@ -218,6 +218,14 @@ window.sendMessageToPlatform = function(message, options) {
     bridge.platform.sendMessage(message, options)
 }
 
+window.sendCustomMessageToPlatform = function(id, options) {
+    if (options) {
+        options = JSON.parse(options)
+    }
+
+    bridge.platform.sendCustomMessage(id, options)
+}
+
 window.getServerTime = function() {
     bridge.platform.getServerTime()
         .then(result => {
