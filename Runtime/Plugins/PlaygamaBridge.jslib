@@ -260,6 +260,30 @@ mergeInto(LibraryManager.library, {
         window.showRewarded(UTF8ToString(placement))
     },
     
+    PlaygamaBridgeIsAdvancedBannersSupported: function() {
+        var isAdvancedBannersSupported = window.getIsAdvancedBannersSupported()
+        var bufferSize = lengthBytesUTF8(isAdvancedBannersSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isAdvancedBannersSupported, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeAdvancedBannersState: function() {
+        var advancedBannersState = window.getAdvancedBannersState()
+        var bufferSize = lengthBytesUTF8(advancedBannersState) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(advancedBannersState, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeShowAdvancedBanners: function(placement) {
+        window.showAdvancedBanners(UTF8ToString(placement))
+    },
+
+    PlaygamaBridgeHideAdvancedBanners: function() {
+        window.hideAdvancedBanners()
+    },
+
     PlaygamaBridgeCheckAdBlock: function() {
         window.checkAdBlock()
     },

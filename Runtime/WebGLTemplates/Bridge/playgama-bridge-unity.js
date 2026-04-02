@@ -130,6 +130,7 @@ function initializeBridge() {
             bridge.advertisement.on('banner_state_changed', state => sendMessageToUnity('OnBannerStateChanged', state))
             bridge.advertisement.on('interstitial_state_changed', state => sendMessageToUnity('OnInterstitialStateChanged', state))
             bridge.advertisement.on('rewarded_state_changed', state => sendMessageToUnity('OnRewardedStateChanged', state))
+            bridge.advertisement.on('advanced_banners_state_changed', state => sendMessageToUnity('OnAdvancedBannersStateChanged', state))
             bridge.game.on('visibility_state_changed', state => sendMessageToUnity('OnVisibilityStateChanged', state))
             bridge.platform.on('audio_state_changed', isEnabled => sendMessageToUnity('OnAudioStateChanged', isEnabled.toString()))
             bridge.platform.on('pause_state_changed', isPaused => sendMessageToUnity('OnPauseStateChanged', isPaused.toString()))
@@ -463,6 +464,26 @@ window.showInterstitial = function(placement) {
 
 window.showRewarded = function(placement) {
     bridge.advertisement.showRewarded(placement)
+}
+
+window.getIsAdvancedBannersSupported = function() {
+    return bridge.advertisement.isAdvancedBannersSupported.toString()
+}
+
+window.getAdvancedBannersState = function() {
+    if (bridge.advertisement.advancedBannersState) {
+        return bridge.advertisement.advancedBannersState
+    } else {
+        return ''
+    }
+}
+
+window.showAdvancedBanners = function(placement) {
+    bridge.advertisement.showAdvancedBanners(placement)
+}
+
+window.hideAdvancedBanners = function() {
+    bridge.advertisement.hideAdvancedBanners()
 }
 
 window.checkAdBlock = function() {
