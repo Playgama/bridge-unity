@@ -126,6 +126,9 @@ namespace Playgama.Modules.Platform
         private static extern void PlaygamaBridgeSendMessageToPlatform(string message, string options);
 
         [DllImport("__Internal")]
+        private static extern void PlaygamaBridgeSendCustomMessageToPlatform(string id, string options);
+
+        [DllImport("__Internal")]
         private static extern string PlaygamaBridgeGetServerTime();
 
         [DllImport("__Internal")]
@@ -197,6 +200,13 @@ namespace Playgama.Modules.Platform
             }
 
             PlaygamaBridgeSendMessageToPlatform(messageString, options != null ? options.ToJson() : null);
+#endif
+        }
+
+        public void SendCustomMessage(string id, Dictionary<string, object> options = null)
+        {
+#if !UNITY_EDITOR
+            PlaygamaBridgeSendCustomMessageToPlatform(id, options != null ? options.ToJson() : null);
 #endif
         }
 

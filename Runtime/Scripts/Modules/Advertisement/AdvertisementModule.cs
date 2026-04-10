@@ -15,10 +15,12 @@ namespace Playgama.Modules.Advertisement
         public event Action<BannerState> bannerStateChanged;
         public event Action<InterstitialState> interstitialStateChanged;
         public event Action<RewardedState> rewardedStateChanged;
+        public event Action<BannerState> advancedBannersStateChanged;
 
         public BannerState bannerState { get; private set; } = BannerState.Hidden;
         public InterstitialState interstitialState { get; private set; } = InterstitialState.Closed;
         public RewardedState rewardedState { get; private set; } = RewardedState.Closed;
+        public BannerState advancedBannersState { get; private set; } = BannerState.Hidden;
 
         public int minimumDelayBetweenInterstitial
         {
@@ -68,7 +70,19 @@ namespace Playgama.Modules.Advertisement
 #endif
             }
         }
-        
+
+        public bool isAdvancedBannersSupported
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return PlaygamaBridgeIsAdvancedBannersSupported() == "true";
+#else
+                return true;
+#endif
+            }
+        }
+
         public string rewardedPlacement
         {
             get
@@ -117,10 +131,22 @@ namespace Playgama.Modules.Advertisement
         
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeShowBanner(string position, string placement);
-        
+
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeHideBanner();
-        
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsAdvancedBannersSupported();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeAdvancedBannersState();
+
+        [DllImport("__Internal")]
+        private static extern void PlaygamaBridgeShowAdvancedBanners(string placement);
+
+        [DllImport("__Internal")]
+        private static extern void PlaygamaBridgeHideAdvancedBanners();
+
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeCheckAdBlock();
 #endif
@@ -191,6 +217,29 @@ namespace Playgama.Modules.Advertisement
 #endif
         }
 
+        public void ShowAdvancedBanners(string placement = null)
+        {
+#if !UNITY_EDITOR
+            PlaygamaBridgeShowAdvancedBanners(placement);
+#else
+            OnAdvancedBannersStateChanged(BannerState.Loading.ToString());
+            DebugWindow.ShowSimple(
+                "Show Advanced Banners",
+                () => OnAdvancedBannersStateChanged(BannerState.Shown.ToString()),
+                () => OnAdvancedBannersStateChanged(BannerState.Failed.ToString())
+            );
+#endif
+        }
+
+        public void HideAdvancedBanners()
+        {
+#if !UNITY_EDITOR
+            PlaygamaBridgeHideAdvancedBanners();
+#else
+            OnAdvancedBannersStateChanged(BannerState.Hidden.ToString());
+#endif
+        }
+
         public void CheckAdBlock(Action<bool> callback)
         {
             _checkAdBlockCallback = callback;
@@ -247,7 +296,16 @@ namespace Playgama.Modules.Advertisement
                 rewardedStateChanged?.Invoke(rewardedState);
             }
         }
-        
+
+        private void OnAdvancedBannersStateChanged(string value)
+        {
+            if (Enum.TryParse<BannerState>(value, true, out var state))
+            {
+                advancedBannersState = state;
+                advancedBannersStateChanged?.Invoke(advancedBannersState);
+            }
+        }
+
         private void OnCheckAdBlockCompleted(string result)
         {
             _checkAdBlockCallback?.Invoke(result == "true");
