@@ -25,6 +25,15 @@ namespace Playgama.Debug
             instance.CreateCanvas();
         }
 
+#if UNITY_EDITOR
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticFields()
+        {
+            _instance = null;
+            _isApplicationQuitting = false;
+        }
+#endif
+
         private void CreateCanvas()
         {
             var canvasGO = new GameObject("DebugWindow");
