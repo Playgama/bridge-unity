@@ -96,16 +96,18 @@ function addLocalBridge() {
     if (bridgeScript && bridgeScript.parentNode) {
         bridgeScript.onload = null
         bridgeScript.onerror = null
-        bridgeScript.src = ''
         bridgeScript.parentNode.removeChild(bridgeScript)
     }
 
+    window.bridge = null
+    window.playgamaBridge = null
+
     const scriptElement = document.createElement('script')
     scriptElement.src = './playgama-bridge.js'
-    document.body.appendChild(scriptElement)
     scriptElement.onload = function() {
         initializeBridge()
     }
+    document.body.appendChild(scriptElement)
 }
 
 bridgeScript = document.createElement('script')
