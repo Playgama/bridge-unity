@@ -23,10 +23,52 @@
                 top: 0px;
                 left: 0px;
             }
+            #dpr-display {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: rgba(0, 0, 0, 0.7);
+                color: #fff;
+                padding: 8px 12px;
+                font-family: monospace;
+                font-size: 14px;
+                border-radius: 4px;
+                z-index: 9999;
+            }
         </style>
     </head>
     <body>
         <canvas id="canvas" class="fullscreen-canvas"></canvas>
+        <div id="dpr-display"></div>
+        <script>
+            function updateDPR() {
+                const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+                const cores = navigator.hardwareConcurrency || 2;
+                const memory = navigator.deviceMemory || 2;
+                const isWeak = cores <= 4 && memory <= 4;
+                const nativeDPR = window.devicePixelRatio || 1;
+
+                let usedDPR;
+                if (isIOS || !isWeak) {
+                    usedDPR = 'native';
+                } else if (navigator.maxTouchPoints > 0 && window.innerWidth < 768) {
+                    usedDPR = 1;
+                } else if (navigator.maxTouchPoints > 0 && window.innerWidth < 1200) {
+                    usedDPR = 1.5;
+                } else {
+                    usedDPR = Math.min(nativeDPR, 1.5);
+                }
+
+                document.getElementById('dpr-display').innerHTML =
+                    `Native DPR: ${nativeDPR.toFixed(2)}<br>` +
+                    `Used DPR: ${usedDPR}<br>` +
+                    `iOS: ${isIOS}<br>` +
+                    `Cores: ${cores}<br>` +
+                    `Memory: ${memory}GB`;
+            }
+            updateDPR();
+            window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`).addEventListener('change', updateDPR);
+        </script>
         <script src="./playgama-bridge-unity.js"></script>
     </body>
 </html>
