@@ -342,18 +342,10 @@ window.getStorageDefaultType = function() {
     return bridge.storage.defaultType
 }
 
-window.getIsStorageSupported = function(storageType) {
-    return bridge.storage.isSupported(storageType).toString()
-}
-
-window.getIsStorageAvailable = function(storageType) {
-    return bridge.storage.isAvailable(storageType).toString()
-}
-
-window.getStorageData = function(key, storageType) {
+window.getStorageData = function(key) {
     let keys = key.split(STORAGE_KEYS_SEPARATOR)
 
-    bridge.storage.get(keys, storageType, false)
+    bridge.storage.get(keys, false)
         .then(data => {
             if (keys.length > 1) {
                 let values = []
@@ -389,11 +381,11 @@ window.getStorageData = function(key, storageType) {
         })
 }
 
-window.setStorageData = function(key, value, storageType) {
+window.setStorageData = function(key, value) {
     let keys = key.split(STORAGE_KEYS_SEPARATOR)
     let values = value.split(STORAGE_VALUES_SEPARATOR)
 
-    bridge.storage.set(keys, values, storageType)
+    bridge.storage.set(keys, values)
         .then(() => {
             sendMessageToUnity('OnSetStorageDataSuccess', key)
         })
@@ -402,10 +394,10 @@ window.setStorageData = function(key, value, storageType) {
         })
 }
 
-window.deleteStorageData = function(key, storageType) {
+window.deleteStorageData = function(key) {
     let keys = key.split(STORAGE_KEYS_SEPARATOR)
 
-    bridge.storage.delete(keys, storageType)
+    bridge.storage.delete(keys)
         .then(() => {
             sendMessageToUnity('OnDeleteStorageDataSuccess', key)
         })

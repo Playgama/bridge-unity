@@ -1,4 +1,4 @@
-﻿#if UNITY_WEBGL
+#if UNITY_WEBGL
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,8 +12,8 @@ namespace Playgama.Modules.Storage
     public class StorageModule : MonoBehaviour
     {
 #if !UNITY_EDITOR
-        public StorageType defaultType 
-        { 
+        public StorageType defaultType
+        {
             get
             {
                 var type = PlaygamaBridgeGetStorageDefaultType();
@@ -22,22 +22,16 @@ namespace Playgama.Modules.Storage
         }
 
         [DllImport("__Internal")]
-        private static extern string PlaygamaBridgeIsStorageSupported(string storageType);
-
-        [DllImport("__Internal")]
-        private static extern string PlaygamaBridgeIsStorageAvailable(string storageType);
-
-        [DllImport("__Internal")]
         private static extern string PlaygamaBridgeGetStorageDefaultType();
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeGetStorageData(string key, string storageType);
+        private static extern void PlaygamaBridgeGetStorageData(string key);
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeSetStorageData(string key, string value, string storageType);
+        private static extern void PlaygamaBridgeSetStorageData(string key, string value);
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeDeleteStorageData(string key, string storageType);
+        private static extern void PlaygamaBridgeDeleteStorageData(string key);
 #else
         public StorageType defaultType => StorageType.LocalStorage;
         private const string _storageDataEditorPlayerPrefsPrefix = "bridge_storage_data";
@@ -52,25 +46,7 @@ namespace Playgama.Modules.Storage
         private readonly Dictionary<string, List<Action<bool>>> _deleteDataCallbacks = new();
 
 
-        public bool IsSupported(StorageType storageType)
-        {
-#if !UNITY_EDITOR
-            return PlaygamaBridgeIsStorageSupported(ConvertStorageType(storageType)) == "true";
-#else
-            return storageType == StorageType.LocalStorage;
-#endif
-        }
-        
-        public bool IsAvailable(StorageType storageType)
-        {
-#if !UNITY_EDITOR
-            return PlaygamaBridgeIsStorageAvailable(ConvertStorageType(storageType)) == "true";
-#else
-            return storageType == StorageType.LocalStorage;
-#endif
-        }
-
-        public void Get(string key, Action<bool, string> onComplete, StorageType? storageType = null)
+        public void Get(string key, Action<bool, string> onComplete)
         {
             if (_getDataCallbacks.TryGetValue(key, out var callbacks))
             {
@@ -81,7 +57,7 @@ namespace Playgama.Modules.Storage
             {
                 _getDataCallbacks.Add(key, new List<Action<bool, string>> { onComplete });
 #if !UNITY_EDITOR
-                PlaygamaBridgeGetStorageData(key, ConvertStorageType(storageType));
+                PlaygamaBridgeGetStorageData(key);
 #else
                 var data = PlayerPrefs.GetString($"{_storageDataEditorPlayerPrefsPrefix}_{key}", null);
                 OnGetStorageDataSuccess($"{key}{_dataSeparator}{data}");
@@ -89,7 +65,7 @@ namespace Playgama.Modules.Storage
             }
         }
 
-        public void Get(List<string> keys, Action<bool, List<string>> onComplete, StorageType? storageType = null)
+        public void Get(List<string> keys, Action<bool, List<string>> onComplete)
         {
             var keysCount = keys.Count;
             if (keysCount <= 0)
@@ -100,10 +76,10 @@ namespace Playgama.Modules.Storage
 
             if (keysCount == 1)
             {
-                Get(keys[0], (success, data) => { onComplete?.Invoke(success, success ? new List<string> { data } : null); }, storageType);
+                Get(keys[0], (success, data) => { onComplete?.Invoke(success, success ? new List<string> { data } : null); });
                 return;
             }
-            
+
             var key = string.Join(_keysSeparator, keys);
             if (_getMultipleDataCallbacks.TryGetValue(key, out var callbacks))
             {
@@ -114,7 +90,7 @@ namespace Playgama.Modules.Storage
             {
                 _getMultipleDataCallbacks.Add(key, new List<Action<bool, List<string>>> { onComplete });
 #if !UNITY_EDITOR
-                PlaygamaBridgeGetStorageData(key, ConvertStorageType(storageType));
+                PlaygamaBridgeGetStorageData(key);
 #else
                 var values = new List<string>();
                 foreach (var k in keys)
@@ -135,7 +111,7 @@ namespace Playgama.Modules.Storage
         }
 
 
-        public void Set(string key, string value, Action<bool> onComplete = null, StorageType? storageType = null)
+        public void Set(string key, string value, Action<bool> onComplete = null)
         {
             if (_setDataCallbacks.TryGetValue(key, out var callbacks))
             {
@@ -146,7 +122,7 @@ namespace Playgama.Modules.Storage
             {
                 _setDataCallbacks.Add(key, new List<Action<bool>> { onComplete });
 #if !UNITY_EDITOR
-                PlaygamaBridgeSetStorageData(key, value, ConvertStorageType(storageType));
+                PlaygamaBridgeSetStorageData(key, value);
 #else
                 PlayerPrefs.SetString($"{_storageDataEditorPlayerPrefsPrefix}_{key}", value);
                 OnSetStorageDataSuccess(key);
@@ -154,17 +130,17 @@ namespace Playgama.Modules.Storage
             }
         }
 
-        public void Set(string key, int value, Action<bool> onComplete = null, StorageType? storageType = null)
+        public void Set(string key, int value, Action<bool> onComplete = null)
         {
-            Set(key, value.ToString(), onComplete, storageType);
+            Set(key, value.ToString(), onComplete);
         }
 
-        public void Set(string key, bool value, Action<bool> onComplete = null, StorageType? storageType = null)
+        public void Set(string key, bool value, Action<bool> onComplete = null)
         {
-            Set(key, value.ToString(), onComplete, storageType);
+            Set(key, value.ToString(), onComplete);
         }
 
-        public void Set(List<string> keys, List<object> values, Action<bool> onComplete = null, StorageType? storageType = null)
+        public void Set(List<string> keys, List<object> values, Action<bool> onComplete = null)
         {
             var key = string.Join(_keysSeparator, keys);
             if (_setDataCallbacks.TryGetValue(key, out var callbacks))
@@ -177,7 +153,7 @@ namespace Playgama.Modules.Storage
                 _setDataCallbacks.Add(key, new List<Action<bool>> { onComplete });
 #if !UNITY_EDITOR
                 var value = string.Join(_valuesSeparator, values);
-                PlaygamaBridgeSetStorageData(key, value, ConvertStorageType(storageType));
+                PlaygamaBridgeSetStorageData(key, value);
 #else
                 for (var i = 0; i < keys.Count; i++)
                 {
@@ -190,7 +166,7 @@ namespace Playgama.Modules.Storage
         }
 
 
-        public void Delete(string key, Action<bool> onComplete = null, StorageType? storageType = null)
+        public void Delete(string key, Action<bool> onComplete = null)
         {
             if (_deleteDataCallbacks.TryGetValue(key, out var callbacks))
             {
@@ -201,7 +177,7 @@ namespace Playgama.Modules.Storage
             {
                 _deleteDataCallbacks.Add(key, new List<Action<bool>> { onComplete });
 #if !UNITY_EDITOR
-                PlaygamaBridgeDeleteStorageData(key, ConvertStorageType(storageType));
+                PlaygamaBridgeDeleteStorageData(key);
 #else
                 PlayerPrefs.DeleteKey($"{_storageDataEditorPlayerPrefsPrefix}_{key}");
                 OnDeleteStorageDataSuccess(key);
@@ -209,7 +185,7 @@ namespace Playgama.Modules.Storage
             }
         }
 
-        public void Delete(List<string> keys, Action<bool> onComplete = null, StorageType? storageType = null)
+        public void Delete(List<string> keys, Action<bool> onComplete = null)
         {
             var key = string.Join(_keysSeparator, keys);
             if (_deleteDataCallbacks.TryGetValue(key, out var callbacks))
@@ -221,7 +197,7 @@ namespace Playgama.Modules.Storage
             {
                 _deleteDataCallbacks.Add(key, new List<Action<bool>> { onComplete });
 #if !UNITY_EDITOR
-                PlaygamaBridgeDeleteStorageData(key, ConvertStorageType(storageType));
+                PlaygamaBridgeDeleteStorageData(key);
 #else
                 foreach (var k in keys)
                 {
@@ -366,26 +342,6 @@ namespace Playgama.Modules.Storage
             }
         }
 
-
-        private string ConvertStorageType(StorageType? storageType)
-        {
-            if (storageType.HasValue)
-            {
-                switch (storageType.Value)
-                {
-                    case StorageType.LocalStorage:
-                        return "local_storage";
-
-                    case StorageType.PlatformInternal:
-                        return "platform_internal";
-
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(storageType), storageType, null);
-                }
-            }
-
-            return "";
-        }
 
         private StorageType ParseStorageType(string type)
         {
