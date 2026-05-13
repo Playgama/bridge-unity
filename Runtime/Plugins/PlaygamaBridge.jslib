@@ -155,14 +155,6 @@ mergeInto(LibraryManager.library, {
     },
 
 
-    PlaygamaBridgeGetStorageDefaultType: function() {
-        var storageType = window.getStorageDefaultType()
-        var bufferSize = lengthBytesUTF8(storageType) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(storageType, buffer, bufferSize)
-        return buffer
-    },
-
     PlaygamaBridgeGetStorageData: function(key) {
         window.getStorageData(UTF8ToString(key))
     },

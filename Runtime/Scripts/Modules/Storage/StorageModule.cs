@@ -12,18 +12,6 @@ namespace Playgama.Modules.Storage
     public class StorageModule : MonoBehaviour
     {
 #if !UNITY_EDITOR
-        public StorageType defaultType
-        {
-            get
-            {
-                var type = PlaygamaBridgeGetStorageDefaultType();
-                return ParseStorageType(type);
-            }
-        }
-
-        [DllImport("__Internal")]
-        private static extern string PlaygamaBridgeGetStorageDefaultType();
-
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeGetStorageData(string key);
 
@@ -33,7 +21,6 @@ namespace Playgama.Modules.Storage
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeDeleteStorageData(string key);
 #else
-        public StorageType defaultType => StorageType.LocalStorage;
         private const string _storageDataEditorPlayerPrefsPrefix = "bridge_storage_data";
 #endif
         private const string _dataSeparator = "{bridge_data_separator}";
@@ -343,20 +330,6 @@ namespace Playgama.Modules.Storage
         }
 
 
-        private StorageType ParseStorageType(string type)
-        {
-            switch (type)
-            {
-                case "local_storage":
-                    return StorageType.LocalStorage;
-
-                case "platform_internal":
-                    return StorageType.PlatformInternal;
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
-            }
-        }
     }
 }
 #endif

@@ -338,10 +338,6 @@ window.getVisibilityState = function() {
 
 
 // storage
-window.getStorageDefaultType = function() {
-    return bridge.storage.defaultType
-}
-
 window.getStorageData = function(key) {
     let keys = key.split(STORAGE_KEYS_SEPARATOR)
 
