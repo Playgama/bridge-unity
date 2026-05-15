@@ -155,40 +155,16 @@ mergeInto(LibraryManager.library, {
     },
 
 
-    PlaygamaBridgeGetStorageDefaultType: function() {
-        var storageType = window.getStorageDefaultType()
-        var bufferSize = lengthBytesUTF8(storageType) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(storageType, buffer, bufferSize)
-        return buffer
+    PlaygamaBridgeGetStorageData: function(key) {
+        window.getStorageData(UTF8ToString(key))
     },
 
-    PlaygamaBridgeIsStorageSupported: function(storageType) {
-        var isStorageSupported = window.getIsStorageSupported(UTF8ToString(storageType))
-        var bufferSize = lengthBytesUTF8(isStorageSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isStorageSupported, buffer, bufferSize)
-        return buffer
+    PlaygamaBridgeSetStorageData: function(key, value) {
+        window.setStorageData(UTF8ToString(key), UTF8ToString(value))
     },
 
-    PlaygamaBridgeIsStorageAvailable: function(storageType) {
-        var isStorageAvailable = window.getIsStorageAvailable(UTF8ToString(storageType))
-        var bufferSize = lengthBytesUTF8(isStorageAvailable) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isStorageAvailable, buffer, bufferSize)
-        return buffer
-    },
-
-    PlaygamaBridgeGetStorageData: function(key, storageType) {
-        window.getStorageData(UTF8ToString(key), UTF8ToString(storageType))
-    },
-
-    PlaygamaBridgeSetStorageData: function(key, value, storageType) {
-        window.setStorageData(UTF8ToString(key), UTF8ToString(value), UTF8ToString(storageType))
-    },
-
-    PlaygamaBridgeDeleteStorageData: function(key, storageType) {
-        window.deleteStorageData(UTF8ToString(key), UTF8ToString(storageType))
+    PlaygamaBridgeDeleteStorageData: function(key) {
+        window.deleteStorageData(UTF8ToString(key))
     },
 
 
