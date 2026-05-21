@@ -146,15 +146,6 @@ mergeInto(LibraryManager.library, {
     },
 
 
-    PlaygamaBridgeGetVisibilityState: function() {
-        var visibilityState = window.getVisibilityState()
-        var bufferSize = lengthBytesUTF8(visibilityState) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(visibilityState, buffer, bufferSize)
-        return buffer
-    },
-
-
     PlaygamaBridgeGetStorageData: function(key) {
         window.getStorageData(UTF8ToString(key))
     },

@@ -18,13 +18,12 @@ Assembly definitions:
 
 ### Module System
 
-The SDK uses a singleton-based module architecture. Entry point is `Bridge.cs` which exposes 12 modules as static properties:
+The SDK uses a singleton-based module architecture. Entry point is `Bridge.cs` which exposes modules as static properties:
 
 ```csharp
 Bridge.advertisement   // Ads: Banner, Interstitial, Rewarded
 Bridge.storage         // LocalStorage/SessionStorage persistence
 Bridge.player          // Player authorization & info
-Bridge.game            // Game lifecycle & visibility
 Bridge.platform        // Platform detection & messaging
 Bridge.device          // Device info & safe areas
 Bridge.leaderboard     // Leaderboard management
@@ -66,7 +65,6 @@ Playgama
 ├── Common                    // Singleton<T>, JsonHelper
 ├── Modules.Advertisement
 ├── Modules.Device
-├── Modules.Game
 ├── Modules.Leaderboards
 ├── Modules.Payments
 ├── Modules.Achievements

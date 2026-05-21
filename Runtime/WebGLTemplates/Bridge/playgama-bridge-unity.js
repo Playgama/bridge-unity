@@ -39,7 +39,7 @@ function onUnityLoadingProgressChanged(progress) {
             clearInterval(progressBarFillingInterval)
             progressBarFillingInterval = null
         }
-        bridge.game.setLoadingProgress(100)
+        bridge.setGameLoadingProgress(100)
         return
     }
 
@@ -53,7 +53,7 @@ function onUnityLoadingProgressChanged(progress) {
         return
     }
 
-    bridge.game.setLoadingProgress(progress * 100)
+    bridge.setGameLoadingProgress(progress * 100)
 }
 
 function completeProgressBarFilling() {
@@ -62,14 +62,14 @@ function completeProgressBarFilling() {
     }
 
     let currentPercent = 90
-    bridge.game.setLoadingProgress(currentPercent)
+    bridge.setGameLoadingProgress(currentPercent)
     progressBarFillingInterval = setInterval(() => {
         currentPercent++
         if (currentPercent > 99) {
             currentPercent = 99
         }
 
-        bridge.game.setLoadingProgress(currentPercent)
+        bridge.setGameLoadingProgress(currentPercent)
 
         if (currentPercent >= 99) {
             clearInterval(progressBarFillingInterval)
@@ -128,12 +128,11 @@ function initializeBridge() {
     bridge
         .initialize()
         .then(() => {
-            bridge.game.setLoadingProgress(0)
+            bridge.setGameLoadingProgress(0)
             bridge.advertisement.on('banner_state_changed', state => sendMessageToUnity('OnBannerStateChanged', state))
             bridge.advertisement.on('interstitial_state_changed', state => sendMessageToUnity('OnInterstitialStateChanged', state))
             bridge.advertisement.on('rewarded_state_changed', state => sendMessageToUnity('OnRewardedStateChanged', state))
             bridge.advertisement.on('advanced_banners_state_changed', state => sendMessageToUnity('OnAdvancedBannersStateChanged', state))
-            bridge.game.on('visibility_state_changed', state => sendMessageToUnity('OnVisibilityStateChanged', state))
             bridge.platform.on('audio_state_changed', isEnabled => sendMessageToUnity('OnAudioStateChanged', isEnabled.toString()))
             bridge.platform.on('pause_state_changed', isPaused => sendMessageToUnity('OnPauseStateChanged', isPaused.toString()))
 
@@ -328,12 +327,6 @@ window.authorizePlayer = function(options) {
         .catch(error => {
             sendMessageToUnity('OnAuthorizeCompleted', 'false')
         })
-}
-
-
-// game
-window.getVisibilityState = function() {
-    return bridge.game.visibilityState
 }
 
 
