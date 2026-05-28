@@ -199,7 +199,34 @@ namespace Playgama.Modules.Platform
                     throw new ArgumentOutOfRangeException(nameof(message), message, null);
             }
 
-            PlaygamaBridgeSendMessageToPlatform(messageString, options != null ? options.ToJson() : null);
+            SendMessageToPlatform(messageString, options);
+#endif
+        }
+
+        public new void SendMessage(string message)
+        {
+            SendMessageToPlatform(message, null);
+        }
+
+        public new void SendMessage(string message, object value)
+        {
+            SendMessageToPlatform(message, value as Dictionary<string, object>);
+        }
+
+        public new void SendMessage(string message, SendMessageOptions options)
+        {
+            SendMessageToPlatform(message, null);
+        }
+
+        public new void SendMessage(string message, object value, SendMessageOptions options)
+        {
+            SendMessageToPlatform(message, value as Dictionary<string, object>);
+        }
+
+        private void SendMessageToPlatform(string message, Dictionary<string, object> options)
+        {
+#if !UNITY_EDITOR
+            PlaygamaBridgeSendMessageToPlatform(message, options != null ? options.ToJson() : null);
 #endif
         }
 
