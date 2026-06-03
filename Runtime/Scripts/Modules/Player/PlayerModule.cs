@@ -37,6 +37,18 @@ namespace Playgama.Modules.Player
             }
         }
 
+        public bool isGuest
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return PlaygamaBridgeIsPlayerGuest() == "true";
+#else
+                return !_isAuthorized;
+#endif
+            }
+        }
+
         public string id
         {
             get
@@ -126,6 +138,9 @@ namespace Playgama.Modules.Player
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsPlayerAuthorized();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsPlayerGuest();
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgePlayerId();
