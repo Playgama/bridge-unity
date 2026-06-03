@@ -212,6 +212,10 @@ window.getIsPlatformGetGameByIdSupported = function() {
     return bridge.platform.isGetGameByIdSupported.toString()
 }
 
+window.getIsPlatformExternalCallsSupported = function() {
+    return bridge.platform.isExternalCallsSupported.toString()
+}
+
 window.sendMessageToPlatform = function(message, options) {
     if (options) {
         options = JSON.parse(options)

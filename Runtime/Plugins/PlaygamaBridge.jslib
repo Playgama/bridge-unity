@@ -55,7 +55,15 @@ mergeInto(LibraryManager.library, {
         stringToUTF8(isGameByIdSupported, buffer, bufferSize)
         return buffer
     },
-    
+
+    PlaygamaBridgeIsPlatformExternalCallsSupported: function() {
+        var isExternalCallsSupported = window.getIsPlatformExternalCallsSupported()
+        var bufferSize = lengthBytesUTF8(isExternalCallsSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isExternalCallsSupported, buffer, bufferSize)
+        return buffer
+    },
+
     PlaygamaBridgeSendMessageToPlatform: function(message, options) {
         window.sendMessageToPlatform(UTF8ToString(message), options ? UTF8ToString(options) : undefined)
     },
