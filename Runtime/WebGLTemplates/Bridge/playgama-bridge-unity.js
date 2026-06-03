@@ -283,6 +283,10 @@ window.getIsPlayerAuthorized = function() {
     return bridge.player.isAuthorized.toString()
 }
 
+window.getIsPlayerGuest = function() {
+    return bridge.player.isGuest.toString()
+}
+
 window.getPlayerId = function() {
     if (bridge.player.id) {
         return bridge.player.id.toString()

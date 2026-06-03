@@ -109,6 +109,14 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
+    PlaygamaBridgeIsPlayerGuest: function() {
+        var isPlayerGuest = window.getIsPlayerGuest()
+        var bufferSize = lengthBytesUTF8(isPlayerGuest) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isPlayerGuest, buffer, bufferSize)
+        return buffer
+    },
+
     PlaygamaBridgePlayerId: function() {
         var playerId = window.getPlayerId()
         var bufferSize = lengthBytesUTF8(playerId) + 1
