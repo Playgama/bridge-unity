@@ -470,16 +470,16 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
     
-    PlaygamaBridgeAchievementsUnlock: function(options) {
-        window.achievementsUnlock(UTF8ToString(options))
+    PlaygamaBridgeAchievementsUnlock: function(id) {
+        window.achievementsUnlock(UTF8ToString(id))
     },
 
-    PlaygamaBridgeAchievementsShowNativePopup: function(options) {
-        window.achievementsShowNativePopup(UTF8ToString(options))
+    PlaygamaBridgeAchievementsShowNativePopup: function() {
+        window.achievementsShowNativePopup()
     },
-        
-    PlaygamaBridgeAchievementsGetList: function(options) {
-        window.achievementsGetList(UTF8ToString(options))
+
+    PlaygamaBridgeAchievementsGetList: function() {
+        window.achievementsGetList()
     },
 
 });

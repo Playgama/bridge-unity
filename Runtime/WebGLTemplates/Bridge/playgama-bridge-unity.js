@@ -790,12 +790,8 @@ window.getIsAchievementsNativePopupSupported = function() {
     return bridge.achievements.isNativePopupSupported.toString()
 }
 
-window.achievementsUnlock = function(options) {
-    if (options) {
-        options = JSON.parse(options)
-    }
-
-    bridge.achievements.unlock(options)
+window.achievementsUnlock = function(id) {
+    bridge.achievements.unlock(id)
         .then(() => {
             sendMessageToUnity('OnAchievementsUnlockCompleted', 'true')
         })
@@ -804,12 +800,8 @@ window.achievementsUnlock = function(options) {
         })
 }
 
-window.achievementsShowNativePopup = function(options) {
-    if (options) {
-        options = JSON.parse(options)
-    }
-
-    bridge.achievements.showNativePopup(options)
+window.achievementsShowNativePopup = function() {
+    bridge.achievements.showNativePopup()
         .then(() => {
             sendMessageToUnity('OnAchievementsShowNativePopupCompleted', 'true')
         })
@@ -818,12 +810,8 @@ window.achievementsShowNativePopup = function(options) {
         })
 }
 
-window.achievementsGetList = function(options) {
-    if (options) {
-        options = JSON.parse(options)
-    }
-
-    bridge.achievements.getList(options)
+window.achievementsGetList = function() {
+    bridge.achievements.getList()
         .then(data => {
             if (data) {
                 if (typeof data !== 'string') {

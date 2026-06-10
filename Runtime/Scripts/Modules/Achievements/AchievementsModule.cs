@@ -58,47 +58,47 @@ namespace Playgama.Modules.Achievements
         private static extern string PlaygamaBridgeIsAchievementsNativePopupSupported();
         
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeAchievementsUnlock(string options);
+        private static extern void PlaygamaBridgeAchievementsUnlock(string id);
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeAchievementsGetList(string options);
-        
+        private static extern void PlaygamaBridgeAchievementsGetList();
+
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeAchievementsShowNativePopup(string options);
+        private static extern void PlaygamaBridgeAchievementsShowNativePopup();
 #endif
-        
+
         private Action<bool> _unlockCallback;
         private Action<bool> _showNativePopupCallback;
         private Action<bool, List<Dictionary<string, string>>> _getListCallback;
-        
-        public void Unlock(Dictionary<string, object> options, Action<bool> onComplete = null)
+
+        public void Unlock(string id, Action<bool> onComplete = null)
         {
             _unlockCallback = onComplete;
 
 #if !UNITY_EDITOR
-            PlaygamaBridgeAchievementsUnlock(options.ToJson());
+            PlaygamaBridgeAchievementsUnlock(id);
 #else
             OnAchievementsUnlockCompleted("false");
 #endif
         }
-        
-        public void ShowNativePopup(Dictionary<string, object> options, Action<bool> onComplete = null)
+
+        public void ShowNativePopup(Action<bool> onComplete = null)
         {
             _showNativePopupCallback = onComplete;
 
 #if !UNITY_EDITOR
-            PlaygamaBridgeAchievementsShowNativePopup(options.ToJson());
+            PlaygamaBridgeAchievementsShowNativePopup();
 #else
             OnAchievementsShowNativePopupCompleted("false");
 #endif
         }
-        
-        public void GetList(Dictionary<string, object> options, Action<bool, List<Dictionary<string, string>>> onComplete = null)
+
+        public void GetList(Action<bool, List<Dictionary<string, string>>> onComplete = null)
         {
             _getListCallback = onComplete;
 
 #if !UNITY_EDITOR
-            PlaygamaBridgeAchievementsGetList(options.ToJson());
+            PlaygamaBridgeAchievementsGetList();
 #else
             OnAchievementsGetListCompletedFailed();
 #endif
