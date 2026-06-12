@@ -814,11 +814,7 @@ window.achievementsGetList = function() {
     bridge.achievements.getList()
         .then(data => {
             if (data) {
-                if (typeof data !== 'string') {
-                    data = JSON.stringify(data)
-                }
-
-                sendMessageToUnity('OnAchievementsGetListCompletedSuccess', data)
+                sendMessageToUnity('OnAchievementsGetListCompletedSuccess', JSON.stringify(data))
             } else {
                 sendMessageToUnity('OnAchievementsGetListCompletedSuccess', '')
             }
