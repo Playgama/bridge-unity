@@ -454,28 +454,8 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
-    PlaygamaBridgeIsGetAchievementsListSupported: function() {
-        var isGetAchievementsListSupported = window.getIsGetAchievementsListSupported()
-        var bufferSize = lengthBytesUTF8(isGetAchievementsListSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isGetAchievementsListSupported, buffer, bufferSize)
-        return buffer
-    },
-
-    PlaygamaBridgeIsAchievementsNativePopupSupported: function() {
-        var isAchievementsNativePopupSupported = window.getIsAchievementsNativePopupSupported()
-        var bufferSize = lengthBytesUTF8(isAchievementsNativePopupSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isAchievementsNativePopupSupported, buffer, bufferSize)
-        return buffer
-    },
-    
     PlaygamaBridgeAchievementsUnlock: function(id) {
         window.achievementsUnlock(UTF8ToString(id))
-    },
-
-    PlaygamaBridgeAchievementsShowNativePopup: function() {
-        window.achievementsShowNativePopup()
     },
 
     PlaygamaBridgeAchievementsGetList: function() {

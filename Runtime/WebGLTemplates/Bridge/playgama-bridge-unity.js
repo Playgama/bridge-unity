@@ -782,14 +782,6 @@ window.getIsAchievementsSupported = function() {
     return bridge.achievements.isSupported.toString()
 }
 
-window.getIsGetAchievementsListSupported = function() {
-    return bridge.achievements.isGetListSupported.toString()
-}
-
-window.getIsAchievementsNativePopupSupported = function() {
-    return bridge.achievements.isNativePopupSupported.toString()
-}
-
 window.achievementsUnlock = function(id) {
     bridge.achievements.unlock(id)
         .then(() => {
@@ -797,16 +789,6 @@ window.achievementsUnlock = function(id) {
         })
         .catch(error => {
             sendMessageToUnity('OnAchievementsUnlockCompleted', 'false')
-        })
-}
-
-window.achievementsShowNativePopup = function() {
-    bridge.achievements.showNativePopup()
-        .then(() => {
-            sendMessageToUnity('OnAchievementsShowNativePopupCompleted', 'true')
-        })
-        .catch(error => {
-            sendMessageToUnity('OnAchievementsShowNativePopupCompleted', 'false')
         })
 }
 
