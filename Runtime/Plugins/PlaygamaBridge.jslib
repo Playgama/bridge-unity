@@ -442,8 +442,12 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
     
-    PlaygamaBridgeRemoteConfigGet: function(options) {
-        window.remoteConfigGet(UTF8ToString(options))
+    PlaygamaBridgeRemoteConfigSetDynamicParameters: function(parameters) {
+        window.remoteConfigSetDynamicParameters(UTF8ToString(parameters))
+    },
+
+    PlaygamaBridgeRemoteConfigGet: function() {
+        window.remoteConfigGet()
     },
 
     PlaygamaBridgeIsAchievementsSupported: function() {

@@ -760,12 +760,16 @@ window.getIsRemoteConfigSupported = function() {
     return bridge.remoteConfig.isSupported.toString()
 }
 
-window.remoteConfigGet = function(options) {
-    if (options) {
-        options = JSON.parse(options)
+window.remoteConfigSetDynamicParameters = function(parameters) {
+    if (parameters) {
+        parameters = JSON.parse(parameters)
     }
 
-    bridge.remoteConfig.get(options)
+    bridge.remoteConfig.setDynamicParameters(parameters)
+}
+
+window.remoteConfigGet = function() {
+    bridge.remoteConfig.get()
         .then(data => {
             if (typeof data !== 'string') {
                 data = JSON.stringify(data)
