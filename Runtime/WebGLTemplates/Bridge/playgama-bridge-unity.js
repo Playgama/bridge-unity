@@ -204,14 +204,6 @@ window.getIsPlatformAudioEnabled = function() {
     return bridge.platform.isAudioEnabled.toString()
 }
 
-window.getIsPlatformGetAllGamesSupported = function() {
-    return bridge.platform.isGetAllGamesSupported.toString()
-}
-
-window.getIsPlatformGetGameByIdSupported = function() {
-    return bridge.platform.isGetGameByIdSupported.toString()
-}
-
 window.getIsPlatformExternalCallsSupported = function() {
     return bridge.platform.isExternalCallsSupported.toString()
 }
@@ -242,30 +234,27 @@ window.getServerTime = function() {
         })
 }
 
-window.getAllGames = function() {
-    bridge.platform.getAllGames()
+// cross promo
+window.crossPromoGetGamesList = function() {
+    bridge.crossPromo.getGamesList()
         .then(result => {
-            sendMessageToUnity('OnGetAllGamesCompletedSuccess', JSON.stringify(result))
+            sendMessageToUnity('OnCrossPromoGetGamesListCompletedSuccess', JSON.stringify(result))
         })
         .catch(error => {
-            sendMessageToUnity('OnGetAllGamesCompletedFailed')
+            sendMessageToUnity('OnCrossPromoGetGamesListCompletedFailed')
         })
 }
 
-window.getGameById = function(options) {
-    if (options) {
-        options = JSON.parse(options)
-    } else {
-        options = {}
-    }
+window.crossPromoShow = function() {
+    bridge.crossPromo.show()
+}
 
-    bridge.platform.getGameById(options)
-        .then(result => {
-            sendMessageToUnity('OnGetGameByIdCompletedSuccess', JSON.stringify(result))
-        })
-        .catch(error => {
-            sendMessageToUnity('OnGetGameByIdCompletedFailed')
-        })
+window.crossPromoHide = function() {
+    bridge.crossPromo.hide()
+}
+
+window.getIsCrossPromoVisible = function() {
+    return bridge.crossPromo.isVisible.toString()
 }
 
 // device
