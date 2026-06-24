@@ -118,18 +118,6 @@ namespace Playgama.Modules.Social
 #endif
             }
         }
-        
-        public bool isExternalLinksAllowed
-        {
-            get
-            {
-#if !UNITY_EDITOR
-                return PlaygamaBridgeIsExternalLinksAllowed() == "true";
-#else
-                return true;
-#endif
-            }
-        }
 
 #if !UNITY_EDITOR
         [DllImport("__Internal")]
@@ -158,9 +146,6 @@ namespace Playgama.Modules.Social
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsRateSupported();
-
-        [DllImport("__Internal")]
-        private static extern string PlaygamaBridgeIsExternalLinksAllowed();
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeShare(string options);

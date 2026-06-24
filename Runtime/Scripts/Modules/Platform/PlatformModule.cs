@@ -112,6 +112,18 @@ namespace Playgama.Modules.Platform
             }
         }
 
+        public bool isExternalLinksAllowed
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return PlaygamaBridgeIsExternalLinksAllowed() == "true";
+#else
+                return true;
+#endif
+            }
+        }
+
 #if !UNITY_EDITOR
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeGetPlatformId();
@@ -136,6 +148,9 @@ namespace Playgama.Modules.Platform
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsPlatformExternalCallsSupported();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsExternalLinksAllowed();
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeSendMessageToPlatform(string message, string options);

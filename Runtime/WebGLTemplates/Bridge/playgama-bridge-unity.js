@@ -526,7 +526,7 @@ window.getIsRateSupported = function() {
 }
 
 window.getIsExternalLinksAllowed = function() {
-    return bridge.social.isExternalLinksAllowed.toString()
+    return bridge.platform.isExternalLinksAllowed.toString()
 }
 
 window.share = function(options) {
