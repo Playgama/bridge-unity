@@ -848,8 +848,8 @@ window.tasksAddProgress = function(options) {
     options = JSON.parse(options)
 
     bridge.tasks.addProgress(options.metric, options.amount)
-        .then(data => {
-            sendMessageToUnity('OnTasksAddProgressCompletedSuccess', data ? JSON.stringify(data) : '[]')
+        .then(() => {
+            sendMessageToUnity('OnTasksAddProgressCompletedSuccess', '')
         })
         .catch(error => {
             sendMessageToUnity('OnTasksAddProgressCompletedFailed', 'false')
@@ -860,9 +860,8 @@ window.tasksClaimReward = function(options) {
     options = JSON.parse(options)
 
     bridge.tasks.claimReward(options.id)
-        .then(rewards => {
-            // null means the task was not claimable; an empty value tells C# so.
-            sendMessageToUnity('OnTasksClaimRewardCompletedSuccess', rewards ? JSON.stringify(rewards) : '')
+        .then(claimed => {
+            sendMessageToUnity('OnTasksClaimRewardCompletedSuccess', claimed ? 'true' : 'false')
         })
         .catch(error => {
             sendMessageToUnity('OnTasksClaimRewardCompletedFailed', 'false')

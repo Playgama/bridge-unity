@@ -23,8 +23,8 @@ namespace Playgama.Modules.Tasks
 #endif
 
         private Action<bool, List<Task>> _getTasksCallback;
-        private Action<bool, List<Task>> _addProgressCallback;
-        private Action<bool, List<TaskReward>> _claimRewardCallback;
+        private Action<bool> _addProgressCallback;
+        private Action<bool> _claimRewardCallback;
 
         // Returns the full list of active tasks with their current progress.
         public void GetTasks(Action<bool, List<Task>> onComplete = null)
@@ -38,9 +38,9 @@ namespace Playgama.Modules.Tasks
 #endif
         }
 
-        // Adds `amount` progress to every active target watching `metric`. The
-        // callback receives the tasks that became fully complete on this call.
-        public void AddProgress(string metric, int amount = 1, Action<bool, List<Task>> onComplete = null)
+        // Adds `amount` progress to every active target watching `metric`. Read the
+        // updated state via GetTasks(); the callback only reports success.
+        public void AddProgress(string metric, int amount = 1, Action<bool> onComplete = null)
         {
             _addProgressCallback = onComplete;
 
@@ -56,9 +56,10 @@ namespace Playgama.Modules.Tasks
 #endif
         }
 
-        // Claims a completed task's rewards. The callback receives (true, rewards)
-        // when claimed, or (false, null) when the task is not claimable.
-        public void ClaimReward(string taskId, Action<bool, List<TaskReward>> onComplete = null)
+        // Claims a completed task's rewards. The callback receives true when the
+        // claim succeeded, false otherwise. The rewards to grant are on the Task
+        // (Task.rewards) from GetTasks().
+        public void ClaimReward(string taskId, Action<bool> onComplete = null)
         {
             _claimRewardCallback = onComplete;
 
@@ -88,35 +89,25 @@ namespace Playgama.Modules.Tasks
 
         private void OnTasksAddProgressCompletedSuccess(string result)
         {
-            _addProgressCallback?.Invoke(true, ParseTasks(result));
+            _addProgressCallback?.Invoke(true);
             _addProgressCallback = null;
         }
 
         private void OnTasksAddProgressCompletedFailed()
         {
-            _addProgressCallback?.Invoke(false, null);
+            _addProgressCallback?.Invoke(false);
             _addProgressCallback = null;
         }
 
-        // An empty result means the task was not claimable (not active / not
-        // complete / already claimed).
         private void OnTasksClaimRewardCompletedSuccess(string result)
         {
-            if (string.IsNullOrEmpty(result))
-            {
-                _claimRewardCallback?.Invoke(false, null);
-            }
-            else
-            {
-                _claimRewardCallback?.Invoke(true, ParseRewards(result));
-            }
-
+            _claimRewardCallback?.Invoke(result == "true");
             _claimRewardCallback = null;
         }
 
         private void OnTasksClaimRewardCompletedFailed()
         {
-            _claimRewardCallback?.Invoke(false, null);
+            _claimRewardCallback?.Invoke(false);
             _claimRewardCallback = null;
         }
 
@@ -144,39 +135,10 @@ namespace Playgama.Modules.Tasks
             return result;
         }
 
-        private static List<TaskReward> ParseRewards(string json)
-        {
-            var result = new List<TaskReward>();
-
-            if (!string.IsNullOrEmpty(json))
-            {
-                try
-                {
-                    var wrapper = JsonUtility.FromJson<TaskRewardListWrapper>("{\"items\":" + json + "}");
-                    if (wrapper?.items != null)
-                    {
-                        result = wrapper.items;
-                    }
-                }
-                catch (Exception e)
-                {
-                    UnityEngine.Debug.Log(e);
-                }
-            }
-
-            return result;
-        }
-
         [Serializable]
         private class TaskListWrapper
         {
             public List<Task> items;
-        }
-
-        [Serializable]
-        private class TaskRewardListWrapper
-        {
-            public List<TaskReward> items;
         }
     }
 }
