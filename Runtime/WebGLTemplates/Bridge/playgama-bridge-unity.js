@@ -832,3 +832,38 @@ window.achievementsGetList = function(options) {
             sendMessageToUnity('OnAchievementsGetListCompletedFailed', 'false')
         })
 }
+
+// tasks
+window.tasksGetTasks = function() {
+    bridge.tasks.getTasks()
+        .then(data => {
+            sendMessageToUnity('OnTasksGetTasksCompletedSuccess', data ? JSON.stringify(data) : '[]')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnTasksGetTasksCompletedFailed', 'false')
+        })
+}
+
+window.tasksAddProgress = function(options) {
+    options = JSON.parse(options)
+
+    bridge.tasks.addProgress(options.metric, options.amount)
+        .then(() => {
+            sendMessageToUnity('OnTasksAddProgressCompletedSuccess', '')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnTasksAddProgressCompletedFailed', 'false')
+        })
+}
+
+window.tasksClaimReward = function(options) {
+    options = JSON.parse(options)
+
+    bridge.tasks.claimReward(options.id)
+        .then(claimed => {
+            sendMessageToUnity('OnTasksClaimRewardCompletedSuccess', claimed ? 'true' : 'false')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnTasksClaimRewardCompletedFailed', 'false')
+        })
+}

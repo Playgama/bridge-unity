@@ -1,6 +1,5 @@
 #if UNITY_WEBGL
 using Playgama.Modules.Advertisement;
-using Playgama.Modules.CrossPromo;
 using Playgama.Modules.Device;
 using Playgama.Modules.Leaderboards;
 using Playgama.Modules.Payments;
@@ -10,6 +9,7 @@ using Playgama.Modules.Player;
 using Playgama.Modules.RemoteConfig;
 using Playgama.Modules.Social;
 using Playgama.Modules.Storage;
+using Playgama.Modules.Tasks;
 using UnityEngine;
 #if UNITY_EDITOR
 using Playgama.Debug;
@@ -29,7 +29,7 @@ namespace Playgama
         public static PaymentsModule payments => instance._payments; 
         public static AchievementsModule achievements => instance._achievements;
         public static RemoteConfigModule remoteConfig => instance._remoteConfig;
-        public static CrossPromoModule crossPromo => instance._crossPromo;
+        public static TasksModule tasks => instance._tasks;
 
         private AdvertisementModule _advertisement;
         private StorageModule _storage;
@@ -41,7 +41,7 @@ namespace Playgama
         private PaymentsModule _payments;
         private AchievementsModule _achievements;
         private RemoteConfigModule _remoteConfig;
-        private CrossPromoModule _crossPromo;
+        private TasksModule _tasks;
 
         protected override void Awake()
         {
@@ -60,7 +60,7 @@ namespace Playgama
             _payments = gameObject.AddComponent<PaymentsModule>();
             _remoteConfig = gameObject.AddComponent<RemoteConfigModule>();
             _achievements = gameObject.AddComponent<AchievementsModule>();
-            _crossPromo = gameObject.AddComponent<CrossPromoModule>();
+            _tasks = gameObject.AddComponent<TasksModule>();
         }
 
 #if UNITY_EDITOR

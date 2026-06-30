@@ -40,6 +40,22 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
+    PlaygamaBridgeIsPlatformGetAllGamesSupported: function() {
+        var isAllGamesSupported = window.getIsPlatformGetAllGamesSupported()
+        var bufferSize = lengthBytesUTF8(isAllGamesSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isAllGamesSupported, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeIsPlatformGetGameByIdSupported: function() {
+        var isGameByIdSupported = window.getIsPlatformGetGameByIdSupported()
+        var bufferSize = lengthBytesUTF8(isGameByIdSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isGameByIdSupported, buffer, bufferSize)
+        return buffer
+    },
+
     PlaygamaBridgeIsPlatformExternalCallsSupported: function() {
         var isExternalCallsSupported = window.getIsPlatformExternalCallsSupported()
         var bufferSize = lengthBytesUTF8(isExternalCallsSupported) + 1
@@ -60,24 +76,12 @@ mergeInto(LibraryManager.library, {
         window.getServerTime()
     },
 
-    PlaygamaBridgeCrossPromoGetGamesList: function() {
-        window.crossPromoGetGamesList()
+    PlaygamaBridgeGetAllGames: function() {
+        window.getAllGames()
     },
 
-    PlaygamaBridgeCrossPromoShow: function() {
-        window.crossPromoShow()
-    },
-
-    PlaygamaBridgeCrossPromoHide: function() {
-        window.crossPromoHide()
-    },
-
-    PlaygamaBridgeIsCrossPromoVisible: function() {
-        var isCrossPromoVisible = window.getIsCrossPromoVisible()
-        var bufferSize = lengthBytesUTF8(isCrossPromoVisible) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isCrossPromoVisible, buffer, bufferSize)
-        return buffer
+    PlaygamaBridgeGetGameById: function(options) {
+        window.getGameById(UTF8ToString(options))
     },
 
     PlaygamaBridgeGetDeviceType: function() {
@@ -438,12 +442,8 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
     
-    PlaygamaBridgeRemoteConfigSetDynamicParameters: function(parameters) {
-        window.remoteConfigSetDynamicParameters(UTF8ToString(parameters))
-    },
-
-    PlaygamaBridgeRemoteConfigGet: function() {
-        window.remoteConfigGet()
+    PlaygamaBridgeRemoteConfigGet: function(options) {
+        window.remoteConfigGet(UTF8ToString(options))
     },
 
     PlaygamaBridgeIsAchievementsSupported: function() {
@@ -480,6 +480,19 @@ mergeInto(LibraryManager.library, {
         
     PlaygamaBridgeAchievementsGetList: function(options) {
         window.achievementsGetList(UTF8ToString(options))
+    },
+
+    // tasks
+    PlaygamaBridgeTasksGetTasks: function() {
+        window.tasksGetTasks()
+    },
+
+    PlaygamaBridgeTasksAddProgress: function(options) {
+        window.tasksAddProgress(UTF8ToString(options))
+    },
+
+    PlaygamaBridgeTasksClaimReward: function(options) {
+        window.tasksClaimReward(UTF8ToString(options))
     },
 
 });
