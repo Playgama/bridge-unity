@@ -208,6 +208,10 @@ window.getIsPlatformExternalCallsSupported = function() {
     return bridge.platform.isExternalCallsSupported.toString()
 }
 
+window.getIsPlatformExternalLinksAllowed = function() {
+    return bridge.platform.isExternalLinksAllowed.toString()
+}
+
 window.sendMessageToPlatform = function(message, options) {
     if (options) {
         options = JSON.parse(options)
@@ -236,7 +240,7 @@ window.getServerTime = function() {
 
 // cross promo
 window.crossPromoGetGamesList = function() {
-    bridge.crossPromo.getGamesList()
+    bridge.crossPromo.getGames()
         .then(result => {
             sendMessageToUnity('OnCrossPromoGetGamesListCompletedSuccess', JSON.stringify(result))
         })
@@ -514,10 +518,6 @@ window.getIsRateSupported = function() {
     return bridge.social.isRateSupported.toString()
 }
 
-window.getIsExternalLinksAllowed = function() {
-    return bridge.social.isExternalLinksAllowed.toString()
-}
-
 window.share = function(options) {
     if (options) {
         options = JSON.parse(options)
@@ -749,12 +749,12 @@ window.getIsRemoteConfigSupported = function() {
     return bridge.remoteConfig.isSupported.toString()
 }
 
-window.remoteConfigSetDynamicParameters = function(parameters) {
+window.remoteConfigSetContext = function(parameters) {
     if (parameters) {
         parameters = JSON.parse(parameters)
     }
 
-    bridge.remoteConfig.setDynamicParameters(parameters)
+    bridge.remoteConfig.setContext(parameters)
 }
 
 window.remoteConfigGet = function() {
@@ -771,24 +771,8 @@ window.remoteConfigGet = function() {
         })
 }
 
-window.getIsAchievementsSupported = function() {
-    return bridge.achievements.isSupported.toString()
-}
-
-window.getIsGetAchievementsListSupported = function() {
-    return bridge.achievements.isGetListSupported.toString()
-}
-
-window.getIsAchievementsNativePopupSupported = function() {
-    return bridge.achievements.isNativePopupSupported.toString()
-}
-
-window.achievementsUnlock = function(options) {
-    if (options) {
-        options = JSON.parse(options)
-    }
-
-    bridge.achievements.unlock(options)
+window.achievementsUnlock = function(id) {
+    bridge.achievements.unlock(id)
         .then(() => {
             sendMessageToUnity('OnAchievementsUnlockCompleted', 'true')
         })
@@ -797,26 +781,8 @@ window.achievementsUnlock = function(options) {
         })
 }
 
-window.achievementsShowNativePopup = function(options) {
-    if (options) {
-        options = JSON.parse(options)
-    }
-
-    bridge.achievements.showNativePopup(options)
-        .then(() => {
-            sendMessageToUnity('OnAchievementsShowNativePopupCompleted', 'true')
-        })
-        .catch(error => {
-            sendMessageToUnity('OnAchievementsShowNativePopupCompleted', 'false')
-        })
-}
-
-window.achievementsGetList = function(options) {
-    if (options) {
-        options = JSON.parse(options)
-    }
-
-    bridge.achievements.getList(options)
+window.achievementsGetList = function() {
+    bridge.achievements.getAchievements()
         .then(data => {
             if (data) {
                 if (typeof data !== 'string') {
@@ -865,5 +831,46 @@ window.tasksClaimReward = function(options) {
         })
         .catch(error => {
             sendMessageToUnity('OnTasksClaimRewardCompletedFailed', 'false')
+        })
+}
+
+// daily rewards
+window.dailyRewardsGetRewards = function() {
+    bridge.dailyRewards.getRewards()
+        .then(data => {
+            sendMessageToUnity('OnDailyRewardsGetRewardsCompletedSuccess', data ? JSON.stringify(data) : '[]')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnDailyRewardsGetRewardsCompletedFailed', 'false')
+        })
+}
+
+window.dailyRewardsGetCurrentDay = function() {
+    bridge.dailyRewards.getCurrentDay()
+        .then(day => {
+            sendMessageToUnity('OnDailyRewardsGetCurrentDayCompletedSuccess', day.toString())
+        })
+        .catch(error => {
+            sendMessageToUnity('OnDailyRewardsGetCurrentDayCompletedFailed', 'false')
+        })
+}
+
+window.dailyRewardsGetCurrentReward = function() {
+    bridge.dailyRewards.getCurrentReward()
+        .then(reward => {
+            sendMessageToUnity('OnDailyRewardsGetCurrentRewardCompletedSuccess', reward ? reward.toString() : '')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnDailyRewardsGetCurrentRewardCompletedFailed', 'false')
+        })
+}
+
+window.dailyRewardsClaimCurrentReward = function() {
+    bridge.dailyRewards.claimCurrentReward()
+        .then(claimed => {
+            sendMessageToUnity('OnDailyRewardsClaimCurrentRewardCompletedSuccess', claimed ? 'true' : 'false')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnDailyRewardsClaimCurrentRewardCompletedFailed', 'false')
         })
 }

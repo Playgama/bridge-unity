@@ -40,7 +40,7 @@ namespace Playgama.Modules.CrossPromo
 #endif
         private Action<bool, List<Dictionary<string, string>>> _getGamesListCallback;
 
-        public void GetGamesList(Action<bool, List<Dictionary<string, string>>> onComplete = null)
+        public void GetGames(Action<bool, List<Dictionary<string, string>>> onComplete = null)
         {
             _getGamesListCallback = onComplete;
 #if !UNITY_EDITOR

@@ -28,7 +28,7 @@ namespace Playgama.Modules.RemoteConfig
         private static extern string PlaygamaBridgeIsRemoteConfigSupported();
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeRemoteConfigSetDynamicParameters(string parameters);
+        private static extern void PlaygamaBridgeRemoteConfigSetContext(string parameters);
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeRemoteConfigGet();
@@ -38,10 +38,10 @@ namespace Playgama.Modules.RemoteConfig
 
         // Sets dynamic game/player parameters used for config segmentation.
         // Accumulates across calls; only used by platforms that support it.
-        public void SetDynamicParameters(Dictionary<string, object> parameters)
+        public void SetContext(Dictionary<string, object> parameters)
         {
 #if !UNITY_EDITOR
-            PlaygamaBridgeRemoteConfigSetDynamicParameters(parameters.ToJson());
+            PlaygamaBridgeRemoteConfigSetContext(parameters.ToJson());
 #endif
         }
 

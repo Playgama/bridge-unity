@@ -40,27 +40,19 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
-    PlaygamaBridgeIsPlatformGetAllGamesSupported: function() {
-        var isAllGamesSupported = window.getIsPlatformGetAllGamesSupported()
-        var bufferSize = lengthBytesUTF8(isAllGamesSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isAllGamesSupported, buffer, bufferSize)
-        return buffer
-    },
-
-    PlaygamaBridgeIsPlatformGetGameByIdSupported: function() {
-        var isGameByIdSupported = window.getIsPlatformGetGameByIdSupported()
-        var bufferSize = lengthBytesUTF8(isGameByIdSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isGameByIdSupported, buffer, bufferSize)
-        return buffer
-    },
-
     PlaygamaBridgeIsPlatformExternalCallsSupported: function() {
         var isExternalCallsSupported = window.getIsPlatformExternalCallsSupported()
         var bufferSize = lengthBytesUTF8(isExternalCallsSupported) + 1
         var buffer = _malloc(bufferSize)
         stringToUTF8(isExternalCallsSupported, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeIsPlatformExternalLinksAllowed: function() {
+        var isExternalLinksAllowed = window.getIsPlatformExternalLinksAllowed()
+        var bufferSize = lengthBytesUTF8(isExternalLinksAllowed) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isExternalLinksAllowed, buffer, bufferSize)
         return buffer
     },
 
@@ -74,14 +66,6 @@ mergeInto(LibraryManager.library, {
 
     PlaygamaBridgeGetServerTime: function() {
         window.getServerTime()
-    },
-
-    PlaygamaBridgeGetAllGames: function() {
-        window.getAllGames()
-    },
-
-    PlaygamaBridgeGetGameById: function(options) {
-        window.getGameById(UTF8ToString(options))
     },
 
     PlaygamaBridgeGetDeviceType: function() {
@@ -344,14 +328,6 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
-    PlaygamaBridgeIsExternalLinksAllowed: function() {
-        var isExternalLinksAllowed = window.getIsExternalLinksAllowed()
-        var bufferSize = lengthBytesUTF8(isExternalLinksAllowed) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isExternalLinksAllowed, buffer, bufferSize)
-        return buffer
-    },
-
     PlaygamaBridgeShare: function(options) {
         window.share(UTF8ToString(options))
     },
@@ -442,44 +418,20 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
     
-    PlaygamaBridgeRemoteConfigGet: function(options) {
-        window.remoteConfigGet(UTF8ToString(options))
+    PlaygamaBridgeRemoteConfigSetContext: function(parameters) {
+        window.remoteConfigSetContext(UTF8ToString(parameters))
     },
 
-    PlaygamaBridgeIsAchievementsSupported: function() {
-        var isAchievementsSupported = window.getIsAchievementsSupported()
-        var bufferSize = lengthBytesUTF8(isAchievementsSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isAchievementsSupported, buffer, bufferSize)
-        return buffer
+    PlaygamaBridgeRemoteConfigGet: function() {
+        window.remoteConfigGet()
     },
 
-    PlaygamaBridgeIsGetAchievementsListSupported: function() {
-        var isGetAchievementsListSupported = window.getIsGetAchievementsListSupported()
-        var bufferSize = lengthBytesUTF8(isGetAchievementsListSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isGetAchievementsListSupported, buffer, bufferSize)
-        return buffer
+    PlaygamaBridgeAchievementsUnlock: function(id) {
+        window.achievementsUnlock(UTF8ToString(id))
     },
 
-    PlaygamaBridgeIsAchievementsNativePopupSupported: function() {
-        var isAchievementsNativePopupSupported = window.getIsAchievementsNativePopupSupported()
-        var bufferSize = lengthBytesUTF8(isAchievementsNativePopupSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isAchievementsNativePopupSupported, buffer, bufferSize)
-        return buffer
-    },
-    
-    PlaygamaBridgeAchievementsUnlock: function(options) {
-        window.achievementsUnlock(UTF8ToString(options))
-    },
-
-    PlaygamaBridgeAchievementsShowNativePopup: function(options) {
-        window.achievementsShowNativePopup(UTF8ToString(options))
-    },
-        
-    PlaygamaBridgeAchievementsGetList: function(options) {
-        window.achievementsGetList(UTF8ToString(options))
+    PlaygamaBridgeAchievementsGetList: function() {
+        window.achievementsGetList()
     },
 
     // tasks
@@ -493,6 +445,23 @@ mergeInto(LibraryManager.library, {
 
     PlaygamaBridgeTasksClaimReward: function(options) {
         window.tasksClaimReward(UTF8ToString(options))
+    },
+
+    // daily rewards
+    PlaygamaBridgeDailyRewardsGetRewards: function() {
+        window.dailyRewardsGetRewards()
+    },
+
+    PlaygamaBridgeDailyRewardsGetCurrentDay: function() {
+        window.dailyRewardsGetCurrentDay()
+    },
+
+    PlaygamaBridgeDailyRewardsGetCurrentReward: function() {
+        window.dailyRewardsGetCurrentReward()
+    },
+
+    PlaygamaBridgeDailyRewardsClaimCurrentReward: function() {
+        window.dailyRewardsClaimCurrentReward()
     },
 
 });
