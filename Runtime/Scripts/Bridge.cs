@@ -11,6 +11,7 @@ using Playgama.Modules.Social;
 using Playgama.Modules.Storage;
 using Playgama.Modules.Tasks;
 using Playgama.Modules.DailyRewards;
+using Playgama.Modules.CrossPromo;
 using UnityEngine;
 #if UNITY_EDITOR
 using Playgama.Debug;
@@ -32,6 +33,7 @@ namespace Playgama
         public static RemoteConfigModule remoteConfig => instance._remoteConfig;
         public static TasksModule tasks => instance._tasks;
         public static DailyRewardsModule dailyRewards => instance._dailyRewards;
+        public static CrossPromoModule crossPromo => instance._crossPromo;
 
         private AdvertisementModule _advertisement;
         private StorageModule _storage;
@@ -45,6 +47,7 @@ namespace Playgama
         private RemoteConfigModule _remoteConfig;
         private TasksModule _tasks;
         private DailyRewardsModule _dailyRewards;
+        private CrossPromoModule _crossPromo;
 
         protected override void Awake()
         {
@@ -65,6 +68,7 @@ namespace Playgama
             _achievements = gameObject.AddComponent<AchievementsModule>();
             _tasks = gameObject.AddComponent<TasksModule>();
             _dailyRewards = gameObject.AddComponent<DailyRewardsModule>();
+            _crossPromo = gameObject.AddComponent<CrossPromoModule>();
         }
 
 #if UNITY_EDITOR
