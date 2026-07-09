@@ -771,10 +771,6 @@ window.remoteConfigGet = function() {
         })
 }
 
-window.getIsAchievementsSupported = function() {
-    return bridge.achievements.isSupported.toString()
-}
-
 window.achievementsUnlock = function(id) {
     bridge.achievements.unlock(id)
         .then(() => {
@@ -785,17 +781,17 @@ window.achievementsUnlock = function(id) {
         })
 }
 
-window.achievementsGetList = function() {
-    bridge.achievements.getList()
+window.achievementsGetAchievements = function() {
+    bridge.achievements.getAchievements()
         .then(data => {
             if (data) {
-                sendMessageToUnity('OnAchievementsGetListCompletedSuccess', JSON.stringify(data))
+                sendMessageToUnity('OnAchievementsGetAchievementsCompletedSuccess', JSON.stringify(data))
             } else {
-                sendMessageToUnity('OnAchievementsGetListCompletedSuccess', '')
+                sendMessageToUnity('OnAchievementsGetAchievementsCompletedSuccess', '')
             }
         })
         .catch(error => {
-            sendMessageToUnity('OnAchievementsGetListCompletedFailed', 'false')
+            sendMessageToUnity('OnAchievementsGetAchievementsCompletedFailed', 'false')
         })
 }
 

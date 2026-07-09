@@ -426,21 +426,12 @@ mergeInto(LibraryManager.library, {
         window.remoteConfigGet()
     },
 
-    // achievements
-    PlaygamaBridgeIsAchievementsSupported: function() {
-        var isAchievementsSupported = window.getIsAchievementsSupported()
-        var bufferSize = lengthBytesUTF8(isAchievementsSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isAchievementsSupported, buffer, bufferSize)
-        return buffer
-    },
-
     PlaygamaBridgeAchievementsUnlock: function(id) {
         window.achievementsUnlock(UTF8ToString(id))
     },
 
-    PlaygamaBridgeAchievementsGetList: function() {
-        window.achievementsGetList()
+    PlaygamaBridgeAchievementsGetAchievements: function() {
+        window.achievementsGetAchievements()
     },
 
     // tasks
