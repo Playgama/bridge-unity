@@ -11,7 +11,22 @@ namespace Playgama.Modules.Achievements
 {
     public class AchievementsModule : MonoBehaviour
     {
+        public bool isSupported
+        {
+            get
+            {
 #if !UNITY_EDITOR
+                return PlaygamaBridgeIsAchievementsSupported() == "true";
+#else
+                return false;
+#endif
+            }
+        }
+
+#if !UNITY_EDITOR
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsAchievementsSupported();
+
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeAchievementsUnlock(string id);
 
@@ -33,7 +48,7 @@ namespace Playgama.Modules.Achievements
 #endif
         }
 
-        public void GetAchievements(Action<bool, List<Dictionary<string, string>>> onComplete = null)
+        public void GetList(Action<bool, List<Dictionary<string, string>>> onComplete = null)
         {
             _getListCallback = onComplete;
 

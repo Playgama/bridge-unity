@@ -426,6 +426,15 @@ mergeInto(LibraryManager.library, {
         window.remoteConfigGet()
     },
 
+    // achievements
+    PlaygamaBridgeIsAchievementsSupported: function() {
+        var isAchievementsSupported = window.getIsAchievementsSupported()
+        var bufferSize = lengthBytesUTF8(isAchievementsSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isAchievementsSupported, buffer, bufferSize)
+        return buffer
+    },
+
     PlaygamaBridgeAchievementsUnlock: function(id) {
         window.achievementsUnlock(UTF8ToString(id))
     },
@@ -462,6 +471,27 @@ mergeInto(LibraryManager.library, {
 
     PlaygamaBridgeDailyRewardsClaimCurrentReward: function() {
         window.dailyRewardsClaimCurrentReward()
+    },
+
+    // cross-promo
+    PlaygamaBridgeIsCrossPromoVisible: function() {
+        var isCrossPromoVisible = window.getIsCrossPromoVisible()
+        var bufferSize = lengthBytesUTF8(isCrossPromoVisible) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isCrossPromoVisible, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeCrossPromoGetGamesList: function() {
+        window.crossPromoGetGamesList()
+    },
+
+    PlaygamaBridgeCrossPromoShow: function() {
+        window.crossPromoShow()
+    },
+
+    PlaygamaBridgeCrossPromoHide: function() {
+        window.crossPromoHide()
     },
 
 });
