@@ -11,31 +11,16 @@ namespace Playgama.Modules.Achievements
 {
     public class AchievementsModule : MonoBehaviour
     {
-        public bool isSupported
-        {
-            get
-            {
 #if !UNITY_EDITOR
-                return PlaygamaBridgeIsAchievementsSupported() == "true";
-#else
-                return false;
-#endif
-            }
-        }
-
-#if !UNITY_EDITOR
-        [DllImport("__Internal")]
-        private static extern string PlaygamaBridgeIsAchievementsSupported();
-
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeAchievementsUnlock(string id);
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeAchievementsGetList();
+        private static extern void PlaygamaBridgeAchievementsGetAchievements();
 #endif
 
         private Action<bool> _unlockCallback;
-        private Action<bool, List<Dictionary<string, string>>> _getListCallback;
+        private Action<bool, List<Dictionary<string, string>>> _getAchievementsCallback;
 
         public void Unlock(string id, Action<bool> onComplete = null)
         {
@@ -48,14 +33,14 @@ namespace Playgama.Modules.Achievements
 #endif
         }
 
-        public void GetList(Action<bool, List<Dictionary<string, string>>> onComplete = null)
+        public void GetAchievements(Action<bool, List<Dictionary<string, string>>> onComplete = null)
         {
-            _getListCallback = onComplete;
+            _getAchievementsCallback = onComplete;
 
 #if !UNITY_EDITOR
-            PlaygamaBridgeAchievementsGetList();
+            PlaygamaBridgeAchievementsGetAchievements();
 #else
-            OnAchievementsGetListCompletedFailed();
+            OnAchievementsGetAchievementsCompletedFailed();
 #endif
         }
 
@@ -67,7 +52,7 @@ namespace Playgama.Modules.Achievements
             _unlockCallback = null;
         }
 
-        private void OnAchievementsGetListCompletedSuccess(string result)
+        private void OnAchievementsGetAchievementsCompletedSuccess(string result)
         {
             var achievements = new List<Dictionary<string, string>>();
 
@@ -83,14 +68,14 @@ namespace Playgama.Modules.Achievements
                 }
             }
 
-            _getListCallback?.Invoke(true, achievements);
-            _getListCallback = null;
+            _getAchievementsCallback?.Invoke(true, achievements);
+            _getAchievementsCallback = null;
         }
 
-        private void OnAchievementsGetListCompletedFailed()
+        private void OnAchievementsGetAchievementsCompletedFailed()
         {
-            _getListCallback?.Invoke(false, null);
-            _getListCallback = null;
+            _getAchievementsCallback?.Invoke(false, null);
+            _getAchievementsCallback = null;
         }
     }
 }
