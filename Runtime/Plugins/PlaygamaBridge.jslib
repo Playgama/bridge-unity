@@ -462,4 +462,55 @@ mergeInto(LibraryManager.library, {
         window.achievementsGetList()
     },
 
+    // tasks
+    PlaygamaBridgeTasksGetTasks: function() {
+        window.tasksGetTasks()
+    },
+
+    PlaygamaBridgeTasksAddProgress: function(options) {
+        window.tasksAddProgress(UTF8ToString(options))
+    },
+
+    PlaygamaBridgeTasksClaimReward: function(options) {
+        window.tasksClaimReward(UTF8ToString(options))
+    },
+
+    // daily rewards
+    PlaygamaBridgeDailyRewardsGetRewards: function() {
+        window.dailyRewardsGetRewards()
+    },
+
+    PlaygamaBridgeDailyRewardsGetCurrentDay: function() {
+        window.dailyRewardsGetCurrentDay()
+    },
+
+    PlaygamaBridgeDailyRewardsGetCurrentReward: function() {
+        window.dailyRewardsGetCurrentReward()
+    },
+
+    PlaygamaBridgeDailyRewardsClaimCurrentReward: function() {
+        window.dailyRewardsClaimCurrentReward()
+    },
+
+    // cross-promo
+    PlaygamaBridgeIsCrossPromoVisible: function() {
+        var isCrossPromoVisible = window.getIsCrossPromoVisible()
+        var bufferSize = lengthBytesUTF8(isCrossPromoVisible) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isCrossPromoVisible, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeCrossPromoGetGamesList: function() {
+        window.crossPromoGetGamesList()
+    },
+
+    PlaygamaBridgeCrossPromoShow: function() {
+        window.crossPromoShow()
+    },
+
+    PlaygamaBridgeCrossPromoHide: function() {
+        window.crossPromoHide()
+    },
+
 });
