@@ -40,27 +40,19 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
-    PlaygamaBridgeIsPlatformGetAllGamesSupported: function() {
-        var isAllGamesSupported = window.getIsPlatformGetAllGamesSupported()
-        var bufferSize = lengthBytesUTF8(isAllGamesSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isAllGamesSupported, buffer, bufferSize)
-        return buffer
-    },
-
-    PlaygamaBridgeIsPlatformGetGameByIdSupported: function() {
-        var isGameByIdSupported = window.getIsPlatformGetGameByIdSupported()
-        var bufferSize = lengthBytesUTF8(isGameByIdSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isGameByIdSupported, buffer, bufferSize)
-        return buffer
-    },
-
     PlaygamaBridgeIsPlatformExternalCallsSupported: function() {
         var isExternalCallsSupported = window.getIsPlatformExternalCallsSupported()
         var bufferSize = lengthBytesUTF8(isExternalCallsSupported) + 1
         var buffer = _malloc(bufferSize)
         stringToUTF8(isExternalCallsSupported, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeIsPlatformExternalLinksAllowed: function() {
+        var isExternalLinksAllowed = window.getIsPlatformExternalLinksAllowed()
+        var bufferSize = lengthBytesUTF8(isExternalLinksAllowed) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isExternalLinksAllowed, buffer, bufferSize)
         return buffer
     },
 
@@ -74,14 +66,6 @@ mergeInto(LibraryManager.library, {
 
     PlaygamaBridgeGetServerTime: function() {
         window.getServerTime()
-    },
-
-    PlaygamaBridgeGetAllGames: function() {
-        window.getAllGames()
-    },
-
-    PlaygamaBridgeGetGameById: function(options) {
-        window.getGameById(UTF8ToString(options))
     },
 
     PlaygamaBridgeGetDeviceType: function() {
@@ -344,14 +328,6 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
-    PlaygamaBridgeIsExternalLinksAllowed: function() {
-        var isExternalLinksAllowed = window.getIsExternalLinksAllowed()
-        var bufferSize = lengthBytesUTF8(isExternalLinksAllowed) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isExternalLinksAllowed, buffer, bufferSize)
-        return buffer
-    },
-
     PlaygamaBridgeShare: function(options) {
         window.share(UTF8ToString(options))
     },
@@ -442,10 +418,15 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
     
-    PlaygamaBridgeRemoteConfigGet: function(options) {
-        window.remoteConfigGet(UTF8ToString(options))
+    PlaygamaBridgeRemoteConfigSetContext: function(parameters) {
+        window.remoteConfigSetContext(UTF8ToString(parameters))
     },
 
+    PlaygamaBridgeRemoteConfigGet: function() {
+        window.remoteConfigGet()
+    },
+
+    // achievements
     PlaygamaBridgeIsAchievementsSupported: function() {
         var isAchievementsSupported = window.getIsAchievementsSupported()
         var bufferSize = lengthBytesUTF8(isAchievementsSupported) + 1

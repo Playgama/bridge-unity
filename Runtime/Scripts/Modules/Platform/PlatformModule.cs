@@ -76,36 +76,24 @@ namespace Playgama.Modules.Platform
             }
         }
 
-        public bool isGetAllGamesSupported
-        {
-            get
-            {
-#if !UNITY_EDITOR
-                return PlaygamaBridgeIsPlatformGetAllGamesSupported() == "true";
-#else
-                return false;
-#endif
-            }
-        }
-
-        public bool isGetGameByIdSupported
-        {
-            get
-            {
-#if !UNITY_EDITOR
-                return PlaygamaBridgeIsPlatformGetGameByIdSupported() == "true";
-#else
-                return false;
-#endif
-            }
-        }
-
         public bool isExternalCallsSupported
         {
             get
             {
 #if !UNITY_EDITOR
                 return PlaygamaBridgeIsPlatformExternalCallsSupported() == "true";
+#else
+                return true;
+#endif
+            }
+        }
+
+        public bool isExternalLinksAllowed
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return PlaygamaBridgeIsPlatformExternalLinksAllowed() == "true";
 #else
                 return true;
 #endif
@@ -129,13 +117,10 @@ namespace Playgama.Modules.Platform
         private static extern string PlaygamaBridgeIsPlatformAudioEnabled();
 
         [DllImport("__Internal")]
-        private static extern string PlaygamaBridgeIsPlatformGetAllGamesSupported();
-
-        [DllImport("__Internal")]
-        private static extern string PlaygamaBridgeIsPlatformGetGameByIdSupported();
-
-        [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsPlatformExternalCallsSupported();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsPlatformExternalLinksAllowed();
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeSendMessageToPlatform(string message, string options);
@@ -145,18 +130,9 @@ namespace Playgama.Modules.Platform
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeGetServerTime();
-
-        [DllImport("__Internal")]
-        private static extern string PlaygamaBridgeGetAllGames();
-
-        [DllImport("__Internal")]
-        private static extern string PlaygamaBridgeGetGameById(string options);
 #endif
         private Action<DateTime?> _getServerTimeCallback;
 
-        private Action<bool, List<Dictionary<string, string>>> _getAllGamesCallback;
-        private Action<bool, Dictionary<string, string>> _getGamesByIdCallback;
-        
         public void SendMessage(PlatformMessage message, Dictionary<string, object> options = null)
         {
 #if !UNITY_EDITOR
@@ -239,27 +215,6 @@ namespace Playgama.Modules.Platform
 #endif
         }
 
-        public void GetAllGames(Action<bool, List<Dictionary<string, string>>> onComplete = null)
-        {
-            _getAllGamesCallback = onComplete;
-#if !UNITY_EDITOR
-            PlaygamaBridgeGetAllGames();
-#else
-            OnGetAllGamesCompletedFailed();
-#endif
-        }
-
-        public void GetGameById(Dictionary<string, object> options, Action<bool, Dictionary<string, string>> onComplete = null) 
-        {
-            _getGamesByIdCallback = onComplete;
-#if !UNITY_EDITOR
-            PlaygamaBridgeGetGameById(options.ToJson());
-#else
-            OnGetGameByIdCompletedFailed();
-#endif
-        }
-
-
         // Called from JS
         private void OnAudioStateChanged(string isEnabled)
         {
@@ -283,58 +238,6 @@ namespace Playgama.Modules.Platform
             
             _getServerTimeCallback?.Invoke(date);
             _getServerTimeCallback = null;
-        }
-
-        private void OnGetAllGamesCompletedSuccess(string result)
-        {
-            var games = new List<Dictionary<string, string>>();
-
-            if (!string.IsNullOrEmpty(result))
-            {
-                try
-                {
-                    games = JsonHelper.FromJsonToListOfDictionaries(result);
-                }
-                catch (Exception e)
-                {
-                    UnityEngine.Debug.Log(e);
-                }
-            }
-
-            _getAllGamesCallback?.Invoke(true, games);
-            _getAllGamesCallback = null;
-        }
-
-        private void OnGetAllGamesCompletedFailed()
-        {
-            _getAllGamesCallback?.Invoke(false, null);
-            _getAllGamesCallback = null;
-        }
-
-        private void OnGetGameByIdCompletedSuccess(string result)
-        {
-            var game = new Dictionary<string, string>();
-
-            if (!string.IsNullOrEmpty(result))
-            {
-                try
-                {
-                    game = JsonHelper.FromJsonToDictionary(result);
-                }
-                catch (Exception e)
-                {
-                    UnityEngine.Debug.Log(e);
-                }
-            }
-
-            _getGamesByIdCallback?.Invoke(true, game);
-            _getGamesByIdCallback = null;
-        }
-
-        private void OnGetGameByIdCompletedFailed()
-        {
-            _getGamesByIdCallback?.Invoke(false, null);
-            _getGamesByIdCallback = null;
         }
     }
 }
