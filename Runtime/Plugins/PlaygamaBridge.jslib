@@ -40,22 +40,22 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
-    PlaygamaBridgeIsPlatformGetAllGamesSupported: function() {
-        var isAllGamesSupported = window.getIsPlatformGetAllGamesSupported()
-        var bufferSize = lengthBytesUTF8(isAllGamesSupported) + 1
+    PlaygamaBridgeIsPlatformExternalCallsSupported: function() {
+        var isExternalCallsSupported = window.getIsPlatformExternalCallsSupported()
+        var bufferSize = lengthBytesUTF8(isExternalCallsSupported) + 1
         var buffer = _malloc(bufferSize)
-        stringToUTF8(isAllGamesSupported, buffer, bufferSize)
+        stringToUTF8(isExternalCallsSupported, buffer, bufferSize)
         return buffer
     },
 
-    PlaygamaBridgeIsPlatformGetGameByIdSupported: function() {
-        var isGameByIdSupported = window.getIsPlatformGetGameByIdSupported()
-        var bufferSize = lengthBytesUTF8(isGameByIdSupported) + 1
+    PlaygamaBridgeIsPlatformExternalLinksAllowed: function() {
+        var isExternalLinksAllowed = window.getIsPlatformExternalLinksAllowed()
+        var bufferSize = lengthBytesUTF8(isExternalLinksAllowed) + 1
         var buffer = _malloc(bufferSize)
-        stringToUTF8(isGameByIdSupported, buffer, bufferSize)
+        stringToUTF8(isExternalLinksAllowed, buffer, bufferSize)
         return buffer
     },
-    
+
     PlaygamaBridgeSendMessageToPlatform: function(message, options) {
         window.sendMessageToPlatform(UTF8ToString(message), options ? UTF8ToString(options) : undefined)
     },
@@ -66,14 +66,6 @@ mergeInto(LibraryManager.library, {
 
     PlaygamaBridgeGetServerTime: function() {
         window.getServerTime()
-    },
-
-    PlaygamaBridgeGetAllGames: function() {
-        window.getAllGames()
-    },
-
-    PlaygamaBridgeGetGameById: function(options) {
-        window.getGameById(UTF8ToString(options))
     },
 
     PlaygamaBridgeGetDeviceType: function() {
@@ -106,6 +98,14 @@ mergeInto(LibraryManager.library, {
         var bufferSize = lengthBytesUTF8(isPlayerAuthorized) + 1
         var buffer = _malloc(bufferSize)
         stringToUTF8(isPlayerAuthorized, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeIsPlayerGuest: function() {
+        var isPlayerGuest = window.getIsPlayerGuest()
+        var bufferSize = lengthBytesUTF8(isPlayerGuest) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isPlayerGuest, buffer, bufferSize)
         return buffer
     },
 
@@ -146,49 +146,16 @@ mergeInto(LibraryManager.library, {
     },
 
 
-    PlaygamaBridgeGetVisibilityState: function() {
-        var visibilityState = window.getVisibilityState()
-        var bufferSize = lengthBytesUTF8(visibilityState) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(visibilityState, buffer, bufferSize)
-        return buffer
+    PlaygamaBridgeGetStorageData: function(key) {
+        window.getStorageData(UTF8ToString(key))
     },
 
-
-    PlaygamaBridgeGetStorageDefaultType: function() {
-        var storageType = window.getStorageDefaultType()
-        var bufferSize = lengthBytesUTF8(storageType) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(storageType, buffer, bufferSize)
-        return buffer
+    PlaygamaBridgeSetStorageData: function(key, value) {
+        window.setStorageData(UTF8ToString(key), UTF8ToString(value))
     },
 
-    PlaygamaBridgeIsStorageSupported: function(storageType) {
-        var isStorageSupported = window.getIsStorageSupported(UTF8ToString(storageType))
-        var bufferSize = lengthBytesUTF8(isStorageSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isStorageSupported, buffer, bufferSize)
-        return buffer
-    },
-
-    PlaygamaBridgeIsStorageAvailable: function(storageType) {
-        var isStorageAvailable = window.getIsStorageAvailable(UTF8ToString(storageType))
-        var bufferSize = lengthBytesUTF8(isStorageAvailable) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isStorageAvailable, buffer, bufferSize)
-        return buffer
-    },
-
-    PlaygamaBridgeGetStorageData: function(key, storageType) {
-        window.getStorageData(UTF8ToString(key), UTF8ToString(storageType))
-    },
-
-    PlaygamaBridgeSetStorageData: function(key, value, storageType) {
-        window.setStorageData(UTF8ToString(key), UTF8ToString(value), UTF8ToString(storageType))
-    },
-
-    PlaygamaBridgeDeleteStorageData: function(key, storageType) {
-        window.deleteStorageData(UTF8ToString(key), UTF8ToString(storageType))
+    PlaygamaBridgeDeleteStorageData: function(key) {
+        window.deleteStorageData(UTF8ToString(key))
     },
 
 
@@ -361,14 +328,6 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
-    PlaygamaBridgeIsExternalLinksAllowed: function() {
-        var isExternalLinksAllowed = window.getIsExternalLinksAllowed()
-        var bufferSize = lengthBytesUTF8(isExternalLinksAllowed) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isExternalLinksAllowed, buffer, bufferSize)
-        return buffer
-    },
-
     PlaygamaBridgeShare: function(options) {
         window.share(UTF8ToString(options))
     },
@@ -459,44 +418,71 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
     
-    PlaygamaBridgeRemoteConfigGet: function(options) {
-        window.remoteConfigGet(UTF8ToString(options))
+    PlaygamaBridgeRemoteConfigSetContext: function(parameters) {
+        window.remoteConfigSetContext(UTF8ToString(parameters))
     },
 
-    PlaygamaBridgeIsAchievementsSupported: function() {
-        var isAchievementsSupported = window.getIsAchievementsSupported()
-        var bufferSize = lengthBytesUTF8(isAchievementsSupported) + 1
+    PlaygamaBridgeRemoteConfigGet: function() {
+        window.remoteConfigGet()
+    },
+
+    PlaygamaBridgeAchievementsUnlock: function(id) {
+        window.achievementsUnlock(UTF8ToString(id))
+    },
+
+    PlaygamaBridgeAchievementsGetAchievements: function() {
+        window.achievementsGetAchievements()
+    },
+
+    // tasks
+    PlaygamaBridgeTasksGetTasks: function() {
+        window.tasksGetTasks()
+    },
+
+    PlaygamaBridgeTasksAddProgress: function(options) {
+        window.tasksAddProgress(UTF8ToString(options))
+    },
+
+    PlaygamaBridgeTasksClaimReward: function(options) {
+        window.tasksClaimReward(UTF8ToString(options))
+    },
+
+    // daily rewards
+    PlaygamaBridgeDailyRewardsGetRewards: function() {
+        window.dailyRewardsGetRewards()
+    },
+
+    PlaygamaBridgeDailyRewardsGetCurrentDay: function() {
+        window.dailyRewardsGetCurrentDay()
+    },
+
+    PlaygamaBridgeDailyRewardsGetCurrentReward: function() {
+        window.dailyRewardsGetCurrentReward()
+    },
+
+    PlaygamaBridgeDailyRewardsClaimCurrentReward: function() {
+        window.dailyRewardsClaimCurrentReward()
+    },
+
+    // cross-promo
+    PlaygamaBridgeIsCrossPromoVisible: function() {
+        var isCrossPromoVisible = window.getIsCrossPromoVisible()
+        var bufferSize = lengthBytesUTF8(isCrossPromoVisible) + 1
         var buffer = _malloc(bufferSize)
-        stringToUTF8(isAchievementsSupported, buffer, bufferSize)
+        stringToUTF8(isCrossPromoVisible, buffer, bufferSize)
         return buffer
     },
 
-    PlaygamaBridgeIsGetAchievementsListSupported: function() {
-        var isGetAchievementsListSupported = window.getIsGetAchievementsListSupported()
-        var bufferSize = lengthBytesUTF8(isGetAchievementsListSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isGetAchievementsListSupported, buffer, bufferSize)
-        return buffer
+    PlaygamaBridgeCrossPromoGetGamesList: function() {
+        window.crossPromoGetGamesList()
     },
 
-    PlaygamaBridgeIsAchievementsNativePopupSupported: function() {
-        var isAchievementsNativePopupSupported = window.getIsAchievementsNativePopupSupported()
-        var bufferSize = lengthBytesUTF8(isAchievementsNativePopupSupported) + 1
-        var buffer = _malloc(bufferSize)
-        stringToUTF8(isAchievementsNativePopupSupported, buffer, bufferSize)
-        return buffer
-    },
-    
-    PlaygamaBridgeAchievementsUnlock: function(options) {
-        window.achievementsUnlock(UTF8ToString(options))
+    PlaygamaBridgeCrossPromoShow: function() {
+        window.crossPromoShow()
     },
 
-    PlaygamaBridgeAchievementsShowNativePopup: function(options) {
-        window.achievementsShowNativePopup(UTF8ToString(options))
-    },
-        
-    PlaygamaBridgeAchievementsGetList: function(options) {
-        window.achievementsGetList(UTF8ToString(options))
+    PlaygamaBridgeCrossPromoHide: function() {
+        window.crossPromoHide()
     },
 
 });
