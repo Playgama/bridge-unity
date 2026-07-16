@@ -125,6 +125,7 @@ document.head.appendChild(bridgeScript)
 function initializeBridge() {
     clearTimeout(bridgeTimeout)
     bridge.engine = 'unity'
+    bridge.gameVersion = '{{{ PRODUCT_VERSION }}}'
     bridge
         .initialize()
         .then(() => {
