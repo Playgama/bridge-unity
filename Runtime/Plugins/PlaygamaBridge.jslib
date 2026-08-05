@@ -485,4 +485,25 @@ mergeInto(LibraryManager.library, {
         window.crossPromoHide()
     },
 
+    // notifications
+    PlaygamaBridgeIsNotificationsSupported: function() {
+        var isNotificationsSupported = window.getIsNotificationsSupported()
+        var bufferSize = lengthBytesUTF8(isNotificationsSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isNotificationsSupported, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeNotificationsSchedule: function(options) {
+        window.notificationsSchedule(UTF8ToString(options))
+    },
+
+    PlaygamaBridgeNotificationsCancel: function(id) {
+        window.notificationsCancel(UTF8ToString(id))
+    },
+
+    PlaygamaBridgeNotificationsCancelAll: function() {
+        window.notificationsCancelAll()
+    },
+
 });
