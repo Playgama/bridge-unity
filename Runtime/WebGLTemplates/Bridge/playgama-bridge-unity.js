@@ -125,6 +125,7 @@ document.head.appendChild(bridgeScript)
 function initializeBridge() {
     clearTimeout(bridgeTimeout)
     bridge.engine = 'unity'
+    bridge.gameVersion = '{{{ PRODUCT_VERSION }}}'
     bridge
         .initialize()
         .then(() => {
@@ -868,5 +869,42 @@ window.dailyRewardsClaimCurrentReward = function() {
         })
         .catch(error => {
             sendMessageToUnity('OnDailyRewardsClaimCurrentRewardCompletedFailed', 'false')
+        })
+}
+
+// notifications
+window.getIsNotificationsSupported = function() {
+    return bridge.notifications.isSupported.toString()
+}
+
+window.notificationsSchedule = function(options) {
+    options = JSON.parse(options)
+
+    bridge.notifications.schedule(options)
+        .then(() => {
+            sendMessageToUnity('OnNotificationsScheduleCompletedSuccess', '')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnNotificationsScheduleCompletedFailed', 'false')
+        })
+}
+
+window.notificationsCancel = function(id) {
+    bridge.notifications.cancel(id)
+        .then(() => {
+            sendMessageToUnity('OnNotificationsCancelCompletedSuccess', '')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnNotificationsCancelCompletedFailed', 'false')
+        })
+}
+
+window.notificationsCancelAll = function() {
+    bridge.notifications.cancelAll()
+        .then(() => {
+            sendMessageToUnity('OnNotificationsCancelAllCompletedSuccess', '')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnNotificationsCancelAllCompletedFailed', 'false')
         })
 }

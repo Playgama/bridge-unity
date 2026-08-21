@@ -129,6 +129,12 @@ namespace Playgama.Modules.Storage
 
         public void Set(List<string> keys, List<object> values, Action<bool> onComplete = null)
         {
+            if (keys == null || values == null || keys.Count <= 0 || keys.Count != values.Count)
+            {
+                onComplete?.Invoke(false);
+                return;
+            }
+
             var key = string.Join(_keysSeparator, keys);
             if (_setDataCallbacks.TryGetValue(key, out var callbacks))
             {
@@ -150,6 +156,17 @@ namespace Playgama.Modules.Storage
                 OnSetStorageDataSuccess($"{key}");
 #endif
             }
+        }
+
+        public void Set(Dictionary<string, object> data, Action<bool> onComplete = null)
+        {
+            if (data == null || data.Count <= 0)
+            {
+                onComplete?.Invoke(false);
+                return;
+            }
+
+            Set(data.Keys.ToList(), data.Values.ToList(), onComplete);
         }
 
 
