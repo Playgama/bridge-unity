@@ -16,7 +16,7 @@ namespace Playgama.Editor
         private const float TabColumnWidth = 150f;
 
         // Project-specific settings file
-        private static readonly string SettingsFilePath = Path.Combine(Application.dataPath, "../Library/PlaygamaBridge.settings");
+        private static string SettingsFilePath;
 
         // Tab indices for external navigation
         public const int TabHome = 0;
@@ -41,6 +41,7 @@ namespace Playgama.Editor
 
         private void OnEnable()
         {
+            SettingsFilePath = Path.Combine(Application.dataPath, "../Library/PlaygamaBridge.settings");
             wantsMouseMove = true;
 
             _buildInfo = new BuildInfo();
@@ -125,7 +126,7 @@ namespace Playgama.Editor
 
             Repaint();
         }
-        
+
         public void SetSelectedTab(int tabIndex)
         {
             if (tabIndex < 0 || tabIndex >= _tabs.Count)
