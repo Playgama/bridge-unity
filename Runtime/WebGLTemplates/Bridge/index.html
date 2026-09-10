@@ -6,7 +6,9 @@
         <title>{{{ PRODUCT_NAME }}}</title>
         <link rel="preconnect" href="https://bridge.playgama.com">
         <link rel="preload" href="Build/{{{ CODE_FILENAME }}}" as="fetch" type="application/wasm" crossorigin>
+#if !PROGRESSIVE_ASSET_LOADING
         <link rel="preload" href="Build/{{{ DATA_FILENAME }}}" as="fetch" crossorigin>
+#endif
         <link rel="preload" href="Build/{{{ FRAMEWORK_FILENAME }}}" as="script">
         <style>
             html, body {

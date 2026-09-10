@@ -143,7 +143,12 @@ function initializeBridge() {
                 createUnityInstance(
                     CANVAS,
                     {
+#if PROGRESSIVE_ASSET_LOADING
+                        primaryDataUrls: {{{ JSON.stringify(PRIMARY_DATA_FILES) }}},
+                        secondaryDataUrls: {{{ JSON.stringify(SECONDARY_DATA_FILES) }}},
+#else
                         dataUrl: 'Build/{{{ DATA_FILENAME }}}',
+#endif
                         frameworkUrl: 'Build/{{{ FRAMEWORK_FILENAME }}}',
                         codeUrl: 'Build/{{{ CODE_FILENAME }}}',
 #if MEMORY_FILENAME
