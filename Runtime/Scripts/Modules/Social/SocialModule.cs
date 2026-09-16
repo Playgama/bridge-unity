@@ -186,6 +186,20 @@ namespace Playgama.Modules.Social
         private Action<bool> _getAddToFavoritesRewardCallback;
 
 
+        // Share, InviteFriends and CreatePost take either the id of an entry declared in
+        // playgama-bridge-config.json (social.shares, social.invites, social.posts) or the
+        // content itself. The id is sent as a JSON string, so the bridge tells it apart
+        // from the content object.
+        public void Share(string id, Action<bool> onComplete = null)
+        {
+            _shareCallback = onComplete;
+#if !UNITY_EDITOR
+            PlaygamaBridgeShare(id.ToJson());
+#else
+            OnShareCompleted("false");
+#endif
+        }
+
         public void Share(Dictionary<string, object> options, Action<bool> onComplete = null)
         {
             _shareCallback = onComplete;
@@ -193,6 +207,16 @@ namespace Playgama.Modules.Social
             PlaygamaBridgeShare(options.ToJson());
 #else
             OnShareCompleted("false");
+#endif
+        }
+
+        public void InviteFriends(string id, Action<bool> onComplete = null)
+        {
+            _inviteFriendsCallback = onComplete;
+#if !UNITY_EDITOR
+            PlaygamaBridgeInviteFriends(id.ToJson());
+#else
+            OnInviteFriendsCompleted("false");
 #endif
         }
 
@@ -213,6 +237,16 @@ namespace Playgama.Modules.Social
             PlaygamaBridgeJoinCommunity(options.ToJson());
 #else
             OnJoinCommunityCompleted("false");
+#endif
+        }
+
+        public void CreatePost(string id, Action<bool> onComplete = null)
+        {
+            _createPostCallback = onComplete;
+#if !UNITY_EDITOR
+            PlaygamaBridgeCreatePost(id.ToJson());
+#else
+            OnCreatePostCompleted("false");
 #endif
         }
 

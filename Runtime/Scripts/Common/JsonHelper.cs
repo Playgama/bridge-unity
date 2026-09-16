@@ -51,6 +51,11 @@ namespace Playgama.Common
             return sb.ToString().SurroundWithBraces();
         }
         
+        public static string ToJson(this string data)
+        {
+            return data == null ? "null" : "\"" + EscapeString(data) + "\"";
+        }
+
         public static Dictionary<string, string> FromJsonToDictionary(string json)
         {
             json = json.Trim('{', '}').Trim();
@@ -144,7 +149,7 @@ namespace Playgama.Common
             return data switch
             {
                 null => "null",
-                string s => "\"" + EscapeString(s) + "\"",
+                string s => s.ToJson(),
                 int or float or double => data.ToString(),
                 bool b => b ? "true" : "false",
                 Array array => array.ToJson(),
