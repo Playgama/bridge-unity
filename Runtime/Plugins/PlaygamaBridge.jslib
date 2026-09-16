@@ -31,6 +31,22 @@ mergeInto(LibraryManager.library, {
         stringToUTF8(platformTld, buffer, bufferSize)
         return buffer
     },
+
+    PlaygamaBridgeGetPlatformLaunchSource: function() {
+        var platformLaunchSource = window.getPlatformLaunchSource()
+        var bufferSize = lengthBytesUTF8(platformLaunchSource) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(platformLaunchSource, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeGetPlatformData: function() {
+        var platformData = window.getPlatformData()
+        var bufferSize = lengthBytesUTF8(platformData) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(platformData, buffer, bufferSize)
+        return buffer
+    },
     
     PlaygamaBridgeIsPlatformAudioEnabled: function() {
         var isAudioEnabled = window.getIsPlatformAudioEnabled()
@@ -328,6 +344,14 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
+    PlaygamaBridgeIsPostRewardSupported: function() {
+        var isPostRewardSupported = window.getIsPostRewardSupported()
+        var bufferSize = lengthBytesUTF8(isPostRewardSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isPostRewardSupported, buffer, bufferSize)
+        return buffer
+    },
+
     PlaygamaBridgeShare: function(options) {
         window.share(UTF8ToString(options))
     },
@@ -340,8 +364,8 @@ mergeInto(LibraryManager.library, {
         window.joinCommunity(UTF8ToString(options))
     },
 
-    PlaygamaBridgeCreatePost: function(options) {
-        window.createPost(UTF8ToString(options))
+    PlaygamaBridgeCreatePost: function(options, payload) {
+        window.createPost(UTF8ToString(options), UTF8ToString(payload))
     },
 
     PlaygamaBridgeAddToHomeScreen: function() {
@@ -362,6 +386,10 @@ mergeInto(LibraryManager.library, {
 
     PlaygamaBridgeGetAddToFavoritesReward: function() {
         window.getAddToFavoritesReward()
+    },
+
+    PlaygamaBridgeGetPostReward: function() {
+        window.getPostReward()
     },
 
 

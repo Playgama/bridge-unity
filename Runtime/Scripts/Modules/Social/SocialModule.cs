@@ -119,6 +119,20 @@ namespace Playgama.Modules.Social
             }
         }
 
+        // Rewards around posts created with CreatePost(). The platform backend
+        // verifies who is rewarded and when, the game decides what a reward means.
+        public bool isPostRewardSupported
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return PlaygamaBridgeIsPostRewardSupported() == "true";
+#else
+                return false;
+#endif
+            }
+        }
+
 #if !UNITY_EDITOR
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsShareSupported();
@@ -148,6 +162,9 @@ namespace Playgama.Modules.Social
         private static extern string PlaygamaBridgeIsRateSupported();
 
         [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeIsPostRewardSupported();
+
+        [DllImport("__Internal")]
         private static extern void PlaygamaBridgeShare(string options);
 
         [DllImport("__Internal")]
@@ -157,7 +174,7 @@ namespace Playgama.Modules.Social
         private static extern void PlaygamaBridgeJoinCommunity(string options);
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeCreatePost(string options);
+        private static extern void PlaygamaBridgeCreatePost(string options, string payload);
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeAddToHomeScreen();
@@ -173,6 +190,9 @@ namespace Playgama.Modules.Social
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeGetAddToFavoritesReward();
+
+        [DllImport("__Internal")]
+        private static extern void PlaygamaBridgeGetPostReward();
 #endif
 
         private Action<bool> _shareCallback;
@@ -184,6 +204,7 @@ namespace Playgama.Modules.Social
         private Action<bool> _rateCallback;
         private Action<bool> _getAddToHomeScreenRewardCallback;
         private Action<bool> _getAddToFavoritesRewardCallback;
+        private Action<bool, List<PostReward>> _getPostRewardCallback;
 
 
         // Share, InviteFriends and CreatePost take either the id of an entry declared in
@@ -242,9 +263,16 @@ namespace Playgama.Modules.Social
 
         public void CreatePost(string id, Action<bool> onComplete = null)
         {
+            CreatePost(id, null, onComplete);
+        }
+
+        // `payload` is the game's own string for this one post — a level, a seed, a
+        // challenge — handed back as Bridge.platform.payload when someone opens it.
+        public void CreatePost(string id, string payload, Action<bool> onComplete = null)
+        {
             _createPostCallback = onComplete;
 #if !UNITY_EDITOR
-            PlaygamaBridgeCreatePost(id.ToJson());
+            PlaygamaBridgeCreatePost(id.ToJson(), payload ?? "");
 #else
             OnCreatePostCompleted("false");
 #endif
@@ -254,7 +282,7 @@ namespace Playgama.Modules.Social
         {
             _createPostCallback = onComplete;
 #if !UNITY_EDITOR
-            PlaygamaBridgeCreatePost(options.ToJson());
+            PlaygamaBridgeCreatePost(options.ToJson(), "");
 #else
             OnCreatePostCompleted("false");
 #endif
@@ -307,6 +335,19 @@ namespace Playgama.Modules.Social
             PlaygamaBridgeGetAddToFavoritesReward();
 #else
             OnGetAddToFavoritesRewardCompleted("false");
+#endif
+        }
+
+        // Everything the player has coming from posts right now: the reward for the post
+        // the game was launched from and what the author earned from the players who came
+        // through their posts. The list is empty when there is nothing to grant.
+        public void GetPostReward(Action<bool, List<PostReward>> onComplete = null)
+        {
+            _getPostRewardCallback = onComplete;
+#if !UNITY_EDITOR
+            PlaygamaBridgeGetPostReward();
+#else
+            OnGetPostRewardCompletedFailed();
 #endif
         }
 
@@ -373,6 +414,48 @@ namespace Playgama.Modules.Social
             var canReceiveReward = result == "true";
             _getAddToFavoritesRewardCallback?.Invoke(canReceiveReward);
             _getAddToFavoritesRewardCallback = null;
+        }
+
+        private void OnGetPostRewardCompletedSuccess(string result)
+        {
+            _getPostRewardCallback?.Invoke(true, ParsePostRewards(result));
+            _getPostRewardCallback = null;
+        }
+
+        private void OnGetPostRewardCompletedFailed()
+        {
+            _getPostRewardCallback?.Invoke(false, null);
+            _getPostRewardCallback = null;
+        }
+
+        private static List<PostReward> ParsePostRewards(string json)
+        {
+            var result = new List<PostReward>();
+
+            if (!string.IsNullOrEmpty(json))
+            {
+                try
+                {
+                    // JsonUtility cannot parse a top-level array, so wrap it.
+                    var wrapper = JsonUtility.FromJson<PostRewardListWrapper>("{\"items\":" + json + "}");
+                    if (wrapper?.items != null)
+                    {
+                        result = wrapper.items;
+                    }
+                }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.Log(e);
+                }
+            }
+
+            return result;
+        }
+
+        [Serializable]
+        private class PostRewardListWrapper
+        {
+            public List<PostReward> items;
         }
     }
 }
