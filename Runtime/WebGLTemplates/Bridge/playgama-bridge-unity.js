@@ -206,6 +206,23 @@ window.getPlatformTld = function() {
     }
 }
 
+window.getPlatformLaunchSource = function() {
+    let launchSource = bridge.platform.launchSource
+    if (typeof launchSource === 'string') {
+        return launchSource
+    } else {
+        return ''
+    }
+}
+
+window.getPlatformData = function() {
+    if (bridge.platform.data) {
+        return JSON.stringify(bridge.platform.data)
+    }
+
+    return ''
+}
+
 window.getIsPlatformAudioEnabled = function() {
     return bridge.platform.isAudioEnabled.toString()
 }
@@ -524,6 +541,10 @@ window.getIsRateSupported = function() {
     return bridge.social.isRateSupported.toString()
 }
 
+window.getIsPostRewardSupported = function() {
+    return bridge.social.isPostRewardSupported.toString()
+}
+
 window.share = function(options) {
     if (options) {
         options = JSON.parse(options)
@@ -566,12 +587,12 @@ window.joinCommunity = function(options) {
         })
 }
 
-window.createPost = function(options) {
+window.createPost = function(options, payload) {
     if (options) {
         options = JSON.parse(options)
     }
 
-    bridge.social.createPost(options)
+    bridge.social.createPost(options, payload || undefined)
         .then(() => {
             sendMessageToUnity('OnCreatePostCompleted', 'true')
         })
@@ -627,6 +648,16 @@ window.getAddToFavoritesReward = function() {
         })
         .catch(error => {
             sendMessageToUnity('OnGetAddToFavoritesRewardCompleted', 'false')
+        })
+}
+
+window.getPostReward = function() {
+    bridge.social.getPostReward()
+        .then(data => {
+            sendMessageToUnity('OnGetPostRewardCompletedSuccess', data ? JSON.stringify(data) : '[]')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnGetPostRewardCompletedFailed', 'false')
         })
 }
 

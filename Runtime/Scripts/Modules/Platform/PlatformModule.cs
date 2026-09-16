@@ -64,6 +64,56 @@ namespace Playgama.Modules.Platform
             }
         }
 
+        // Where the game was opened from: a notification or one of its own posts.
+        // Null when the platform did not say.
+        public LaunchSource? launchSource
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                switch (PlaygamaBridgeGetPlatformLaunchSource())
+                {
+                    case "notification":
+                        return LaunchSource.Notification;
+                    case "post":
+                        return LaunchSource.Post;
+                }
+
+                return null;
+#else
+                return null;
+#endif
+            }
+        }
+
+        // Everything the launch carries: the parameters the platform passed to the
+        // game and, when it was opened from one of the game's own posts, "postId" —
+        // the id of that post's config entry.
+        public Dictionary<string, string> data
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                var json = PlaygamaBridgeGetPlatformData();
+                if (string.IsNullOrEmpty(json))
+                {
+                    return new Dictionary<string, string>();
+                }
+
+                try
+                {
+                    return JsonHelper.FromJsonToDictionary(json);
+                }
+                catch (Exception)
+                {
+                    return new Dictionary<string, string>();
+                }
+#else
+                return new Dictionary<string, string>();
+#endif
+            }
+        }
+
         public bool isAudioEnabled
         {
             get
@@ -112,6 +162,12 @@ namespace Playgama.Modules.Platform
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeGetPlatformTld();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeGetPlatformLaunchSource();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeGetPlatformData();
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeIsPlatformAudioEnabled();
