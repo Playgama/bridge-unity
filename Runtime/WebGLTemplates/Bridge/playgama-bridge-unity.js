@@ -261,6 +261,15 @@ window.getServerTime = function() {
         })
 }
 
+// analytics
+window.analyticsSend = function(eventName, data) {
+    if (data) {
+        data = JSON.parse(data)
+    }
+
+    bridge.analytics.send(eventName, data)
+}
+
 // cross promo
 window.crossPromoGetGamesList = function() {
     bridge.crossPromo.getGames()

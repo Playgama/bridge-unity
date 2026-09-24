@@ -1,5 +1,6 @@
 #if UNITY_WEBGL
 using Playgama.Modules.Advertisement;
+using Playgama.Modules.Analytics;
 using Playgama.Modules.Device;
 using Playgama.Modules.Leaderboards;
 using Playgama.Modules.Payments;
@@ -36,6 +37,7 @@ namespace Playgama
         public static DailyRewardsModule dailyRewards => instance._dailyRewards;
         public static CrossPromoModule crossPromo => instance._crossPromo;
         public static NotificationsModule notifications => instance._notifications;
+        public static AnalyticsModule analytics => instance._analytics;
 
         private AdvertisementModule _advertisement;
         private StorageModule _storage;
@@ -51,6 +53,7 @@ namespace Playgama
         private DailyRewardsModule _dailyRewards;
         private CrossPromoModule _crossPromo;
         private NotificationsModule _notifications;
+        private AnalyticsModule _analytics;
 
         protected override void Awake()
         {
@@ -73,6 +76,7 @@ namespace Playgama
             _dailyRewards = gameObject.AddComponent<DailyRewardsModule>();
             _crossPromo = gameObject.AddComponent<CrossPromoModule>();
             _notifications = gameObject.AddComponent<NotificationsModule>();
+            _analytics = gameObject.AddComponent<AnalyticsModule>();
         }
 
 #if UNITY_EDITOR

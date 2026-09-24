@@ -80,6 +80,10 @@ mergeInto(LibraryManager.library, {
         window.sendCustomMessageToPlatform(UTF8ToString(id), options ? UTF8ToString(options) : undefined)
     },
 
+    PlaygamaBridgeAnalyticsSend: function(eventName, data) {
+        window.analyticsSend(UTF8ToString(eventName), data ? UTF8ToString(data) : undefined)
+    },
+
     PlaygamaBridgeGetServerTime: function() {
         window.getServerTime()
     },
