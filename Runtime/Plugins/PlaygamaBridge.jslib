@@ -356,20 +356,20 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
-    PlaygamaBridgeShare: function(options) {
-        window.share(UTF8ToString(options))
+    PlaygamaBridgeShare: function(id) {
+        window.share(UTF8ToString(id))
     },
 
-    PlaygamaBridgeInviteFriends: function(options) {
-        window.inviteFriends(UTF8ToString(options))
+    PlaygamaBridgeInviteFriends: function(id) {
+        window.inviteFriends(UTF8ToString(id))
     },
 
-    PlaygamaBridgeJoinCommunity: function(options) {
-        window.joinCommunity(UTF8ToString(options))
+    PlaygamaBridgeJoinCommunity: function() {
+        window.joinCommunity()
     },
 
-    PlaygamaBridgeCreatePost: function(options, payload) {
-        window.createPost(UTF8ToString(options), UTF8ToString(payload))
+    PlaygamaBridgeCreatePost: function(id, payload) {
+        window.createPost(UTF8ToString(id), UTF8ToString(payload))
     },
 
     PlaygamaBridgeAddToHomeScreen: function() {

@@ -165,16 +165,16 @@ namespace Playgama.Modules.Social
         private static extern string PlaygamaBridgeIsPostRewardSupported();
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeShare(string options);
+        private static extern void PlaygamaBridgeShare(string id);
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeInviteFriends(string options);
+        private static extern void PlaygamaBridgeInviteFriends(string id);
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeJoinCommunity(string options);
+        private static extern void PlaygamaBridgeJoinCommunity();
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeCreatePost(string options, string payload);
+        private static extern void PlaygamaBridgeCreatePost(string id, string payload);
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeAddToHomeScreen();
@@ -207,25 +207,14 @@ namespace Playgama.Modules.Social
         private Action<bool, List<PostReward>> _getPostRewardCallback;
 
 
-        // Share, InviteFriends and CreatePost take either the id of an entry declared in
-        // playgama-bridge-config.json (social.shares, social.invites, social.posts) or the
-        // content itself. The id is sent as a JSON string, so the bridge tells it apart
-        // from the content object.
+        // Share, InviteFriends and CreatePost take the id of an entry declared in
+        // playgama-bridge-config.json (social.shares, social.invites, social.posts).
+        // JoinCommunity reads its data from social.joinCommunity of the config.
         public void Share(string id, Action<bool> onComplete = null)
         {
             _shareCallback = onComplete;
 #if !UNITY_EDITOR
-            PlaygamaBridgeShare(id.ToJson());
-#else
-            OnShareCompleted("false");
-#endif
-        }
-
-        public void Share(Dictionary<string, object> options, Action<bool> onComplete = null)
-        {
-            _shareCallback = onComplete;
-#if !UNITY_EDITOR
-            PlaygamaBridgeShare(options.ToJson());
+            PlaygamaBridgeShare(id ?? "");
 #else
             OnShareCompleted("false");
 #endif
@@ -235,27 +224,17 @@ namespace Playgama.Modules.Social
         {
             _inviteFriendsCallback = onComplete;
 #if !UNITY_EDITOR
-            PlaygamaBridgeInviteFriends(id.ToJson());
+            PlaygamaBridgeInviteFriends(id ?? "");
 #else
             OnInviteFriendsCompleted("false");
 #endif
         }
 
-        public void InviteFriends(Dictionary<string, object> options, Action<bool> onComplete = null)
-        {
-            _inviteFriendsCallback = onComplete;
-#if !UNITY_EDITOR
-            PlaygamaBridgeInviteFriends(options.ToJson());
-#else
-            OnInviteFriendsCompleted("false");
-#endif
-        }
-
-        public void JoinCommunity(Dictionary<string, object> options, Action<bool> onComplete = null)
+        public void JoinCommunity(Action<bool> onComplete = null)
         {
             _joinCommunityCallback = onComplete;
 #if !UNITY_EDITOR
-            PlaygamaBridgeJoinCommunity(options.ToJson());
+            PlaygamaBridgeJoinCommunity();
 #else
             OnJoinCommunityCompleted("false");
 #endif
@@ -272,21 +251,12 @@ namespace Playgama.Modules.Social
         {
             _createPostCallback = onComplete;
 #if !UNITY_EDITOR
-            PlaygamaBridgeCreatePost(id.ToJson(), payload ?? "");
+            PlaygamaBridgeCreatePost(id ?? "", payload ?? "");
 #else
             OnCreatePostCompleted("false");
 #endif
         }
 
-        public void CreatePost(Dictionary<string, object> options, Action<bool> onComplete = null)
-        {
-            _createPostCallback = onComplete;
-#if !UNITY_EDITOR
-            PlaygamaBridgeCreatePost(options.ToJson(), "");
-#else
-            OnCreatePostCompleted("false");
-#endif
-        }
 
         public void AddToHomeScreen(Action<bool> onComplete = null)
         {

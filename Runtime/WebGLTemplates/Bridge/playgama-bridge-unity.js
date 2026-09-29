@@ -554,12 +554,8 @@ window.getIsPostRewardSupported = function() {
     return bridge.social.isPostRewardSupported.toString()
 }
 
-window.share = function(options) {
-    if (options) {
-        options = JSON.parse(options)
-    }
-
-    bridge.social.share(options)
+window.share = function(id) {
+    bridge.social.share(id || undefined)
         .then(() => {
             sendMessageToUnity('OnShareCompleted', 'true')
         })
@@ -568,12 +564,8 @@ window.share = function(options) {
         })
 }
 
-window.inviteFriends = function(options) {
-    if (options) {
-        options = JSON.parse(options)
-    }
-
-    bridge.social.inviteFriends(options)
+window.inviteFriends = function(id) {
+    bridge.social.inviteFriends(id || undefined)
         .then(() => {
             sendMessageToUnity('OnInviteFriendsCompleted', 'true')
         })
@@ -582,12 +574,8 @@ window.inviteFriends = function(options) {
         })
 }
 
-window.joinCommunity = function(options) {
-    if (options) {
-        options = JSON.parse(options)
-    }
-
-    bridge.social.joinCommunity(options)
+window.joinCommunity = function() {
+    bridge.social.joinCommunity()
         .then(() => {
             sendMessageToUnity('OnJoinCommunityCompleted', 'true')
         })
@@ -596,12 +584,8 @@ window.joinCommunity = function(options) {
         })
 }
 
-window.createPost = function(options, payload) {
-    if (options) {
-        options = JSON.parse(options)
-    }
-
-    bridge.social.createPost(options, payload || undefined)
+window.createPost = function(id, payload) {
+    bridge.social.createPost(id || undefined, payload || undefined)
         .then(() => {
             sendMessageToUnity('OnCreatePostCompleted', 'true')
         })
