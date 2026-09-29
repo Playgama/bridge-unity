@@ -209,11 +209,6 @@ namespace Playgama.Editor
                         }
                     }
 
-                    if (useReleaseOptimization)
-                        Tabs.BuildSettingsTab.TrySetCodeOptimization(Tabs.BuildSettingsTab.CodeOptimizationState.DiskSizeLTO);
-                    else
-                        Tabs.BuildSettingsTab.TrySetCodeOptimization(Tabs.BuildSettingsTab.CodeOptimizationState.ShorterBuildTime);
-
                     // Build options: Only use DetailedBuildReport on Unity 6+ where it's stable
                     BuildOptions buildOptions = BuildOptions.None;
 

@@ -954,7 +954,11 @@ namespace Playgama.Editor
             {
                 if (BuildAnalyzer.ValidateScenesForBuild())
                 {
-                    EditorApplication.delayCall += () => BuildAnalyzer.BuildForRelease();
+                    EditorApplication.delayCall += () =>
+                    {
+                        Tabs.BuildSettingsTab.TrySetCodeOptimization(Tabs.BuildSettingsTab.CodeOptimizationState.DiskSizeLTO);
+                        BuildAnalyzer.BuildForRelease();
+                    };
                 }
             }
             GUI.backgroundColor = oldBg;

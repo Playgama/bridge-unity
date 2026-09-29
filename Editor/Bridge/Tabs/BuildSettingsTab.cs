@@ -179,7 +179,7 @@ namespace Playgama.Editor.Tabs
 
             BridgeStyles.BeginCard();
             EditorGUILayout.LabelField("Quick Analysis Build", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Fast build for testing. Uses 'Shorter Build Time'.", BridgeStyles.subtitleStyle);
+            EditorGUILayout.LabelField("Fast build for testing. Uses the Code Opt setting above.", BridgeStyles.subtitleStyle);
             using (new EditorGUILayout.HorizontalScope())
             {
                 if (BridgeStyles.DrawAccentButton(new GUIContent("Build & Analyze (WebGL)"), GUILayout.Height(30)))
@@ -207,7 +207,7 @@ namespace Playgama.Editor.Tabs
             GUI.Label(new Rect(headerRect.x + 10, headerRect.y + 2, headerRect.width, headerRect.height), "Build for Release", EditorStyles.boldLabel);
 
             GUILayout.Space(4);
-            EditorGUILayout.LabelField("Smallest build with LTO. Takes longer but worth it.", BridgeStyles.subtitleStyle);
+            EditorGUILayout.LabelField("Production build. Uses the Code Opt setting above.", BridgeStyles.subtitleStyle);
             GUILayout.Space(6);
 
             Color oldBg = GUI.backgroundColor;
