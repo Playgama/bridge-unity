@@ -20,7 +20,7 @@ namespace Playgama.Common
                 }
 
 #if UNITY_2023_1_OR_NEWER
-                _instance = FindFirstObjectByType<T>();
+                _instance = FindAnyObjectByType<T>();
 #else
                 _instance = FindObjectOfType<T>();
 #endif
