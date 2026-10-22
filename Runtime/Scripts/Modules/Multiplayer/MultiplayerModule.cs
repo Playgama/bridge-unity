@@ -362,28 +362,28 @@ namespace Playgama.Modules.Multiplayer
 #endif
         }
 
-        // `data` is any JSON value as a string (e.g. JsonUtility.ToJson(...)), or null.
-        public void Send(string type, string data = null, MultiplayerTarget to = MultiplayerTarget.Others)
+        // `data` is a flat dictionary: string, number or bool values; null sends an empty one.
+        public void Send(string type, Dictionary<string, object> data = null, MultiplayerTarget to = MultiplayerTarget.Others)
         {
             SendToTarget(type, data, TargetToString(to));
         }
 
         // Sends to a single player.
-        public void Send(string type, string data, string playerId)
+        public void Send(string type, Dictionary<string, object> data, string playerId)
         {
             SendToTarget(type, data, playerId);
         }
 
         // Sends to the listed players.
-        public void Send(string type, string data, string[] playerIds)
+        public void Send(string type, Dictionary<string, object> data, string[] playerIds)
         {
             SendToTarget(type, data, "[" + string.Join(",", Array.ConvertAll(playerIds, id => id.ToJson())) + "]");
         }
 
-        private void SendToTarget(string type, string data, string to)
+        private void SendToTarget(string type, Dictionary<string, object> data, string to)
         {
 #if !UNITY_EDITOR
-            PlaygamaBridgeMultiplayerSend(type, data, to);
+            PlaygamaBridgeMultiplayerSend(type, (data ?? new Dictionary<string, object>()).ToJson(), to);
 #endif
         }
 

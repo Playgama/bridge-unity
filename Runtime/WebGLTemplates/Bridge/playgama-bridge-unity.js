@@ -943,9 +943,30 @@ window.notificationsCancelAll = function() {
 }
 
 // multiplayer
-// Unity's JsonUtility cannot parse free-form objects, so properties and message data are passed as JSON strings
+// Unity's JsonUtility cannot parse free-form objects, so a flat object (properties, message data)
+// goes as a list of typed values and becomes Dictionary<string, object> in C#
+function toMultiplayerValueList(object) {
+    if (!object || typeof object !== 'object' || Array.isArray(object)) {
+        return []
+    }
+
+    return Object.keys(object).map(key => {
+        const value = object[key]
+        const type = typeof value === 'number' || typeof value === 'boolean' ? typeof value : 'string'
+        return {
+            key,
+            type,
+            stringValue: type === 'string' ? (typeof value === 'string' ? value : JSON.stringify(value)) : '',
+            numberValue: type === 'number' ? value : 0,
+            boolValue: type === 'boolean' ? value : false,
+        }
+    })
+}
+
 function prepareMultiplayerObject(value) {
-    return Object.assign({}, value, { properties: JSON.stringify(value.properties || {}) })
+    const prepared = Object.assign({}, value, { propertyList: toMultiplayerValueList(value.properties) })
+    delete prepared.properties
+    return prepared
 }
 
 function stringifyMultiplayerObject(value) {
@@ -959,7 +980,7 @@ function stringifyMultiplayerList(values) {
 function prepareMultiplayerMessage(message) {
     return {
         type: message.type,
-        data: message.data === undefined ? null : JSON.stringify(message.data),
+        dataList: toMultiplayerValueList(message.data),
         from: message.from,
     }
 }

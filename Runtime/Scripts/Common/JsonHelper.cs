@@ -1,6 +1,7 @@
 ﻿#if UNITY_WEBGL
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 namespace Playgama.Common
@@ -150,7 +151,8 @@ namespace Playgama.Common
             {
                 null => "null",
                 string s => s.ToJson(),
-                int or float or double => data.ToString(),
+                // Invariant culture: a comma decimal separator would break the JSON
+                int or long or float or double => Convert.ToString(data, CultureInfo.InvariantCulture),
                 bool b => b ? "true" : "false",
                 Array array => array.ToJson(),
                 Dictionary<string, object> objects => objects.ToJson(),
@@ -160,7 +162,7 @@ namespace Playgama.Common
 
         private static string EscapeString(string str)
         {
-            return str.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            return str.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
         }
     }
 }
