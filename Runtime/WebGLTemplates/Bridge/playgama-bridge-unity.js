@@ -137,6 +137,10 @@ function initializeBridge() {
             bridge.platform.on('audio_state_changed', isEnabled => sendMessageToUnity('OnAudioStateChanged', isEnabled.toString()))
             bridge.platform.on('pause_state_changed', isPaused => sendMessageToUnity('OnPauseStateChanged', isPaused.toString()))
 
+            if (bridge.multiplayer) {
+                subscribeMultiplayerEvents()
+            }
+
             let unityLoader = document.createElement('script')
             unityLoader.src = 'Build/{{{ LOADER_FILENAME }}}'
             unityLoader.onload = () => {
@@ -936,4 +940,179 @@ window.notificationsCancelAll = function() {
         .catch(error => {
             sendMessageToUnity('OnNotificationsCancelAllCompletedFailed', 'false')
         })
+}
+
+// multiplayer
+// Unity's JsonUtility cannot parse free-form objects, so properties and message data are passed as JSON strings
+function prepareMultiplayerObject(value) {
+    return Object.assign({}, value, { properties: JSON.stringify(value.properties || {}) })
+}
+
+function stringifyMultiplayerObject(value) {
+    return value ? JSON.stringify(prepareMultiplayerObject(value)) : ''
+}
+
+function stringifyMultiplayerList(values) {
+    return JSON.stringify((values || []).map(prepareMultiplayerObject))
+}
+
+function prepareMultiplayerMessage(message) {
+    return {
+        type: message.type,
+        data: message.data === undefined ? null : JSON.stringify(message.data),
+        from: message.from,
+    }
+}
+
+// Messages wait here and C# takes them once per frame, see PlaygamaBridgeMultiplayerTakeMessages
+const multiplayerMessageQueue = []
+
+function takeMultiplayerMessages() {
+    if (multiplayerMessageQueue.length === 0) {
+        return ''
+    }
+
+    return JSON.stringify(multiplayerMessageQueue.splice(0).map(prepareMultiplayerMessage))
+}
+
+// Other events go right away, so queued messages are delivered first to keep the order
+function sendMultiplayerEventToUnity(name, value) {
+    if (multiplayerMessageQueue.length > 0) {
+        sendMessageToUnity('OnMultiplayerMessagesReceived', takeMultiplayerMessages())
+    }
+
+    sendMessageToUnity(name, value)
+}
+
+function subscribeMultiplayerEvents() {
+    bridge.multiplayer.on('multiplayer_state_changed', state => sendMultiplayerEventToUnity('OnMultiplayerStateChanged', state))
+    bridge.multiplayer.on('multiplayer_room_left', reason => sendMultiplayerEventToUnity('OnMultiplayerRoomLeft', reason))
+    bridge.multiplayer.on('multiplayer_room_updated', room => sendMultiplayerEventToUnity('OnMultiplayerRoomUpdated', stringifyMultiplayerObject(room)))
+    bridge.multiplayer.on('multiplayer_player_joined', player => sendMultiplayerEventToUnity('OnMultiplayerPlayerJoined', stringifyMultiplayerObject(player)))
+    bridge.multiplayer.on('multiplayer_player_left', player => sendMultiplayerEventToUnity('OnMultiplayerPlayerLeft', stringifyMultiplayerObject(player)))
+    bridge.multiplayer.on('multiplayer_player_updated', player => sendMultiplayerEventToUnity('OnMultiplayerPlayerUpdated', stringifyMultiplayerObject(player)))
+    bridge.multiplayer.on('multiplayer_host_changed', player => sendMultiplayerEventToUnity('OnMultiplayerHostChanged', stringifyMultiplayerObject(player)))
+    bridge.multiplayer.on('multiplayer_message_received', message => multiplayerMessageQueue.push(message))
+}
+
+function getMultiplayerErrorCode(error) {
+    return (error && error.code) || ''
+}
+
+window.getIsMultiplayerSupported = function() {
+    return Boolean(bridge.multiplayer && bridge.multiplayer.isSupported).toString()
+}
+
+// Room state in one call: C# caches it and asks again only after a multiplayer event
+window.getMultiplayerSnapshot = function() {
+    const multiplayer = bridge.multiplayer
+    return JSON.stringify({
+        state: multiplayer.state,
+        isInRoom: multiplayer.isInRoom,
+        isHost: multiplayer.isHost,
+        playerId: multiplayer.playerId || '',
+        hostId: multiplayer.hostId || '',
+        roomId: multiplayer.roomId || '',
+        room: multiplayer.room ? prepareMultiplayerObject(multiplayer.room) : null,
+        players: multiplayer.players.map(prepareMultiplayerObject),
+    })
+}
+
+window.takeMultiplayerMessages = takeMultiplayerMessages
+
+window.getIsMultiplayerInviteSupported = function() {
+    return bridge.multiplayer.isInviteSupported.toString()
+}
+
+window.getMultiplayerLaunchRoomId = function() {
+    return bridge.multiplayer.launchRoomId || ''
+}
+
+window.multiplayerCreateRoom = function(options) {
+    options = JSON.parse(options)
+
+    bridge.multiplayer.createRoom(options)
+        .then(roomId => {
+            sendMessageToUnity('OnMultiplayerCreateRoomCompletedSuccess', roomId)
+        })
+        .catch(error => {
+            sendMessageToUnity('OnMultiplayerCreateRoomCompletedFailed', getMultiplayerErrorCode(error))
+        })
+}
+
+window.multiplayerJoinRoom = function(roomId, options) {
+    options = JSON.parse(options)
+
+    bridge.multiplayer.joinRoom(roomId, options)
+        .then(() => {
+            sendMessageToUnity('OnMultiplayerJoinRoomCompletedSuccess', '')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnMultiplayerJoinRoomCompletedFailed', getMultiplayerErrorCode(error))
+        })
+}
+
+window.multiplayerJoinOrCreateRoom = function(options) {
+    options = JSON.parse(options)
+
+    bridge.multiplayer.joinOrCreateRoom(options)
+        .then(roomId => {
+            sendMessageToUnity('OnMultiplayerJoinOrCreateRoomCompletedSuccess', roomId)
+        })
+        .catch(error => {
+            sendMessageToUnity('OnMultiplayerJoinOrCreateRoomCompletedFailed', getMultiplayerErrorCode(error))
+        })
+}
+
+window.multiplayerGetRooms = function(options) {
+    options = JSON.parse(options)
+
+    bridge.multiplayer.getRooms(options)
+        .then(rooms => {
+            sendMessageToUnity('OnMultiplayerGetRoomsCompletedSuccess', stringifyMultiplayerList(rooms))
+        })
+        .catch(error => {
+            sendMessageToUnity('OnMultiplayerGetRoomsCompletedFailed', getMultiplayerErrorCode(error))
+        })
+}
+
+window.multiplayerInviteToRoom = function(options) {
+    options = JSON.parse(options)
+
+    bridge.multiplayer.inviteToRoom(options)
+        .then(() => {
+            sendMessageToUnity('OnMultiplayerInviteToRoomCompletedSuccess', '')
+        })
+        .catch(error => {
+            sendMessageToUnity('OnMultiplayerInviteToRoomCompletedFailed', getMultiplayerErrorCode(error))
+        })
+}
+
+window.multiplayerLeaveRoom = function() {
+    bridge.multiplayer.leaveRoom()
+}
+
+window.multiplayerSetRoomOpen = function(isOpen) {
+    bridge.multiplayer.setRoomOpen(isOpen === 'true')
+}
+
+window.multiplayerSetRoomVisible = function(isVisible) {
+    bridge.multiplayer.setRoomVisible(isVisible === 'true')
+}
+
+window.multiplayerSetRoomProperties = function(properties) {
+    bridge.multiplayer.setRoomProperties(JSON.parse(properties))
+}
+
+window.multiplayerSetPlayerProperties = function(properties) {
+    bridge.multiplayer.setPlayerProperties(JSON.parse(properties))
+}
+
+// to: 'all' / 'others' / 'host', a player id or a JSON array of player ids
+window.multiplayerSend = function(type, data, to) {
+    if (data) {
+        data = JSON.parse(data)
+    }
+
+    bridge.multiplayer.send(type, data, { to: to.charAt(0) === '[' ? JSON.parse(to) : to })
 }

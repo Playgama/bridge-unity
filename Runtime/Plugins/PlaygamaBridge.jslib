@@ -538,4 +538,94 @@ mergeInto(LibraryManager.library, {
         window.notificationsCancelAll()
     },
 
+    // multiplayer
+    PlaygamaBridgeIsMultiplayerSupported: function() {
+        var isMultiplayerSupported = window.getIsMultiplayerSupported()
+        var bufferSize = lengthBytesUTF8(isMultiplayerSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isMultiplayerSupported, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeMultiplayerSnapshot: function() {
+        var snapshot = window.getMultiplayerSnapshot()
+        var bufferSize = lengthBytesUTF8(snapshot) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(snapshot, buffer, bufferSize)
+        return buffer
+    },
+
+    // Called every frame while in a room: returns null when no messages are waiting
+    PlaygamaBridgeMultiplayerTakeMessages: function() {
+        var messages = window.takeMultiplayerMessages()
+        if (!messages) {
+            return null
+        }
+
+        var bufferSize = lengthBytesUTF8(messages) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(messages, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeIsMultiplayerInviteSupported: function() {
+        var isInviteSupported = window.getIsMultiplayerInviteSupported()
+        var bufferSize = lengthBytesUTF8(isInviteSupported) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(isInviteSupported, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeMultiplayerLaunchRoomId: function() {
+        var launchRoomId = window.getMultiplayerLaunchRoomId()
+        var bufferSize = lengthBytesUTF8(launchRoomId) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(launchRoomId, buffer, bufferSize)
+        return buffer
+    },
+
+    PlaygamaBridgeMultiplayerCreateRoom: function(options) {
+        window.multiplayerCreateRoom(UTF8ToString(options))
+    },
+
+    PlaygamaBridgeMultiplayerJoinRoom: function(roomId, options) {
+        window.multiplayerJoinRoom(UTF8ToString(roomId), UTF8ToString(options))
+    },
+
+    PlaygamaBridgeMultiplayerJoinOrCreateRoom: function(options) {
+        window.multiplayerJoinOrCreateRoom(UTF8ToString(options))
+    },
+
+    PlaygamaBridgeMultiplayerGetRooms: function(options) {
+        window.multiplayerGetRooms(UTF8ToString(options))
+    },
+
+    PlaygamaBridgeMultiplayerInviteToRoom: function(options) {
+        window.multiplayerInviteToRoom(UTF8ToString(options))
+    },
+
+    PlaygamaBridgeMultiplayerLeaveRoom: function() {
+        window.multiplayerLeaveRoom()
+    },
+
+    PlaygamaBridgeMultiplayerSetRoomOpen: function(isOpen) {
+        window.multiplayerSetRoomOpen(UTF8ToString(isOpen))
+    },
+
+    PlaygamaBridgeMultiplayerSetRoomVisible: function(isVisible) {
+        window.multiplayerSetRoomVisible(UTF8ToString(isVisible))
+    },
+
+    PlaygamaBridgeMultiplayerSetRoomProperties: function(properties) {
+        window.multiplayerSetRoomProperties(UTF8ToString(properties))
+    },
+
+    PlaygamaBridgeMultiplayerSetPlayerProperties: function(properties) {
+        window.multiplayerSetPlayerProperties(UTF8ToString(properties))
+    },
+
+    PlaygamaBridgeMultiplayerSend: function(type, data, to) {
+        window.multiplayerSend(UTF8ToString(type), data ? UTF8ToString(data) : undefined, UTF8ToString(to))
+    },
+
 });
