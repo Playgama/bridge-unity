@@ -255,7 +255,8 @@ namespace Playgama.Modules.Multiplayer
 #endif
 
         // Options: maxPlayers, isVisible (false by default: joined by code only), isOpen,
-        // properties, playerName, playerProperties. The callback receives the room id.
+        // filter (lets quick match and filtered room lists find a visible room), properties,
+        // playerName, playerProperties. The callback receives the room id.
         public void CreateRoom(Dictionary<string, object> options = null, Action<bool, string> onComplete = null)
         {
             _createRoomCallback = onComplete;
@@ -281,7 +282,7 @@ namespace Playgama.Modules.Multiplayer
 #endif
         }
 
-        // Quick match: enters a matching visible room or creates one.
+        // Quick match: enters a visible room with the same maxPlayers and filter or creates one.
         // Options: maxPlayers, filter, properties, playerName, playerProperties.
         // The callback receives the room id.
         public void JoinOrCreateRoom(Dictionary<string, object> options = null, Action<bool, string> onComplete = null)
@@ -296,7 +297,8 @@ namespace Playgama.Modules.Multiplayer
 #endif
         }
 
-        // Visible open rooms with a free seat. Options: filter, maxPlayers, limit.
+        // Visible open rooms with a free seat. Options: filter (only rooms created with exactly
+        // this filter), maxPlayers, limit.
         public void GetRooms(Dictionary<string, object> options = null, Action<bool, List<MultiplayerRoomInfo>> onComplete = null)
         {
             _getRoomsCallback = onComplete;

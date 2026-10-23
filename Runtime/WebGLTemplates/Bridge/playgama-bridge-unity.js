@@ -966,6 +966,11 @@ function toMultiplayerValueList(object) {
 function prepareMultiplayerObject(value) {
     const prepared = Object.assign({}, value, { propertyList: toMultiplayerValueList(value.properties) })
     delete prepared.properties
+    // Room list items also carry the filter the room was created with
+    if (prepared.filter) {
+        prepared.filterList = toMultiplayerValueList(prepared.filter)
+        delete prepared.filter
+    }
     return prepared
 }
 
