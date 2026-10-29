@@ -943,8 +943,8 @@ window.notificationsCancelAll = function() {
 }
 
 // multiplayer
-// Unity's JsonUtility cannot parse free-form objects, so a flat object (properties, message data)
-// goes as a list of typed values and becomes Dictionary<string, object> in C#
+// Unity's JsonUtility cannot parse free-form objects, so a flat object (properties, message data,
+// sync state) goes as a list of typed values and becomes Dictionary<string, object> in C#
 function toMultiplayerValueList(object) {
     if (!object || typeof object !== 'object' || Array.isArray(object)) {
         return []
@@ -1019,6 +1019,7 @@ function subscribeMultiplayerEvents() {
     bridge.multiplayer.on('multiplayer_player_updated', player => sendMultiplayerEventToUnity('OnMultiplayerPlayerUpdated', stringifyMultiplayerObject(player)))
     bridge.multiplayer.on('multiplayer_host_changed', player => sendMultiplayerEventToUnity('OnMultiplayerHostChanged', stringifyMultiplayerObject(player)))
     bridge.multiplayer.on('multiplayer_message_received', message => multiplayerMessageQueue.push(message))
+    bridge.multiplayer.on('multiplayer_sync_state_received', state => sendMultiplayerEventToUnity('OnMultiplayerSyncStateReceived', JSON.stringify(toMultiplayerValueList(state))))
 }
 
 function getMultiplayerErrorCode(error) {
@@ -1052,6 +1053,10 @@ window.getIsMultiplayerInviteSupported = function() {
 
 window.getMultiplayerLaunchRoomId = function() {
     return bridge.multiplayer.launchRoomId || ''
+}
+
+window.getMultiplayerSyncState = function() {
+    return JSON.stringify(toMultiplayerValueList(bridge.multiplayer.syncState))
 }
 
 window.multiplayerCreateRoom = function(options) {
@@ -1141,4 +1146,8 @@ window.multiplayerSend = function(type, data, to) {
     }
 
     bridge.multiplayer.send(type, data, { to: to.charAt(0) === '[' ? JSON.parse(to) : to })
+}
+
+window.multiplayerSetSyncState = function(state) {
+    bridge.multiplayer.setSyncState(JSON.parse(state))
 }

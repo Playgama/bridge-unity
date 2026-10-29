@@ -20,6 +20,9 @@ namespace Playgama.Modules.Multiplayer
         // The new host, null when the room has none.
         public event Action<MultiplayerPlayer> hostChanged;
         public event Action<MultiplayerMessage> messageReceived;
+        // The host's world with the syncState room option, in the format of message data: for
+        // each snapshot on the other players, and on a new host when it takes over the last one.
+        public event Action<Dictionary<string, object>> syncStateReceived;
 
         public bool isSupported
         {
@@ -158,6 +161,19 @@ namespace Playgama.Modules.Multiplayer
             }
         }
 
+        // A copy of the last world set with SetSyncState() or received; empty after leaving the room.
+        public Dictionary<string, object> syncState
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return ParseDictionary(PlaygamaBridgeMultiplayerSyncState());
+#else
+                return new Dictionary<string, object>();
+#endif
+            }
+        }
+
         // Error code of the last failed request, e.g. MULTIPLAYER_ROOM_FULL; null after a success.
         public string lastError { get; private set; }
 
@@ -176,6 +192,9 @@ namespace Playgama.Modules.Multiplayer
 
         [DllImport("__Internal")]
         private static extern string PlaygamaBridgeMultiplayerLaunchRoomId();
+
+        [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeMultiplayerSyncState();
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeMultiplayerCreateRoom(string options);
@@ -209,6 +228,9 @@ namespace Playgama.Modules.Multiplayer
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeMultiplayerSend(string type, string data, string to);
+
+        [DllImport("__Internal")]
+        private static extern void PlaygamaBridgeMultiplayerSetSyncState(string state);
 #endif
 
         private Action<bool, string> _createRoomCallback;
@@ -256,7 +278,8 @@ namespace Playgama.Modules.Multiplayer
 
         // Options: maxPlayers, isVisible (false by default: joined by code only), isOpen,
         // filter (lets quick match and filtered room lists find a visible room), properties,
-        // playerName, playerProperties. The callback receives the room id.
+        // playerName, playerProperties, syncState (true, or a dictionary with updatesPerSecond
+        // from 1 to 10, 10 by default: see SetSyncState()). The callback receives the room id.
         public void CreateRoom(Dictionary<string, object> options = null, Action<bool, string> onComplete = null)
         {
             _createRoomCallback = onComplete;
@@ -269,7 +292,7 @@ namespace Playgama.Modules.Multiplayer
 #endif
         }
 
-        // Options: playerName, playerProperties.
+        // Options: playerName, playerProperties, syncState (see CreateRoom()).
         public void JoinRoom(string roomId, Dictionary<string, object> options = null, Action<bool> onComplete = null)
         {
             _joinRoomCallback = onComplete;
@@ -283,8 +306,8 @@ namespace Playgama.Modules.Multiplayer
         }
 
         // Quick match: enters a visible room with the same maxPlayers and filter or creates one.
-        // Options: maxPlayers, filter, properties, playerName, playerProperties.
-        // The callback receives the room id.
+        // Options: maxPlayers, filter, properties, playerName, playerProperties,
+        // syncState (see CreateRoom()). The callback receives the room id.
         public void JoinOrCreateRoom(Dictionary<string, object> options = null, Action<bool, string> onComplete = null)
         {
             _joinOrCreateRoomCallback = onComplete;
@@ -389,6 +412,16 @@ namespace Playgama.Modules.Multiplayer
 #endif
         }
 
+        // World for the syncState room option, flat like Send() data; null sets an empty one.
+        // Only the host's world is sent: change it on the host and set it after each change.
+        // Works outside a room too, e.g. to set the starting world before CreateRoom().
+        public void SetSyncState(Dictionary<string, object> state)
+        {
+#if !UNITY_EDITOR
+            PlaygamaBridgeMultiplayerSetSyncState(state.ToJson());
+#endif
+        }
+
         // Called from JS
         private void OnMultiplayerStateChanged(string value)
         {
@@ -444,6 +477,12 @@ namespace Playgama.Modules.Multiplayer
             {
                 messageReceived?.Invoke(message);
             }
+        }
+
+        // A JSON array of values, sent from JS right after the queued messages.
+        private void OnMultiplayerSyncStateReceived(string value)
+        {
+            syncStateReceived?.Invoke(ParseDictionary(value));
         }
 
         private void OnMultiplayerCreateRoomCompletedSuccess(string result)
@@ -594,6 +633,12 @@ namespace Playgama.Modules.Multiplayer
             }
 
             return result;
+        }
+
+        // A flat object sent as a JSON array of values, see MultiplayerValue.
+        private static Dictionary<string, object> ParseDictionary(string json)
+        {
+            return MultiplayerValue.ToDictionary(ParseList<MultiplayerValue>(json));
         }
 
         [Serializable]
