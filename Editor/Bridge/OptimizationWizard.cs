@@ -936,29 +936,25 @@ namespace Playgama.Editor
             EditorGUILayout.Space(10);
 
             EditorGUILayout.LabelField(
-                "Create the smallest possible build for publishing.",
+                "Create a production build for publishing.",
                 EditorStyles.wordWrappedLabel);
 
             EditorGUILayout.Space(5);
 
             EditorGUILayout.HelpBox(
-                "Build for Release uses 'Disk Size with LTO' optimization.\n" +
-                "This creates the smallest build but takes significantly longer to compile.",
+                "Build for Release uses the Code Opt setting from the Build Settings tab.\n" +
+                "'Disk Size with LTO' gives the smallest build but takes significantly longer to compile.",
                 MessageType.Info);
 
             EditorGUILayout.Space(10);
 
             Color oldBg = GUI.backgroundColor;
             GUI.backgroundColor = new Color(0.2f, 0.7f, 0.3f);
-            if (GUILayout.Button(new GUIContent("  Build for Release  ", "Creates smallest possible WebGL build using Disk Size with LTO optimization"), GUILayout.Height(40)))
+            if (GUILayout.Button(new GUIContent("  Build for Release  ", "Creates a production WebGL build using the Code Opt setting from the Build Settings tab"), GUILayout.Height(40)))
             {
                 if (BuildAnalyzer.ValidateScenesForBuild())
                 {
-                    EditorApplication.delayCall += () =>
-                    {
-                        Tabs.BuildSettingsTab.TrySetCodeOptimization(Tabs.BuildSettingsTab.CodeOptimizationState.DiskSizeLTO);
-                        BuildAnalyzer.BuildForRelease();
-                    };
+                    EditorApplication.delayCall += BuildAnalyzer.BuildForRelease;
                 }
             }
             GUI.backgroundColor = oldBg;
