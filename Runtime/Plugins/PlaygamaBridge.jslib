@@ -584,6 +584,14 @@ mergeInto(LibraryManager.library, {
         return buffer
     },
 
+    PlaygamaBridgeMultiplayerRegion: function() {
+        var region = window.getMultiplayerRegion()
+        var bufferSize = lengthBytesUTF8(region) + 1
+        var buffer = _malloc(bufferSize)
+        stringToUTF8(region, buffer, bufferSize)
+        return buffer
+    },
+
     PlaygamaBridgeMultiplayerSyncState: function() {
         var syncState = window.getMultiplayerSyncState()
         var bufferSize = lengthBytesUTF8(syncState) + 1
@@ -606,6 +614,14 @@ mergeInto(LibraryManager.library, {
 
     PlaygamaBridgeMultiplayerGetRooms: function(options) {
         window.multiplayerGetRooms(UTF8ToString(options))
+    },
+
+    PlaygamaBridgeMultiplayerGetRegions: function() {
+        window.multiplayerGetRegions()
+    },
+
+    PlaygamaBridgeMultiplayerSetRegion: function(region) {
+        window.multiplayerSetRegion(UTF8ToString(region))
     },
 
     PlaygamaBridgeMultiplayerInviteToRoom: function(options) {

@@ -1055,6 +1055,10 @@ window.getMultiplayerLaunchRoomId = function() {
     return bridge.multiplayer.launchRoomId || ''
 }
 
+window.getMultiplayerRegion = function() {
+    return bridge.multiplayer.region || ''
+}
+
 window.getMultiplayerSyncState = function() {
     return JSON.stringify(toMultiplayerValueList(bridge.multiplayer.syncState))
 }
@@ -1105,6 +1109,20 @@ window.multiplayerGetRooms = function(options) {
         .catch(error => {
             sendMessageToUnity('OnMultiplayerGetRoomsCompletedFailed', getMultiplayerErrorCode(error))
         })
+}
+
+window.multiplayerGetRegions = function() {
+    bridge.multiplayer.getRegions()
+        .then(regions => {
+            sendMessageToUnity('OnMultiplayerGetRegionsCompletedSuccess', JSON.stringify(regions))
+        })
+        .catch(error => {
+            sendMessageToUnity('OnMultiplayerGetRegionsCompletedFailed', getMultiplayerErrorCode(error))
+        })
+}
+
+window.multiplayerSetRegion = function(region) {
+    bridge.multiplayer.setRegion(region)
 }
 
 window.multiplayerInviteToRoom = function(options) {

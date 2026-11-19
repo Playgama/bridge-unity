@@ -161,6 +161,20 @@ namespace Playgama.Modules.Multiplayer
             }
         }
 
+        // Region of the next created or matched room and of GetRooms(), e.g. "eu". Null until
+        // SetRegion(), GetRegions() or the first room call.
+        public string region
+        {
+            get
+            {
+#if !UNITY_EDITOR
+                return NullIfEmpty(PlaygamaBridgeMultiplayerRegion());
+#else
+                return null;
+#endif
+            }
+        }
+
         // A copy of the last world set with SetSyncState() or received; empty after leaving the room.
         public Dictionary<string, object> syncState
         {
@@ -194,6 +208,9 @@ namespace Playgama.Modules.Multiplayer
         private static extern string PlaygamaBridgeMultiplayerLaunchRoomId();
 
         [DllImport("__Internal")]
+        private static extern string PlaygamaBridgeMultiplayerRegion();
+
+        [DllImport("__Internal")]
         private static extern string PlaygamaBridgeMultiplayerSyncState();
 
         [DllImport("__Internal")]
@@ -207,6 +224,12 @@ namespace Playgama.Modules.Multiplayer
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeMultiplayerGetRooms(string options);
+
+        [DllImport("__Internal")]
+        private static extern void PlaygamaBridgeMultiplayerGetRegions();
+
+        [DllImport("__Internal")]
+        private static extern void PlaygamaBridgeMultiplayerSetRegion(string region);
 
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeMultiplayerInviteToRoom(string options);
@@ -237,6 +260,7 @@ namespace Playgama.Modules.Multiplayer
         private Action<bool> _joinRoomCallback;
         private Action<bool, string> _joinOrCreateRoomCallback;
         private Action<bool, List<MultiplayerRoomInfo>> _getRoomsCallback;
+        private Action<bool, List<string>> _getRegionsCallback;
         private Action<bool> _inviteToRoomCallback;
 
 #if !UNITY_EDITOR
@@ -331,6 +355,29 @@ namespace Playgama.Modules.Multiplayer
             PlaygamaBridgeMultiplayerGetRooms(options.ToJson());
 #else
             OnMultiplayerGetRoomsCompletedFailed();
+#endif
+        }
+
+        // Region ids for a region picker, e.g. "eu", "us", "ap". Also sets region to the default
+        // one if it is still unknown.
+        public void GetRegions(Action<bool, List<string>> onComplete = null)
+        {
+            _getRegionsCallback = onComplete;
+            lastError = null;
+
+#if !UNITY_EDITOR
+            PlaygamaBridgeMultiplayerGetRegions();
+#else
+            OnMultiplayerGetRegionsCompletedFailed();
+#endif
+        }
+
+        // Region of the next created or matched room and of GetRooms(), an id from GetRegions().
+        // The current room stays where it is; JoinRoom() by code always enters the code's region.
+        public void SetRegion(string region)
+        {
+#if !UNITY_EDITOR
+            PlaygamaBridgeMultiplayerSetRegion(region ?? string.Empty);
 #endif
         }
 
@@ -535,6 +582,19 @@ namespace Playgama.Modules.Multiplayer
             lastError = NullIfEmpty(error);
             _getRoomsCallback?.Invoke(false, null);
             _getRoomsCallback = null;
+        }
+
+        private void OnMultiplayerGetRegionsCompletedSuccess(string result)
+        {
+            _getRegionsCallback?.Invoke(true, ParseList<string>(result));
+            _getRegionsCallback = null;
+        }
+
+        private void OnMultiplayerGetRegionsCompletedFailed(string error = null)
+        {
+            lastError = NullIfEmpty(error);
+            _getRegionsCallback?.Invoke(false, null);
+            _getRegionsCallback = null;
         }
 
         private void OnMultiplayerInviteToRoomCompletedSuccess(string result)
