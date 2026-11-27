@@ -1,6 +1,7 @@
 ﻿#if UNITY_WEBGL
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Playgama.Common;
 using UnityEngine;
 #if !UNITY_EDITOR
@@ -46,12 +47,16 @@ namespace Playgama.Modules.Leaderboards
         private static extern void PlaygamaBridgeLeaderboardsGetEntries(string id);
         
         [DllImport("__Internal")]
+        private static extern void PlaygamaBridgeLeaderboardsGetInfo(string id);
+        
+        [DllImport("__Internal")]
         private static extern void PlaygamaBridgeLeaderboardsShowNativePopup(string id);
         
 #endif
 
         private Action<bool> _setScoreCallback;
         private Action<bool, List<Dictionary<string, string>>> _getEntriesCallback;
+        private Action<bool, LeaderboardInfo> _getInfoCallback;
         private Action<bool> _showNativePopupCallback;
 
         
@@ -80,6 +85,18 @@ namespace Playgama.Modules.Leaderboards
 #endif
         }
         
+        // Period of the leaderboard and seconds until it resets. Native platform leaderboards
+        // are always Permanent. Fails when leaderboards are not available or the request fails.
+        public void GetInfo(string id, Action<bool, LeaderboardInfo> onComplete)
+        {
+            _getInfoCallback = onComplete;
+#if !UNITY_EDITOR
+            PlaygamaBridgeLeaderboardsGetInfo(id);
+#else
+            OnLeaderboardsGetInfoCompletedFailed();
+#endif
+        }
+
         public void ShowNativePopup(string id, Action<bool> onComplete = null)
         {
             _showNativePopupCallback = onComplete;
@@ -124,6 +141,18 @@ namespace Playgama.Modules.Leaderboards
             _getEntriesCallback = null;
         }
         
+        private void OnLeaderboardsGetInfoCompletedSuccess(string result)
+        {
+            _getInfoCallback?.Invoke(true, ParseInfo(result));
+            _getInfoCallback = null;
+        }
+
+        private void OnLeaderboardsGetInfoCompletedFailed()
+        {
+            _getInfoCallback?.Invoke(false, null);
+            _getInfoCallback = null;
+        }
+
         private void OnLeaderboardsShowNativePopupCompleted(string result)
         {
             var isSuccess = result == "true";
@@ -131,6 +160,40 @@ namespace Playgama.Modules.Leaderboards
             _showNativePopupCallback = null;
         }
         
+        private static LeaderboardInfo ParseInfo(string json)
+        {
+            var data = string.IsNullOrEmpty(json)
+                ? new Dictionary<string, string>()
+                : JsonHelper.FromJsonToDictionary(json);
+
+            data.TryGetValue("id", out var id);
+            data.TryGetValue("period", out var period);
+            data.TryGetValue("timeLeft", out var timeLeft);
+
+            return new LeaderboardInfo
+            {
+                id = id,
+                period = ToPeriod(period),
+                timeLeft = int.TryParse(timeLeft, NumberStyles.Integer, CultureInfo.InvariantCulture, out var seconds)
+                    ? seconds
+                    : (int?)null
+            };
+        }
+
+        private static LeaderboardPeriod ToPeriod(string value)
+        {
+            switch (value)
+            {
+                case "daily":
+                    return LeaderboardPeriod.Daily;
+                case "weekly":
+                    return LeaderboardPeriod.Weekly;
+                case "monthly":
+                    return LeaderboardPeriod.Monthly;
+            }
+
+            return LeaderboardPeriod.Permanent;
+        }
     }
 }
 #endif

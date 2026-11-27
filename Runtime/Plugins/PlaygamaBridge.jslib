@@ -412,6 +412,10 @@ mergeInto(LibraryManager.library, {
     PlaygamaBridgeLeaderboardsGetEntries: function(id) {
         window.leaderboardsGetEntries(UTF8ToString(id))
     },
+
+    PlaygamaBridgeLeaderboardsGetInfo: function(id) {
+        window.leaderboardsGetInfo(UTF8ToString(id))
+    },
     
     PlaygamaBridgeLeaderboardsShowNativePopup: function(id) {
         window.leaderboardsShowNativePopup(UTF8ToString(id))

@@ -689,6 +689,16 @@ window.leaderboardsGetEntries = function(id) {
         })
 }
 
+window.leaderboardsGetInfo = function(id) {
+    bridge.leaderboards.getInfo(id)
+        .then(info => {
+            sendMessageToUnity('OnLeaderboardsGetInfoCompletedSuccess', JSON.stringify(info))
+        })
+        .catch(error => {
+            sendMessageToUnity('OnLeaderboardsGetInfoCompletedFailed', 'false')
+        })
+}
+
 window.leaderboardsShowNativePopup = function(id) {
     bridge.leaderboards.showNativePopup(id)
         .then(() => {
