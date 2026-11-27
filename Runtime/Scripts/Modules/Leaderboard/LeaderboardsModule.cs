@@ -43,7 +43,7 @@ namespace Playgama.Modules.Leaderboards
         private static extern void PlaygamaBridgeLeaderboardsSetScore(string id, string score);
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeLeaderboardsGetEntries(string id);
+        private static extern void PlaygamaBridgeLeaderboardsGetEntries(string id, string period);
         
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeLeaderboardsShowNativePopup(string id);
@@ -55,6 +55,7 @@ namespace Playgama.Modules.Leaderboards
         private Action<bool> _showNativePopupCallback;
 
         
+        // On a leaderboard set to "sum" in the developer console the score is added, so send what the player earned.
         public void SetScore(string id, int score, Action<bool> onComplete = null)
         {
             SetScore(id, score.ToString(), onComplete);
@@ -72,9 +73,15 @@ namespace Playgama.Modules.Leaderboards
 
         public void GetEntries(string id, Action<bool, List<Dictionary<string, string>>> onComplete)
         {
+            GetEntries(id, LeaderboardPeriod.Permanent, onComplete);
+        }
+
+        // Entries of the given standing. Platform leaderboards have only Permanent, other periods fail there.
+        public void GetEntries(string id, LeaderboardPeriod period, Action<bool, List<Dictionary<string, string>>> onComplete)
+        {
             _getEntriesCallback = onComplete;
 #if !UNITY_EDITOR
-            PlaygamaBridgeLeaderboardsGetEntries(id);
+            PlaygamaBridgeLeaderboardsGetEntries(id, ToPeriodString(period));
 #else
             OnLeaderboardsGetEntriesCompletedFailed();
 #endif
@@ -131,6 +138,20 @@ namespace Playgama.Modules.Leaderboards
             _showNativePopupCallback = null;
         }
         
+        private static string ToPeriodString(LeaderboardPeriod period)
+        {
+            switch (period)
+            {
+                case LeaderboardPeriod.Daily:
+                    return "daily";
+                case LeaderboardPeriod.Weekly:
+                    return "weekly";
+                case LeaderboardPeriod.Monthly:
+                    return "monthly";
+            }
+
+            return "permanent";
+        }
     }
 }
 #endif

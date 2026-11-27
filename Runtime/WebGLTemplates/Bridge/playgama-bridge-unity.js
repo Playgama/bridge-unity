@@ -675,8 +675,8 @@ window.leaderboardsSetScore = function(id, score) {
         })
 }
 
-window.leaderboardsGetEntries = function(id) {
-    bridge.leaderboards.getEntries(id)
+window.leaderboardsGetEntries = function(id, period) {
+    bridge.leaderboards.getEntries(id, { period })
         .then(data => {
             if (data) {
                 sendMessageToUnity('OnLeaderboardsGetEntriesCompletedSuccess', JSON.stringify(data))

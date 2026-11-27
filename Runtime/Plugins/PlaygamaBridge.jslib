@@ -409,8 +409,8 @@ mergeInto(LibraryManager.library, {
         window.leaderboardsSetScore(UTF8ToString(id), UTF8ToString(score))
     },
 
-    PlaygamaBridgeLeaderboardsGetEntries: function(id) {
-        window.leaderboardsGetEntries(UTF8ToString(id))
+    PlaygamaBridgeLeaderboardsGetEntries: function(id, period) {
+        window.leaderboardsGetEntries(UTF8ToString(id), UTF8ToString(period))
     },
     
     PlaygamaBridgeLeaderboardsShowNativePopup: function(id) {
