@@ -1,7 +1,6 @@
 ﻿#if UNITY_WEBGL
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using Playgama.Common;
 using UnityEngine;
 #if !UNITY_EDITOR
@@ -44,7 +43,7 @@ namespace Playgama.Modules.Leaderboards
         private static extern void PlaygamaBridgeLeaderboardsSetScore(string id, string score);
 
         [DllImport("__Internal")]
-        private static extern void PlaygamaBridgeLeaderboardsGetEntries(string id);
+        private static extern void PlaygamaBridgeLeaderboardsGetEntries(string id, string period);
         
         [DllImport("__Internal")]
         private static extern void PlaygamaBridgeLeaderboardsGetInfo(string id);
@@ -60,6 +59,7 @@ namespace Playgama.Modules.Leaderboards
         private Action<bool> _showNativePopupCallback;
 
         
+        // Best score mode keeps the best score, Sum mode adds the score, so send what the player earned.
         public void SetScore(string id, int score, Action<bool> onComplete = null)
         {
             SetScore(id, score.ToString(), onComplete);
@@ -77,16 +77,22 @@ namespace Playgama.Modules.Leaderboards
 
         public void GetEntries(string id, Action<bool, List<Dictionary<string, string>>> onComplete)
         {
+            GetEntries(id, LeaderboardPeriod.Permanent, onComplete);
+        }
+
+        // Entries of the given standing. Platform leaderboards have only Permanent, other periods fail there.
+        public void GetEntries(string id, LeaderboardPeriod period, Action<bool, List<Dictionary<string, string>>> onComplete)
+        {
             _getEntriesCallback = onComplete;
 #if !UNITY_EDITOR
-            PlaygamaBridgeLeaderboardsGetEntries(id);
+            PlaygamaBridgeLeaderboardsGetEntries(id, ToPeriodString(period));
 #else
             OnLeaderboardsGetEntriesCompletedFailed();
 #endif
         }
         
-        // Period of the leaderboard and seconds until it resets. Native platform leaderboards
-        // are always Permanent. Fails when leaderboards are not available or the request fails.
+        // Score mode, readable periods and seconds until each period resets. Platform leaderboards
+        // are Best with only Permanent. Fails when leaderboards are not available or the request fails.
         public void GetInfo(string id, Action<bool, LeaderboardInfo> onComplete)
         {
             _getInfoCallback = onComplete;
@@ -162,28 +168,58 @@ namespace Playgama.Modules.Leaderboards
         
         private static LeaderboardInfo ParseInfo(string json)
         {
-            var data = string.IsNullOrEmpty(json)
-                ? new Dictionary<string, string>()
-                : JsonHelper.FromJsonToDictionary(json);
+            var info = new LeaderboardInfo();
 
-            data.TryGetValue("id", out var id);
-            data.TryGetValue("period", out var period);
-            data.TryGetValue("timeLeft", out var timeLeft);
-
-            return new LeaderboardInfo
+            if (string.IsNullOrEmpty(json))
             {
-                id = id,
-                period = ToPeriod(period),
-                timeLeft = int.TryParse(timeLeft, NumberStyles.Integer, CultureInfo.InvariantCulture, out var seconds)
-                    ? seconds
-                    : (int?)null
-            };
+                return info;
+            }
+
+            try
+            {
+                var data = JsonUtility.FromJson<LeaderboardInfoJson>(json);
+                info.id = data.id;
+                info.scoreMode = data.scoreMode == "sum" ? LeaderboardScoreMode.Sum : LeaderboardScoreMode.Best;
+
+                foreach (var value in data.periods)
+                {
+                    var period = ToPeriod(value);
+                    if (period == null)
+                    {
+                        continue;
+                    }
+
+                    info.periods.Add(period.Value);
+
+                    // timeLeft has a key for every listed period except permanent
+                    switch (period.Value)
+                    {
+                        case LeaderboardPeriod.Daily:
+                            info.SetTimeLeft(period.Value, data.timeLeft.daily);
+                            break;
+                        case LeaderboardPeriod.Weekly:
+                            info.SetTimeLeft(period.Value, data.timeLeft.weekly);
+                            break;
+                        case LeaderboardPeriod.Monthly:
+                            info.SetTimeLeft(period.Value, data.timeLeft.monthly);
+                            break;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.Log(e);
+            }
+
+            return info;
         }
 
-        private static LeaderboardPeriod ToPeriod(string value)
+        private static LeaderboardPeriod? ToPeriod(string value)
         {
             switch (value)
             {
+                case "permanent":
+                    return LeaderboardPeriod.Permanent;
                 case "daily":
                     return LeaderboardPeriod.Daily;
                 case "weekly":
@@ -192,8 +228,43 @@ namespace Playgama.Modules.Leaderboards
                     return LeaderboardPeriod.Monthly;
             }
 
-            return LeaderboardPeriod.Permanent;
+            return null;
         }
+
+        private static string ToPeriodString(LeaderboardPeriod period)
+        {
+            switch (period)
+            {
+                case LeaderboardPeriod.Daily:
+                    return "daily";
+                case LeaderboardPeriod.Weekly:
+                    return "weekly";
+                case LeaderboardPeriod.Monthly:
+                    return "monthly";
+            }
+
+            return "permanent";
+        }
+
+        // Filled by JsonUtility
+#pragma warning disable CS0649
+        [Serializable]
+        private class LeaderboardInfoJson
+        {
+            public string id;
+            public string scoreMode;
+            public List<string> periods = new List<string>();
+            public TimeLeftJson timeLeft = new TimeLeftJson();
+        }
+
+        [Serializable]
+        private class TimeLeftJson
+        {
+            public int daily;
+            public int weekly;
+            public int monthly;
+        }
+#pragma warning restore CS0649
     }
 }
 #endif
